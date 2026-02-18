@@ -26,21 +26,26 @@ export default function AuthCallback() {
           })
             .then(res => res.json())
             .then(userInfo => {
-              // Check if user is registered
+              // Auto-register user if not exists (OAuth flow)
               const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
               const registeredUser = existingUsers.find(u => 
                 u.email.toLowerCase() === userInfo.email?.toLowerCase()
               );
               
               if (!registeredUser) {
-                // User not registered, redirect to login with message
-                console.warn('User not registered:', userInfo.email);
-                alert('No account found. Please sign up first.');
-                navigate('/login');
-                return;
+                // Register new user automatically
+                const newUser = {
+                  name: userInfo.name || userInfo.given_name || 'User',
+                  email: userInfo.email.toLowerCase(),
+                  provider: 'google',
+                  createdAt: new Date().toISOString()
+                };
+                existingUsers.push(newUser);
+                localStorage.setItem('registered_users', JSON.stringify(existingUsers));
+                console.log('✅ New user registered:', userInfo.email);
               }
               
-              // Store user info with consistent key name
+              // Store user session
               const userData = {
                 name: userInfo.name || userInfo.given_name || 'User',
                 email: userInfo.email
