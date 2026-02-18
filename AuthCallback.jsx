@@ -26,8 +26,26 @@ export default function AuthCallback() {
           })
             .then(res => res.json())
             .then(userInfo => {
-              // Store user info
-              localStorage.setItem('user_info', JSON.stringify(userInfo));
+              // Check if user is registered
+              const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
+              const registeredUser = existingUsers.find(u => 
+                u.email.toLowerCase() === userInfo.email?.toLowerCase()
+              );
+              
+              if (!registeredUser) {
+                // User not registered, redirect to login with message
+                console.warn('User not registered:', userInfo.email);
+                alert('No account found. Please sign up first.');
+                navigate('/login');
+                return;
+              }
+              
+              // Store user info with consistent key name
+              const userData = {
+                name: userInfo.name || userInfo.given_name || 'User',
+                email: userInfo.email
+              };
+              localStorage.setItem('current_user', JSON.stringify(userData));
               
               // Redirect to home
               navigate('/home');
