@@ -1,55 +1,49 @@
-# CarbonCalc — Frontend
+# CarbonTracker – Frontend
 
-## Overview
+React single‑page application for the CarbonTracker project.
 
-React.js single-page application providing the UI for CarbonCalc: login/register, dashboard, lifestyle survey, carbon history, goals, gamification (badges, leaderboards), and the eco marketplace.
+### Tech stack
 
-## Tech stack
+- React (Create React App)
+- React Router
+- Axios
 
-- React.js (v18+)
-- Tailwind CSS for styling
-- State management: React Context / Redux (project-specific)
-- HTTP client: fetch or Axios
+### Prerequisites
 
-## Prerequisites
+- Node.js and npm installed
+- Backend running on `http://localhost:8080` (default)
 
-- Node.js 16+ (recommended 18+)
-- npm, yarn, or pnpm
-
-## Configuration
-
-Create a `.env` file in the `frontend/` root with at least:
-
-- `REACT_APP_API_BASE_URL` — backend API URL (e.g. http://localhost:8080/api)
-- `REACT_APP_MAPS_API_KEY` — optional, for any location-based features
-
-## Install & Run
+### Setup
 
 ```bash
-# install dependencies
+cd frontend
 npm install
+```
 
-# development
+### Run in development
+
+```bash
 npm start
+```
 
-# build for production
+- App runs at `http://localhost:3000`
+- Proxies API calls to the backend URL you configured (usually `http://localhost:8080`)
+
+### Build for production
+
+```bash
 npm run build
 ```
 
-## Usage notes
+Build output is written to the `build/` folder.
 
-- The app expects the backend's auth endpoints for JWT login/register and token refresh.
-- Store access tokens in memory or secure storage; follow best practices for refresh tokens.
-- Tailwind configuration is in `tailwind.config.js` — adjust theme/colors as needed.
+### Main routes
 
-## Testing & Lint
+- `/` or `/login` – Login (email/password + Google/GitHub OAuth)
+- `/register` – Register with validations + Terms/Privacy
+- `/forgot-password` and `/reset-password/:token`
+- `/dashboard` – Protected dashboard with emission summary and add‑emission form
 
-```bash
-npm test
-npm run lint
-```
+### Where to configure API URL
 
-## Deployment
-
-- Serve the `build/` folder via any static hosting (Netlify, Vercel, S3 + CloudFront, or an Nginx web server).
-- Configure `REACT_APP_API_BASE_URL` for the production backend.
+If you need to change the backend base URL, update the Axios configuration file (e.g. `src/api.js` or where `axios.create` is defined) so that it points to your backend server. 
