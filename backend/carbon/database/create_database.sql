@@ -1,0 +1,45 @@
+-- Carbon Footprint Application Database Setup Script
+-- Database: carboncals
+-- PostgreSQL
+
+-- Create database (run this as superuser/postgres)
+-- Note: If database already exists, you can skip this step
+CREATE DATABASE carboncals;
+
+-- Connect to the carboncals database before running the following commands
+-- \c carboncals
+
+-- Create users table
+CREATE TABLE IF NOT EXISTS users (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) NOT NULL UNIQUE,
+    password VARCHAR(255) NOT NULL
+);
+
+-- Create index on email for faster lookups
+CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
+
+-- Create emission_records table
+CREATE TABLE IF NOT EXISTS emission_records (
+    id BIGSERIAL PRIMARY KEY,
+    category VARCHAR(255),
+    activity_type VARCHAR(255),
+    quantity DOUBLE PRECISION,
+    carbon_output DOUBLE PRECISION,
+    user_id BIGINT NOT NULL,
+    CONSTRAINT fk_emission_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create index on user_id for faster queries
+CREATE INDEX IF NOT EXISTS idx_emission_records_user_id ON emission_records(user_id);
+
+-- Optional: Add comments to tables
+COMMENT ON TABLE users IS 'Stores user account information';
+COMMENT ON TABLE emission_records IS 'Stores carbon emission records linked to users';
+
+COMMENT ON COLUMN users.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN users.email IS 'Unique email address for login';
+COMMENT ON COLUMN users.password IS 'BCrypt encrypted password';
+COMMENT ON COLUMN emission_records.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN emission_records.user_id IS 'Foreign key to users table';
