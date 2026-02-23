@@ -352,14 +352,31 @@ export default function SignUpPage() {
         }
 
         .right-panel {
-          flex: 1;
           background: var(--warm-off);
+          padding: 4rem 2rem 3rem;
           display: flex;
           flex-direction: column;
-          justify-content: center;
           align-items: center;
-          padding: 4rem 3rem;
+          justify-content: center;
           position: relative;
+          flex: 1;
+          width: 100%;
+          min-height: 100vh;
+        }
+
+        .top-link {
+          position: absolute;
+          top: 1.5rem;
+          right: 2rem;
+          font-size: 0.88rem;
+          color: var(--text-med);
+          text-decoration: none;
+          transition: color 0.3s ease;
+          font-weight: 400;
+        }
+
+        .top-link:hover {
+          color: var(--sage);
         }
 
         /* Gradient background animation */
@@ -460,40 +477,66 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .signup-card-container {
           width: 100%;
-          max-width: 460px;
+          max-width: 520px;
           animation: cardEntrance 0.8s ease-out;
         }
 
         .signup-card {
-          background: white;
+          background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
           border-radius: 24px;
           padding: 3rem 2.5rem;
-          box-shadow: 0 20px 60px rgba(26, 61, 43, 0.12);
+          box-shadow: 0 20px 60px rgba(26, 61, 43, 0.3);
+          position: relative;
+          overflow: hidden;
+        }
+
+        .card-background-image {
+          position: absolute;
+          top: 0;
+          right: 0;
+          width: 400px;
+          height: 400px;
+          opacity: 0.12;
+          mix-blend-mode: overlay;
+          pointer-events: none;
+          transform: translate(25%, -25%) rotate(15deg);
+          filter: blur(1px) brightness(1.2);
+          animation: floatImage 20s ease-in-out infinite;
+        }
+
+        @keyframes floatImage {
+          0%, 100% {
+            transform: translate(25%, -25%) rotate(15deg) scale(1);
+          }
+          50% {
+            transform: translate(30%, -20%) rotate(18deg) scale(1.05);
+          }
         }
 
         .card-label {
           font-size: 0.7rem;
           text-transform: uppercase;
-          letter-spacing: 1.5px;
-          color: var(--sage);
-          font-weight: 600;
-          margin-bottom: 1rem;
+          letter-spacing: 1.8px;
+          color: var(--mist);
+          font-weight: 500;
+          margin-bottom: 0.75rem;
         }
 
         .card-title {
           font-family: 'Playfair Display', serif;
-          font-size: 2rem;
+          font-size: 2.4rem;
           font-weight: 700;
-          color: var(--forest);
-          line-height: 1.3;
+          color: var(--cream);
+          line-height: 1.2;
           margin-bottom: 1rem;
         }
 
         .card-subtitle {
-          font-size: 0.95rem;
-          color: var(--text-med);
-          line-height: 1.6;
-          margin-bottom: 2rem;
+          font-size: 1rem;
+          color: var(--mist);
+          font-weight: 300;
+          line-height: 1.7;
+          margin-bottom: 2.5rem;
         }
 
         /* ═══════════════════════════════════════════════════════════════ */
@@ -509,10 +552,11 @@ export default function SignUpPage() {
 
         .input-label {
           display: block;
-          font-size: 0.85rem;
+          font-size: 0.9rem;
           font-weight: 500;
-          color: var(--charcoal);
+          color: var(--mist);
           margin-bottom: 0.5rem;
+          text-align: left;
         }
 
         .input-wrapper {
@@ -521,20 +565,20 @@ export default function SignUpPage() {
 
         .input-field {
           width: 100%;
-          padding: 0.875rem 1rem;
-          border: 1.5px solid rgba(200, 222, 206, 0.5);
-          border-radius: 12px;
+          padding: 0.95rem 1.25rem;
+          border: 1.5px solid rgba(200, 222, 206, 0.3);
+          border-radius: 10px;
           font-size: 1rem;
           font-family: 'DM Sans', sans-serif;
-          transition: all 0.3s ease;
-          background: rgba(255, 255, 255, 0.9);
           color: var(--charcoal);
+          background: rgba(255, 255, 255, 0.95);
+          transition: all 0.3s ease;
         }
 
         .input-field:focus {
           outline: none;
-          border-color: var(--sage);
-          box-shadow: 0 0 0 3px rgba(90, 138, 106, 0.1);
+          border-color: var(--fern);
+          box-shadow: 0 0 0 3px rgba(137, 187, 151, 0.2);
           background: white;
         }
 
@@ -579,7 +623,7 @@ export default function SignUpPage() {
           border-radius: 12px;
           padding: 1rem 1.5rem;
           font-size: 1rem;
-          font-weight: 600;
+          font-weight: 500;
           color: white;
           cursor: pointer;
           transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
@@ -588,6 +632,7 @@ export default function SignUpPage() {
           display: flex;
           align-items: center;
           justify-content: center;
+          gap: 0.75rem;
         }
 
         .email-btn:hover:not(:disabled) {
@@ -701,30 +746,23 @@ export default function SignUpPage() {
         /* LOGIN LINK */
         /* ═══════════════════════════════════════════════════════════════ */
         .login-link {
-          text-align: center !important;
+          text-align: center;
           margin-top: 1.5rem;
-          margin-left: auto;
-          margin-right: auto;
           padding-top: 1.5rem;
           border-top: 1px solid rgba(200, 222, 206, 0.3);
           font-size: 0.95rem;
-          color: var(--text-med);
-          width: 100%;
-          display: flex;
-          justify-content: center;
-          align-items: center;
+          color: white;
         }
 
         .login-link a {
-          color: var(--forest);
+          color: white;
           text-decoration: none;
           font-weight: 600;
           transition: color 0.2s ease;
-          margin-left: 0.25rem;
         }
 
         .login-link a:hover {
-          color: var(--sage);
+          color: var(--mist);
           text-decoration: underline;
         }
 
@@ -733,22 +771,23 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .trust-badges {
           display: flex;
-          gap: 1.5rem;
-          margin-top: 2rem;
           flex-wrap: wrap;
+          gap: 1.5rem;
           justify-content: center;
+          margin: 2rem 0 2.5rem;
+          padding: 0;
         }
 
         .badge {
           display: flex;
           align-items: center;
-          gap: 0.5rem;
-          font-size: 0.8rem;
-          color: var(--text-lt);
+          gap: 0.4rem;
+          font-size: 0.85rem;
+          color: var(--sage);
         }
 
         .badge-icon {
-          font-size: 1.2rem;
+          font-size: 1rem;
         }
 
         /* ═══════════════════════════════════════════════════════════════ */
@@ -776,15 +815,29 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         /* RESPONSIVE DESIGN */
         /* ═══════════════════════════════════════════════════════════════ */
-        @media (max-width: 1024px) {
+        @media (max-width: 860px) {
           .right-panel {
-            padding: 3rem 2rem;
+            padding: 3rem 1.5rem 2.5rem;
+          }
+
+          .top-link {
+            top: 1.25rem;
+            right: 1.5rem;
+            font-size: 0.85rem;
+          }
+
+          .signup-card-container {
+            max-width: 100%;
+          }
+
+          .card-title {
+            font-size: 2rem;
           }
         }
 
-        @media (max-width: 640px) {
+        @media (max-width: 480px) {
           .right-panel {
-            padding: 2rem 1.5rem;
+            padding: 2.5rem 1.25rem 2rem;
           }
 
           .signup-card {
@@ -795,10 +848,19 @@ export default function SignUpPage() {
             font-size: 1.75rem;
           }
 
+          .top-link {
+            position: relative;
+            top: auto;
+            right: auto;
+            text-align: center;
+            margin-bottom: 1.5rem;
+            display: block;
+          }
+
           .trust-badges {
             flex-direction: column;
             align-items: center;
-            gap: 1rem;
+            gap: 0.75rem;
           }
         }
       `}</style>
@@ -845,6 +907,14 @@ export default function SignUpPage() {
         <div className="right-panel">
           <div className="signup-card-container">
             <div className="signup-card">
+              {/* Decorative background image */}
+              <img 
+                src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80" 
+                alt="" 
+                className="card-background-image"
+                loading="lazy"
+              />
+
               <div className="card-label">JOIN US TODAY</div>
               <h2 className="card-title">
                 Create your
