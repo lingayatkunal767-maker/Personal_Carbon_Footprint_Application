@@ -833,6 +833,13 @@ export default function SignUpPage() {
           .card-title {
             font-size: 2rem;
           }
+
+          .footer {
+            position: relative;
+            bottom: auto;
+            margin-top: 3rem;
+            padding: 0 1.5rem;
+          }
         }
 
         @media (max-width: 480px) {
@@ -862,6 +869,11 @@ export default function SignUpPage() {
             align-items: center;
             gap: 0.75rem;
           }
+
+          .footer-links {
+            flex-direction: column;
+            gap: 0.5rem;
+          }
         }
       `}</style>
 
@@ -888,7 +900,7 @@ export default function SignUpPage() {
             <div className="logo-section">
               <span className="logo-icon">🌍</span>
               <h1 className="logo-text">
-                Personol Carbon Footprint
+                Personal Carbon Footprint
               </h1>
               <div className="tagline">
                 Track · Reduce · Sustain
@@ -914,6 +926,52 @@ export default function SignUpPage() {
                 className="card-background-image"
                 loading="lazy"
               />
+
+              {/* Logo/Brand at top */}
+              <div style={{ 
+                textAlign: 'center', 
+                marginBottom: '2.5rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.75rem',
+                justifyContent: 'center',
+              }}>
+                <div style={{ 
+                  width: '48px', 
+                  height: '48px', 
+                  background: 'linear-gradient(135deg, #89bb97 0%, #c8dece 100%)',
+                  borderRadius: '12px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  fontSize: '26px',
+                  boxShadow: '0 2px 8px rgba(200, 222, 206, 0.2)'
+                }}>
+                  🌿
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                  <h1 style={{ 
+                    fontFamily: "'Playfair Display', serif",
+                    fontSize: '1.6rem',
+                    fontWeight: '700',
+                    color: 'var(--cream)',
+                    margin: '0',
+                    lineHeight: '1.1'
+                  }}>
+                    Personal Carbon Footprint
+                  </h1>
+                  <div style={{
+                    fontSize: '0.7rem',
+                    textTransform: 'uppercase',
+                    letterSpacing: '1.5px',
+                    color: 'var(--mist)',
+                    marginTop: '5px',
+                    fontWeight: '500'
+                  }}>
+                    Track · Reduce · Sustain
+                  </div>
+                </div>
+              </div>
 
               <div className="card-label">JOIN US TODAY</div>
               <h2 className="card-title">
@@ -1052,12 +1110,23 @@ export default function SignUpPage() {
           {/* Trust badges */}
           <div className="trust-badges">
             <div className="badge">
-              <span className="badge-icon">🔒</span>
-              <span>Secure & encrypted</span>
-            </div>
-            <div className="badge">
               <span className="badge-icon">🌱</span>
               <span>Carbon-neutral hosting</span>
+            </div>
+          </div>
+
+          {/* Footer */}
+          <div className="footer">
+            <div className="footer-links">
+              <a href="#about">About</a>
+              <a href="#privacy">Privacy Policy</a>
+              <a href="#terms">Terms of Service</a>
+              <a href="#contact">Contact</a>
+              <a href="#blog">Sustainability Blog</a>
+              <a href="#faq">FAQ</a>
+            </div>
+            <div className="copyright">
+              © 2025 Personal Carbon Footprint. Made with ♥ for the planet.
             </div>
           </div>
         </div>

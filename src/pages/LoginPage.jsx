@@ -909,7 +909,7 @@ export default function LoginPage() {
                   margin: '0',
                   lineHeight: '1.1'
                 }}>
-                  Personol Carbon Footprint
+                  Personal Carbon Footprint
                 </h1>
                 <div style={{
                   fontSize: '0.7rem',
@@ -1038,7 +1038,7 @@ export default function LoginPage() {
               <a href="#faq">FAQ</a>
             </div>
             <div className="copyright">
-              © 2025 Personol Carbon Footprint. Made with ♥ for the planet.
+              © 2025 Personal Carbon Footprint. Made with ♥ for the planet.
             </div>
           </div>
         </div>
