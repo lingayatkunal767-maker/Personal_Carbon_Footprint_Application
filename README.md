@@ -32,26 +32,28 @@ npm install
 
 ### 2. Configure Google OAuth
 
+**IMPORTANT:** The app runs on port **5173** (not 3000).
+
 1. Go to [Google Cloud Console](https://console.cloud.google.com/)
 2. Create a project and enable Google+ API
 3. Create OAuth 2.0 credentials
-4. Add authorized origins: `http://localhost:3000`
-5. Add redirect URIs: `http://localhost:3000/auth/callback`
+4. Add authorized origins: 
+   - `http://localhost:5173`
+   - `http://127.0.0.1:5173`
+5. Add redirect URIs: 
+   - `http://localhost:5173/auth/callback`
+   - `http://127.0.0.1:5173/auth/callback`
 6. Copy your Client ID
+
+**📖 See [GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md) for detailed setup instructions**
 
 ### 3. Set Up Environment Variables
 
+Your `.env` file is already configured with a Google Client ID. If you need to change it:
+
 \`\`\`bash
-# Copy the example file
-cp .env.example .env
-
-# Edit .env and add your Client ID
+# Edit .env file
 VITE_GOOGLE_CLIENT_ID=your_actual_client_id_here
-\`\`\`
-
-**Alternative**: Edit `LoginPage.jsx` line 11 directly:
-\`\`\`javascript
-const GOOGLE_CLIENT_ID = "your_actual_client_id_here";
 \`\`\`
 
 ### 4. Start Development Server
@@ -60,7 +62,7 @@ const GOOGLE_CLIENT_ID = "your_actual_client_id_here";
 npm run dev
 \`\`\`
 
-Open [http://localhost:3000](http://localhost:3000) to view the app! 🎉
+Open [http://localhost:5173](http://localhost:5173) to view the app! 🎉
 
 ## 📁 Project Structure
 
@@ -130,7 +132,7 @@ Redirect to /home (1.2s delay)
 ## 🛠️ Available Scripts
 
 \`\`\`bash
-npm run dev      # Start development server (port 3000)
+npm run dev      # Start development server (port 5173)
 npm run build    # Build for production
 npm run preview  # Preview production build
 npm run lint     # Run ESLint
@@ -148,7 +150,7 @@ npm run lint     # Run ESLint
 → App automatically falls back to redirect flow
 
 ### Port already in use
-→ Change port in `vite.config.js` or kill process on port 3000
+→ Change port in `vite.config.js` or kill process on port 5173
 
 See [SETUP_INSTRUCTIONS.md](./SETUP_INSTRUCTIONS.md) for detailed troubleshooting.
 

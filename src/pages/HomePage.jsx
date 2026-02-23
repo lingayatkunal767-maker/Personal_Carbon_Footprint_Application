@@ -173,13 +173,25 @@ export default function HomePage() {
   const handleProfileSave = (updatedProfile) => {
     setProfile(updatedProfile);
     const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-    const mergedUser = { ...currentUser, name: updatedProfile.name, email: updatedProfile.email, memberSince: updatedProfile.memberSince };
+    const mergedUser = { 
+      ...currentUser, 
+      name: updatedProfile.name, 
+      email: updatedProfile.email, 
+      memberSince: updatedProfile.memberSince,
+      profilePicture: updatedProfile.profilePicture 
+    };
     localStorage.setItem('current_user', JSON.stringify(mergedUser));
 
     const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
     const updatedUsers = existingUsers.map((user) => {
       if (user.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
-        return { ...user, name: updatedProfile.name, email: updatedProfile.email, memberSince: updatedProfile.memberSince };
+        return { 
+          ...user, 
+          name: updatedProfile.name, 
+          email: updatedProfile.email, 
+          memberSince: updatedProfile.memberSince,
+          profilePicture: updatedProfile.profilePicture 
+        };
       }
       return user;
     });

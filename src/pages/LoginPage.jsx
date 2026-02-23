@@ -120,6 +120,7 @@ export default function LoginPage() {
       const firstName = payload.given_name || 'there';
       const userEmail = payload.email;
       const fullName = payload.name || firstName;
+      const profilePicture = payload.picture || null;
       
       // Check if user exists
       const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
@@ -130,8 +131,23 @@ export default function LoginPage() {
         return;
       }
       
+      // Update user's profile picture if available
+      if (profilePicture) {
+        const updatedUsers = existingUsers.map(u => {
+          if (u.email.toLowerCase() === userEmail.toLowerCase()) {
+            return { ...u, profilePicture };
+          }
+          return u;
+        });
+        localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
+      }
+      
       // Set current user session
-      localStorage.setItem('current_user', JSON.stringify({ name: fullName, email: userEmail.toLowerCase() }));
+      localStorage.setItem('current_user', JSON.stringify({ 
+        name: fullName, 
+        email: userEmail.toLowerCase(),
+        profilePicture 
+      }));
       localStorage.setItem('auth_token', 'authenticated');
       
       showToast(`Welcome back, ${firstName}! 🌿`);
@@ -217,35 +233,61 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-      showToast('⚠️ Please configure GOOGLE_CLIENT_ID first');
+      showToast('⚠️ Google OAuth not configured. Check GOOGLE_AUTH_SETUP.md');
+      console.error('Missing VITE_GOOGLE_CLIENT_ID in .env file');
       return;
     }
 
     if (!window.google) {
-      console.error('❌ Google library not loaded');
-      showToast('⚠️ Google Sign-In not ready. Please refresh the page.');
+      console.error('❌ Google Identity Services library not loaded');
+      showToast('⚠️ Google Sign-In loading failed. Please refresh the page.');
       return;
     }
 
     setLoading(true);
-    setBtnLabel('Signing you in…');
+    setBtnLabel('Opening Google Sign-In…');
 
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
-      console.log('🔍 Redirect URI:', redirectUri);
-      console.log('✅ Client ID configured');
+      console.log('🔍 Google OAuth Configuration:');
+      console.log('   Redirect URI:', redirectUri);
+      console.log('   Client ID:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
+      console.log('   Origin:', window.location.origin);
       
       if (window.google.accounts && window.google.accounts.id) {
+        // Try Google One Tap first
         window.google.accounts.id.prompt((notification) => {
+          console.log('One Tap Notification:', notification);
+          
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log('One Tap skipped, redirecting to OAuth flow...');
+            // Fallback to OAuth redirect flow
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
               `client_id=${GOOGLE_CLIENT_ID}&` +
               `redirect_uri=${encodeURIComponent(redirectUri)}&` +
               `response_type=token&` +
-              `scope=openid%20email%20profile`;
+              `scope=openid%20email%20profile&` +
+              `prompt=select_account`;
+            
+            console.log('🔗 Redirecting to:', authUrl);
             window.location.href = authUrl;
+          } else {
+            // One Tap displayed successfully
+            setLoading(false);
+            setBtnLabel('Continue with Google');
           }
         });
+        
+        // Set timeout in case prompt doesn't respond
+        setTimeout(() => {
+          if (loading) {
+            setLoading(false);
+            setBtnLabel('Continue with Google');
+          }
+        }, 3000);
+      } else {
+        console.error('Google accounts.id not available');
+        throw new Error('Google Identity Services not initialized');
       }
     } catch (error) {
       console.error('❌ Login error:', error);
@@ -345,8 +387,9 @@ export default function LoginPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .login-container {
           display: flex;
-          min-height: 100vh;
+          min-height: 100svh;
           width: 100%;
+          align-items: stretch;
         }
 
         /* ═══════════════════════════════════════════════════════════════ */
@@ -361,7 +404,7 @@ export default function LoginPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .right-panel {
           background: var(--warm-off);
-          padding: 4rem 2rem 3rem;
+          padding: clamp(2.5rem, 3.5vw, 4rem) clamp(1.5rem, 3vw, 2rem) clamp(2rem, 3vw, 3rem);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -369,7 +412,9 @@ export default function LoginPage() {
           position: relative;
           flex: 1;
           width: 100%;
-          min-height: 100vh;
+          min-height: 100%;
+          box-sizing: border-box;
+          gap: 1.5rem;
         }
 
         .top-link {
@@ -391,7 +436,7 @@ export default function LoginPage() {
         .dark-green-card {
           background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
           border-radius: 24px;
-          padding: 3rem 2.5rem;
+          padding: clamp(2rem, 2.6vw, 3rem) clamp(1.75rem, 2.2vw, 2.5rem);
           box-shadow: 0 20px 60px rgba(26, 61, 43, 0.3);
           max-width: 520px;
           width: 100%;
@@ -674,7 +719,7 @@ export default function LoginPage() {
           flex-wrap: wrap;
           gap: 1.5rem;
           justify-content: center;
-          margin: 2rem 0 2.5rem;
+          margin: 1.5rem 0 2rem;
           padding: 0;
         }
 
@@ -739,7 +784,7 @@ export default function LoginPage() {
         /* Footer */
         .footer {
           position: absolute;
-          bottom: 1.5rem;
+          bottom: 1rem;
           left: 0;
           right: 0;
           text-align: center;
@@ -798,6 +843,22 @@ export default function LoginPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         /* RESPONSIVE DESIGN */
         /* ═══════════════════════════════════════════════════════════════ */
+        @media (max-height: 760px) {
+          .right-panel {
+            justify-content: flex-start;
+          }
+
+          .trust-badges {
+            margin: 1.25rem 0 1.5rem;
+          }
+
+          .footer {
+            position: relative;
+            bottom: auto;
+            margin-top: 2rem;
+          }
+        }
+
         @media (max-width: 860px) {
           .right-panel {
             padding: 3rem 1.5rem 2.5rem;

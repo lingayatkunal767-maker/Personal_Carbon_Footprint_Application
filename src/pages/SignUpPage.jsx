@@ -111,6 +111,7 @@ export default function SignUpPage() {
       const firstName = payload.given_name || 'there';
       const userEmail = payload.email;
       const fullName = payload.name || firstName;
+      const profilePicture = payload.picture || null;
       
       // Check if user already exists
       const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
@@ -122,6 +123,8 @@ export default function SignUpPage() {
           name: fullName,
           email: userEmail.toLowerCase(),
           provider: 'google',
+          profilePicture,
+          googleId: payload.sub,
           createdAt: new Date().toISOString()
         };
         existingUsers.push(newUser);
@@ -129,7 +132,11 @@ export default function SignUpPage() {
       }
       
       // Set current user session
-      localStorage.setItem('current_user', JSON.stringify({ name: fullName, email: userEmail.toLowerCase() }));
+      localStorage.setItem('current_user', JSON.stringify({ 
+        name: fullName, 
+        email: userEmail.toLowerCase(),
+        profilePicture 
+      }));
       localStorage.setItem('auth_token', 'authenticated');
       
       showToast(`✅ Welcome, ${firstName}! Your account has been created successfully.`);
@@ -216,42 +223,67 @@ export default function SignUpPage() {
 
   const handleGoogleSignUp = () => {
     if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-      showToast('⚠️ Google sign-up is not configured yet.');
+      showToast('⚠️ Google OAuth not configured. Check GOOGLE_AUTH_SETUP.md');
+      console.error('Missing VITE_GOOGLE_CLIENT_ID in .env file');
+      return;
+    }
+
+    if (!window.google) {
+      console.error('❌ Google Identity Services library not loaded');
+      showToast('⚠️ Google Sign-In loading failed. Please refresh the page.');
       return;
     }
 
     setLoading(true);
-    setBtnLabel('Signing you up…');
+    setBtnLabel('Opening Google Sign-In…');
 
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
+      console.log('🔍 Google OAuth Configuration:');
+      console.log('   Redirect URI:', redirectUri);
+      console.log('   Client ID:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
+      console.log('   Origin:', window.location.origin);
       
-      console.log('🔍 Redirect URI:', redirectUri);
-      
-      if (window.google && window.google.accounts && window.google.accounts.id) {
+      if (window.google.accounts && window.google.accounts.id) {
+        // Try Google One Tap first
         window.google.accounts.id.prompt((notification) => {
+          console.log('One Tap Notification:', notification);
+          
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            console.log('One Tap skipped, redirecting to OAuth flow...');
+            // Fallback to OAuth redirect flow
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
               `client_id=${GOOGLE_CLIENT_ID}&` +
               `redirect_uri=${encodeURIComponent(redirectUri)}&` +
               `response_type=token&` +
-              `scope=openid%20email%20profile`;
+              `scope=openid%20email%20profile&` +
+              `prompt=select_account`;
+            
+            console.log('🔗 Redirecting to:', authUrl);
             window.location.href = authUrl;
           } else {
+            // One Tap displayed successfully
             setLoading(false);
             setBtnLabel('Sign up with Google');
           }
         });
+        
+        // Set timeout in case prompt doesn't respond
+        setTimeout(() => {
+          if (loading) {
+            setLoading(false);
+            setBtnLabel('Sign up with Google');
+          }
+        }, 3000);
       } else {
-        setLoading(false);
-        setBtnLabel('Sign up with Google');
-        showToast('⚠️ Google Sign-In not ready. Please refresh.');
+        console.error('Google accounts.id not available');
+        throw new Error('Google Identity Services not initialized');
       }
     } catch (error) {
       console.error('Sign up error:', error);
       setLoading(false);
       setBtnLabel('Sign up with Google');
-      showToast('❌ Sign up failed. Please try again.');
+      showToast('❌ Sign up failed. Please try again or refresh the page.');
     }
   };
 
@@ -344,7 +376,9 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .signup-container {
           display: flex;
-          min-height: 100vh;
+          min-height: 100svh;
+          width: 100%;
+          align-items: stretch;
         }
 
         .left-panel {
@@ -353,7 +387,7 @@ export default function SignUpPage() {
 
         .right-panel {
           background: var(--warm-off);
-          padding: 4rem 2rem 3rem;
+          padding: clamp(2.5rem, 3.5vw, 4rem) clamp(1.5rem, 3vw, 2rem) clamp(2rem, 3vw, 3rem);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -361,7 +395,9 @@ export default function SignUpPage() {
           position: relative;
           flex: 1;
           width: 100%;
-          min-height: 100vh;
+          min-height: 100%;
+          box-sizing: border-box;
+          gap: 1.5rem;
         }
 
         .top-link {
@@ -484,7 +520,7 @@ export default function SignUpPage() {
         .signup-card {
           background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
           border-radius: 24px;
-          padding: 3rem 2.5rem;
+          padding: clamp(2rem, 2.6vw, 3rem) clamp(1.75rem, 2.2vw, 2.5rem);
           box-shadow: 0 20px 60px rgba(26, 61, 43, 0.3);
           position: relative;
           overflow: hidden;
@@ -774,7 +810,7 @@ export default function SignUpPage() {
           flex-wrap: wrap;
           gap: 1.5rem;
           justify-content: center;
-          margin: 2rem 0 2.5rem;
+          margin: 1.5rem 0 2rem;
           padding: 0;
         }
 
@@ -815,6 +851,22 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         /* RESPONSIVE DESIGN */
         /* ═══════════════════════════════════════════════════════════════ */
+        @media (max-height: 760px) {
+          .right-panel {
+            justify-content: flex-start;
+          }
+
+          .trust-badges {
+            margin: 1.25rem 0 1.5rem;
+          }
+
+          .footer {
+            position: relative;
+            bottom: auto;
+            margin-top: 2rem;
+          }
+        }
+
         @media (max-width: 860px) {
           .right-panel {
             padding: 3rem 1.5rem 2.5rem;

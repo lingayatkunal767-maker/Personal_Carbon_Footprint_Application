@@ -5,6 +5,10 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('🔐 Auth Callback - Processing authentication...');
+    console.log('   Current URL:', window.location.href);
+    console.log('   Hash:', window.location.hash);
+    
     // Handle OAuth redirect (when Google One Tap is skipped)
     const hash = window.location.hash;
     
@@ -14,18 +18,28 @@ export default function AuthCallback() {
         const params = new URLSearchParams(hash.substring(1));
         const accessToken = params.get('access_token');
         
+        console.log('✅ Access token found');
+        
         if (accessToken) {
           // Store token (in production, send to backend for validation)
           localStorage.setItem('auth_token', accessToken);
           
           // Fetch user info from Google
+          console.log('📡 Fetching user info from Google...');
           fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
             headers: {
               'Authorization': `Bearer ${accessToken}`
             }
           })
-            .then(res => res.json())
+            .then(res => {
+              if (!res.ok) {
+                throw new Error(`HTTP error! status: ${res.status}`);
+              }
+              return res.json();
+            })
             .then(userInfo => {
+              console.log('✅ User info received:', userInfo.email);
+              
               // Auto-register user if not exists (OAuth flow)
               const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
               const registeredUser = existingUsers.find(u => 
@@ -38,36 +52,68 @@ export default function AuthCallback() {
                   name: userInfo.name || userInfo.given_name || 'User',
                   email: userInfo.email.toLowerCase(),
                   provider: 'google',
+                  profilePicture: userInfo.picture || null,
+                  googleId: userInfo.id,
                   createdAt: new Date().toISOString()
                 };
                 existingUsers.push(newUser);
                 localStorage.setItem('registered_users', JSON.stringify(existingUsers));
                 console.log('✅ New user registered:', userInfo.email);
+              } else {
+                // Update existing user's profile picture if available
+                const updatedUsers = existingUsers.map(u => {
+                  if (u.email.toLowerCase() === userInfo.email?.toLowerCase()) {
+                    return {
+                      ...u,
+                      profilePicture: userInfo.picture || u.profilePicture,
+                      name: userInfo.name || u.name
+                    };
+                  }
+                  return u;
+                });
+                localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
+                console.log('✅ Existing user found:', userInfo.email);
               }
               
               // Store user session
               const userData = {
                 name: userInfo.name || userInfo.given_name || 'User',
-                email: userInfo.email
+                email: userInfo.email,
+                profilePicture: userInfo.picture || null
               };
               localStorage.setItem('current_user', JSON.stringify(userData));
               
+              console.log('✅ Authentication successful, redirecting to home...');
               // Redirect to home
               navigate('/home');
             })
             .catch(error => {
-              console.error('Error fetching user info:', error);
+              console.error('❌ Error fetching user info:', error);
+              alert('Authentication failed: Unable to fetch user information. Please try again.');
               navigate('/login');
             });
         } else {
+          console.error('❌ No access token found in URL');
+          alert('Authentication failed: No access token received. Please try again.');
           navigate('/login');
         }
       } catch (error) {
-        console.error('Authentication error:', error);
+        console.error('❌ Authentication error:', error);
+        alert('Authentication failed: ' + error.message);
         navigate('/login');
       }
+    } else if (hash.includes('error')) {
+      // Handle OAuth errors
+      const params = new URLSearchParams(hash.substring(1));
+      const error = params.get('error');
+      const errorDescription = params.get('error_description');
+      
+      console.error('❌ OAuth Error:', error, errorDescription);
+      alert(`Google Sign-In Error: ${errorDescription || error || 'Unknown error'}\n\nPlease check:\n1. Redirect URI is configured in Google Cloud Console\n2. Using correct Google account\n3. See GOOGLE_AUTH_SETUP.md for setup instructions`);
+      navigate('/login');
     } else {
-      // No access token found, redirect to login
+      // No access token or error found, redirect to login
+      console.warn('⚠️ No authentication data found in URL, redirecting to login');
       navigate('/login');
     }
   }, [navigate]);
