@@ -84,6 +84,8 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .card.full{grid-column:1/-1}
 .card-title{font-size:.95rem;font-weight:700;margin-bottom:1rem;display:flex;align-items:center;justify-content:space-between}
 .card-title a{font-size:.75rem;color:var(--g-mid);font-weight:600;cursor:pointer;text-decoration:none}
+.card-action{font-size:.72rem;color:var(--g-mid);font-weight:600;background:var(--g-bg);border:1px solid var(--border);border-radius:8px;padding:.25rem .6rem;cursor:pointer;transition:background .2s}
+.card-action:hover{background:var(--g-pale)}
 
 /* ── PROFILE ── */
 .profile{display:flex;align-items:center;gap:1rem}

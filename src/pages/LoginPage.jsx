@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // ═══════════════════════════════════════════════════════════════════
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "YOUR_GOOGLE_CLIENT_ID_HERE";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com";
 
 const FACTS = [
   "Global ocean temperatures have risen by 0.13°F per decade since 1901.",
@@ -76,7 +76,6 @@ export default function LoginPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      // Initialize Google Sign-In if client ID is configured
       if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
         window.google?.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
@@ -222,7 +221,6 @@ export default function LoginPage() {
       return;
     }
 
-    // Check if Google library is loaded
     if (!window.google) {
       console.error('❌ Google library not loaded');
       showToast('⚠️ Google Sign-In not ready. Please refresh the page.');
@@ -233,43 +231,21 @@ export default function LoginPage() {
     setBtnLabel('Signing you in…');
 
     try {
-      // Construct the redirect URI
       const redirectUri = `${window.location.origin}/auth/callback`;
+      console.log('🔍 Redirect URI:', redirectUri);
+      console.log('✅ Client ID configured');
       
-      // Debug: Log the redirect URI (remove in production)
-      console.log('🔍 Redirect URI being used:', redirectUri);
-      console.log('📋 Add this exact URI to Google Cloud Console:');
-      console.log('   → Authorized JavaScript origins:', window.location.origin);
-      console.log('   → Authorized redirect URIs:', redirectUri);
-      console.log('✅ Google Client ID:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
-      
-      // Try to show the One Tap prompt
       if (window.google.accounts && window.google.accounts.id) {
         window.google.accounts.id.prompt((notification) => {
-          console.log('📱 One Tap notification:', notification);
-          
           if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.log('⚠️ One Tap not displayed, using redirect flow...');
-            // Fallback to redirect flow
             const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
               `client_id=${GOOGLE_CLIENT_ID}&` +
               `redirect_uri=${encodeURIComponent(redirectUri)}&` +
               `response_type=token&` +
               `scope=openid%20email%20profile`;
-            
-            console.log('🚀 Redirecting to:', authUrl);
             window.location.href = authUrl;
-          } else {
-            console.log('✅ One Tap displayed successfully');
-            setLoading(false);
-            setBtnLabel('Continue with Google');
           }
         });
-      } else {
-        console.error('❌ Google Identity Services not initialized');
-        setLoading(false);
-        setBtnLabel('Continue with Google');
-        showToast('⚠️ Google Sign-In initialization failed');
       }
     } catch (error) {
       console.error('❌ Login error:', error);

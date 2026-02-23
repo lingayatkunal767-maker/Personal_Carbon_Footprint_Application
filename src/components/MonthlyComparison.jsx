@@ -4,25 +4,14 @@ import { Chart as ChartJS, CategoryScale, LinearScale, BarElement, Tooltip, Lege
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Tooltip, Legend);
 
-const MonthlyComparison = () => {
-  const data = {
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-    datasets: [
-      {
-        label: '2024',
-        data: [420, 410, 390, 430, 380, 360],
-        backgroundColor: '#d4edda',
-        borderRadius: 6,
-        borderSkipped: false
-      },
-      {
-        label: '2025',
-        data: [390, 370, 350, 400, 340, 320],
-        backgroundColor: '#2d7a4f',
-        borderRadius: 6,
-        borderSkipped: false
-      }
-    ]
+const MonthlyComparison = ({ data }) => {
+  const chartData = {
+    labels: data.labels,
+    datasets: data.datasets.map((dataset) => ({
+      ...dataset,
+      borderRadius: 6,
+      borderSkipped: false
+    }))
   };
 
   const options = {
@@ -49,7 +38,7 @@ const MonthlyComparison = () => {
     <div className="card">
       <div className="card-title">Monthly Comparison <a>2024 vs 2025</a></div>
       <div className="compare-wrap">
-        <Bar data={data} options={options} />
+        <Bar data={chartData} options={options} />
       </div>
     </div>
   );

@@ -1,6 +1,6 @@
 import React from 'react';
 
-const TopBar = ({ onLogout, onOpenModal, onOpenNotifications }) => {
+const TopBar = ({ onLogout, onOpenModal, onOpenNotifications, unreadCount }) => {
   return (
     <div className="topbar">
       <div className="logo">
@@ -14,7 +14,7 @@ const TopBar = ({ onLogout, onOpenModal, onOpenNotifications }) => {
       <div className="topbar-right">
         <button className="btn-icon" title="Search">🔍</button>
         <button className="btn-icon" onClick={onOpenNotifications} title="Notifications">
-          🔔<span className="notif-dot"></span>
+          🔔{unreadCount > 0 && <span className="notif-dot"></span>}
         </button>
         <button className="btn-primary" onClick={onOpenModal}>＋ Log Activity</button>
         <button className="btn-logout" onClick={onLogout}>Logout</button>

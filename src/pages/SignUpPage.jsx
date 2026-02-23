@@ -67,7 +67,7 @@ export default function SignUpPage() {
     document.body.appendChild(script);
 
     script.onload = () => {
-      if (GOOGLE_CLIENT_ID !== "245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com") {
+      if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
         window.google?.accounts.id.initialize({
           client_id: GOOGLE_CLIENT_ID,
           callback: handleCredentialResponse
@@ -215,7 +215,7 @@ export default function SignUpPage() {
   };
 
   const handleGoogleSignUp = () => {
-    if (GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
       showToast('⚠️ Google sign-up is not configured yet.');
       return;
     }
@@ -226,21 +226,27 @@ export default function SignUpPage() {
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
       
-      console.log('🔍 Redirect URI being used:', redirectUri);
+      console.log('🔍 Redirect URI:', redirectUri);
       
-      window.google?.accounts.id.prompt((notification) => {
-        if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-          const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-            `client_id=${GOOGLE_CLIENT_ID}&` +
-            `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-            `response_type=token&` +
-            `scope=openid%20email%20profile`;
-          window.location.href = authUrl;
-        } else {
-          setLoading(false);
-          setBtnLabel('Sign up with Google');
-        }
-      });
+      if (window.google && window.google.accounts && window.google.accounts.id) {
+        window.google.accounts.id.prompt((notification) => {
+          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
+              `client_id=${GOOGLE_CLIENT_ID}&` +
+              `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+              `response_type=token&` +
+              `scope=openid%20email%20profile`;
+            window.location.href = authUrl;
+          } else {
+            setLoading(false);
+            setBtnLabel('Sign up with Google');
+          }
+        });
+      } else {
+        setLoading(false);
+        setBtnLabel('Sign up with Google');
+        showToast('⚠️ Google Sign-In not ready. Please refresh.');
+      }
     } catch (error) {
       console.error('Sign up error:', error);
       setLoading(false);

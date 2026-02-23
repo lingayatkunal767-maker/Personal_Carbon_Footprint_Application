@@ -1,25 +1,29 @@
 import React from 'react';
 
-const NotificationsPanel = ({ isOpen, onClose }) => {
-  const notifications = [
-    { type: 'alert', icon: '⚠️', text: 'Emissions up 12% this week!', detail: 'Try reducing transport to hit your goal.' },
-    { type: 'warn', icon: '🎯', text: 'Goal is 40% complete!', detail: "You're halfway to reducing monthly emissions." },
-    { type: '', icon: '🏆', text: 'Team Green crossed 800 pts!', detail: 'Leaderboard updated 2 hours ago.' },
-    { type: '', icon: '🌱', text: 'New personalised Eco Tips ready', detail: 'Check the tips section for new recommendations.' },
-    { type: '', icon: '🏅', text: '"Transport Pro" badge earned!', detail: 'Congratulations on your 21-day streak!' }
-  ];
-
+const NotificationsPanel = ({ isOpen, onClose, notifications, onDismiss, onMarkAllRead }) => {
   return (
     <div className={`notif-panel ${isOpen ? 'open' : ''}`}>
       <div className="notif-header">
         Notifications
-        <button className="notif-close" onClick={onClose}>✕</button>
+        <div style={{ display: 'flex', gap: '.4rem', alignItems: 'center' }}>
+          <button className="card-action" onClick={onMarkAllRead}>Mark all read</button>
+          <button className="notif-close" onClick={onClose}>✕</button>
+        </div>
       </div>
       <div className="notif-list">
-        {notifications.map((notif, index) => (
-          <div key={index} className={`notif-item ${notif.type}`}>
+        {notifications.length === 0 && (
+          <div className="notif-item">
+            <p>🎉 You're all caught up!</p>
+            <small>No new notifications.</small>
+          </div>
+        )}
+        {notifications.map((notif) => (
+          <div key={notif.id} className={`notif-item ${notif.type}`}>
             <p>{notif.icon} {notif.text}</p>
             <small>{notif.detail}</small>
+            <button className="btn-logout" style={{ marginTop: '.45rem' }} onClick={() => onDismiss(notif.id)}>
+              Dismiss
+            </button>
           </div>
         ))}
       </div>

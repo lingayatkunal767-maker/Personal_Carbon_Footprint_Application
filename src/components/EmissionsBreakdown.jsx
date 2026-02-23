@@ -4,12 +4,13 @@ import { Chart as ChartJS, ArcElement, Tooltip } from 'chart.js';
 
 ChartJS.register(ArcElement, Tooltip);
 
-const EmissionsBreakdown = () => {
+const EmissionsBreakdown = ({ breakdown }) => {
+  const total = breakdown.reduce((sum, item) => sum + item.value, 0);
   const data = {
-    labels: ['Transport', 'Energy', 'Food', 'Shopping'],
+    labels: breakdown.map((item) => item.label),
     datasets: [{
-      data: [142, 98, 72, 36],
-      backgroundColor: ['#2d7a4f', '#5aaa72', '#e8a624', '#4a90d9'],
+      data: breakdown.map((item) => item.value),
+      backgroundColor: breakdown.map((item) => item.color),
       borderWidth: 0,
       hoverOffset: 6
     }]
@@ -25,12 +26,12 @@ const EmissionsBreakdown = () => {
     }
   };
 
-  const legendItems = [
-    { icon: '🚗', label: 'Transport', value: '142 kg', color: '#2d7a4f' },
-    { icon: '⚡', label: 'Energy', value: '98 kg', color: '#5aaa72' },
-    { icon: '🍔', label: 'Food', value: '72 kg', color: '#e8a624' },
-    { icon: '🛍️', label: 'Shopping', value: '36 kg', color: '#4a90d9' }
-  ];
+  const legendItems = breakdown.map((item) => ({
+    icon: item.icon,
+    label: item.label,
+    value: `${Math.round(item.value)} kg`,
+    color: item.color
+  }));
 
   return (
     <div className="card">
@@ -39,7 +40,7 @@ const EmissionsBreakdown = () => {
         <div className="donut-canvas-wrap">
           <Doughnut data={data} options={options} />
           <div className="donut-center">
-            <span className="dc-val">348</span>
+            <span className="dc-val">{Math.round(total)}</span>
             <span className="dc-lbl">kg total</span>
           </div>
         </div>

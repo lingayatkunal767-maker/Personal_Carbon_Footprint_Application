@@ -1,0 +1,173 @@
+// API Service for Backend Communication
+// Base URL - update this when deploying to production
+
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+
+// Helper function for API calls
+const fetchAPI = async (endpoint, options = {}) => {
+  const defaultHeaders = {
+    'Content-Type': 'application/json',
+  };
+
+  const config = {
+    ...options,
+    headers: {
+      ...defaultHeaders,
+      ...options.headers,
+    },
+  };
+
+  try {
+    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
+    
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({ message: 'Request failed' }));
+      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+    }
+
+    // Handle empty responses (like DELETE)
+    if (response.status === 204) {
+      return null;
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('API Error:', error);
+    throw error;
+  }
+};
+
+// User APIs
+export const userAPI = {
+  // Get user by ID
+  getUser: async (userId) => {
+    return fetchAPI(`/users/${userId}`);
+  },
+
+  // Get user by email
+  getUserByEmail: async (email) => {
+    return fetchAPI(`/users/email/${encodeURIComponent(email)}`);
+  },
+
+  // Create new user
+  createUser: async (userData) => {
+    return fetchAPI('/users', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+
+  // Update user
+  updateUser: async (userId, userData) => {
+    return fetchAPI(`/users/${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(userData),
+    });
+  },
+};
+
+// Carbon Activity APIs
+export const activityAPI = {
+  // Get all activities for a user
+  getUserActivities: async (userId) => {
+    return fetchAPI(`/activities/user/${userId}`);
+  },
+
+  // Create new activity
+  createActivity: async (activityData) => {
+    return fetchAPI('/activities', {
+      method: 'POST',
+      body: JSON.stringify(activityData),
+    });
+  },
+
+  // Delete activity
+  deleteActivity: async (activityId) => {
+    return fetchAPI(`/activities/${activityId}`, {
+      method: 'DELETE',
+    });
+  },
+
+  // Get activities by date range
+  getActivitiesByDateRange: async (userId, startDate, endDate) => {
+    return fetchAPI(`/activities/user/${userId}/range?start=${startDate}&end=${endDate}`);
+  },
+};
+
+// Goal APIs
+export const goalAPI = {
+  // Get all goals for a user
+  getUserGoals: async (userId) => {
+    return fetchAPI(`/goals/user/${userId}`);
+  },
+
+  // Create new goal
+  createGoal: async (goalData) => {
+    return fetchAPI('/goals', {
+      method: 'POST',
+      body: JSON.stringify(goalData),
+    });
+  },
+
+  // Update goal
+  updateGoal: async (goalId, goalData) => {
+    return fetchAPI(`/goals/${goalId}`, {
+      method: 'PUT',
+      body: JSON.stringify(goalData),
+    });
+  },
+
+  // Delete goal
+  deleteGoal: async (goalId) => {
+    return fetchAPI(`/goals/${goalId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Badge APIs
+export const badgeAPI = {
+  // Get all badges for a user
+  getUserBadges: async (userId) => {
+    return fetchAPI(`/badges/user/${userId}`);
+  },
+};
+
+// Leaderboard APIs
+export const leaderboardAPI = {
+  // Get global leaderboard
+  getLeaderboard: async (limit = 10) => {
+    return fetchAPI(`/leaderboard?limit=${limit}`);
+  },
+};
+
+// Statistics APIs
+export const statsAPI = {
+  // Get user statistics summary
+  getUserStats: async (userId) => {
+    return fetchAPI(`/stats/user/${userId}`);
+  },
+
+  // Get monthly comparison
+  getMonthlyComparison: async (userId, months = 6) => {
+    return fetchAPI(`/stats/user/${userId}/monthly?months=${months}`);
+  },
+
+  // Get emissions breakdown
+  getEmissionsBreakdown: async (userId) => {
+    return fetchAPI(`/stats/user/${userId}/breakdown`);
+  },
+};
+
+// Export all as a single object (alternative usage)
+export const api = {
+  user: userAPI,
+  activity: activityAPI,
+  goal: goalAPI,
+  badge: badgeAPI,
+  leaderboard: leaderboardAPI,
+  stats: statsAPI,
+};
+
+// Default export
+export default api;

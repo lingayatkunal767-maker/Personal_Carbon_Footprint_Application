@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState } from 'react';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -12,20 +12,15 @@ import {
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Filler);
 
-const CarbonFootprintLog = () => {
+const CarbonFootprintLog = ({ data, weeklyTotal, trendLabel }) => {
   const [activeTab, setActiveTab] = useState('week');
+  const [showHistory, setShowHistory] = useState(false);
   const chartRef = useRef(null);
 
-  const datasets = {
-    week: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [260, 278, 305, 295, 330, 320, 348] },
-    month: { labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'], data: [1100, 1250, 1180, 1380] },
-    year: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], data: [4200, 4050, 3900, 4100, 3800, 3600, 3700, 3850, 3500, 3400, 3600, 3480] }
-  };
-
   const chartData = {
-    labels: datasets[activeTab].labels,
+    labels: data[activeTab].labels,
     datasets: [{
-      data: datasets[activeTab].data,
+      data: data[activeTab].data,
       fill: true,
       backgroundColor: (context) => {
         const ctx = context.chart.ctx;
@@ -57,7 +52,12 @@ const CarbonFootprintLog = () => {
 
   return (
     <div className="card">
-      <div className="card-title">Carbon Footprint Log <a>View Full History →</a></div>
+      <div className="card-title">
+        Carbon Footprint Log
+        <button className="card-action" onClick={() => setShowHistory((prev) => !prev)}>
+          {showHistory ? 'Hide History' : 'View Full History →'}
+        </button>
+      </div>
       <div className="chart-tabs">
         {['week', 'month', 'year'].map(tab => (
           <button
@@ -69,11 +69,21 @@ const CarbonFootprintLog = () => {
           </button>
         ))}
       </div>
-      <div className="big-num">348 <small>kg CO₂e / Week</small></div>
-      <div className="trend-lbl up">▲ +12% from last week</div>
+      <div className="big-num">{Math.round(weeklyTotal)} <small>kg CO₂e / Week</small></div>
+      <div className={`trend-lbl ${trendLabel.includes('▲') ? 'up' : 'dn'}`}>{trendLabel}</div>
       <div className="chart-wrap">
         <Line ref={chartRef} data={chartData} options={options} />
       </div>
+      {showHistory && (
+        <div style={{ marginTop: '1rem' }}>
+          {data[activeTab].labels.map((label, index) => (
+            <div key={label} className="lb-row" style={{ borderBottom: 'none' }}>
+              <span className="lb-name">{label}</span>
+              <span className="lb-score">{Math.round(data[activeTab].data[index])} kg</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   );
 };
