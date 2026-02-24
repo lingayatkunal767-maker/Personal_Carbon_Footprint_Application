@@ -1,143 +1,142 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
 
 export default function Login() {
   const navigate = useNavigate();
 
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
-
+  const [formData, setFormData] = useState({ email: "", password: "" });
   const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
-  // Handle Input Change
- const handleChange = (e) => {
-  const { name, value } = e.target;
-
-  const updatedForm = {
-    ...formData,
-    [name]: value,
+  const handleChange = (e) => {
+    const updated = { ...formData, [e.target.name]: e.target.value };
+    setFormData(updated);
+    setErrors(validate(updated));
   };
 
-  setFormData(updatedForm);
-  setErrors(validate(updatedForm));
-};
+  const validate = (data = formData) => {
+    const errs = {};
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    if (!data.email) errs.email = "Email is required";
+    else if (!emailRegex.test(data.email)) errs.email = "Enter a valid email address";
+    if (!data.password) errs.password = "Password is required";
+    else if (data.password.length < 8) errs.password = "Password must be 8+ characters";
+    return errs;
+  };
 
-
-  // Validate Form
-  const validate = (data= formData) => {
-  let newErrors = {};
-
-  // Email validation
-  if (!formData.email) {
-    newErrors.email = "Email is required";
-  } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
-    newErrors.email = "Enter a valid email address";
-  }
-
-  // Password validation
-  if (!formData.password) {
-    newErrors.password = "Password is required";
-  } else if (formData.password.length < 8) {
-    newErrors.password = "Password must be at least 8 characters";
-  }
-
-  return newErrors;
-};
-const isFormValid =
-  formData.email &&
-  /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email) &&
-  formData.password &&
-  formData.password.length >= 6;
-
-
-  // Handle Submit
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-
     const validationErrors = validate();
     setErrors(validationErrors);
+    if (!formData.email || !formData.password) return;
 
-    if (Object.keys(validationErrors).length === 0) {
-      // 👉 Temporary fake authentication
-      // Later this will connect to backend
-
-      console.log("Login Successful:", formData);
-
-      // Navigate to dashboard
-      navigate("/dashboard");
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
+      if (data && data.token) {
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard");
+      } else {
+        setErrors({ api: "Login succeeded but no token returned." });
+      }
+    } catch (err) {
+      if (err.status === 401) setErrors({ api: "Invalid email or password." });
+      else setErrors({ api: err.message || "Network error. Please try again later." });
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-50">
+    <AuthLayout>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden max-w-md w-full px-8 py-8">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium mb-4 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Home
+        </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-green-800 mb-1">Welcome back</h1>
+          <p className="text-gray-500 text-sm">
+            Sign in to your account
+          </p>
+        </div>
 
-      <div className="bg-white p-8 rounded-xl shadow-md w-full max-w-md">
+        {errors.api && (
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.api}</p>
+        )}
 
-        <h1 className="text-3xl font-bold text-center text-green-700">
-          CarbonCalc 🌱
-        </h1>
-
-        <p className="text-gray-500 text-center mb-4">
-          Track and reduce your carbon footprint
-        </p>
-
-        <h2 className="text-xl font-semibold text-center text-green-600 mb-6">
-          Login 🌿
-        </h2>
-
-        <form onSubmit={handleSubmit} className="flex flex-col gap-4">
-
+        <form onSubmit={handleSubmit} className="space-y-4">
           {/* Email */}
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
             <input
               type="email"
               name="email"
-              placeholder="Email"
+              placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
             />
-            {errors.email && (
-              <p className="text-red-500 text-sm mt-1">{errors.email}</p>
-            )}
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </div>
 
           {/* Password */}
           <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
             <input
-              type="password"
+              type={showPassword ? "text" : "password"}
               name="password"
-              placeholder="Password"
+              placeholder="Enter your password"
               value={formData.password}
               onChange={handleChange}
-              className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
             />
-            {errors.password && (
-              <p className="text-red-500 text-sm mt-1">{errors.password}</p>
-            )}
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
           </div>
 
-          {/* Forgot Password */}
-          <Link
-            to="/forgot-password"
-            className="text-sm text-green-600 text-right hover:underline"
-          >
-            Forgot Password?
-          </Link>
+          {/* Show password & Forgot */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              Show password
+            </label>
+            <Link to="/forgot-password" className="text-sm text-green-600 hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
 
           {/* Login Button */}
-          <Link
-            to="/dashboard"
-            className="bg-green-500 hover:bg-green-600 text-white py-2 rounded-lg text-center"
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-70"
+            disabled={loading}
           >
-            Login
-          </Link>
-
+            {loading ? "Logging in..." : "Login"}
+          </button>
         </form>
 
+        <p className="text-center text-sm mt-5 text-gray-500">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-green-600 font-semibold hover:underline">
+            Sign up
+          </Link>
+        </p>
       </div>
-    </div>
+    </AuthLayout>
   );
 }

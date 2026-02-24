@@ -34,6 +34,31 @@ CREATE TABLE IF NOT EXISTS emission_records (
 -- Create index on user_id for faster queries
 CREATE INDEX IF NOT EXISTS idx_emission_records_user_id ON emission_records(user_id);
 
+-- Create password_reset_tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    token VARCHAR(255) NOT NULL UNIQUE,
+    user_id BIGINT NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE,
+    CONSTRAINT fk_reset_token_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- Create index on token for faster lookups
+CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token);
+
+-- Create otp_tokens table for email verification during registration
+CREATE TABLE IF NOT EXISTS otp_tokens (
+    id BIGSERIAL PRIMARY KEY,
+    email VARCHAR(255) NOT NULL,
+    otp VARCHAR(6) NOT NULL,
+    expiry_date TIMESTAMP NOT NULL,
+    used BOOLEAN NOT NULL DEFAULT FALSE
+);
+
+-- Create index on email for faster OTP lookups
+CREATE INDEX IF NOT EXISTS idx_otp_tokens_email ON otp_tokens(email);
+
 -- Optional: Add comments to tables
 COMMENT ON TABLE users IS 'Stores user account information';
 COMMENT ON TABLE emission_records IS 'Stores carbon emission records linked to users';
