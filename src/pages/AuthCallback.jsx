@@ -1,6 +1,8 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+
 export default function AuthCallback() {
   const navigate = useNavigate();
 
@@ -39,53 +41,31 @@ export default function AuthCallback() {
             })
             .then(userInfo => {
               console.log('✅ User info received:', userInfo.email);
-              
-              // Auto-register user if not exists (OAuth flow)
-              const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-              const registeredUser = existingUsers.find(u => 
-                u.email.toLowerCase() === userInfo.email?.toLowerCase()
-              );
-              
-              if (!registeredUser) {
-                // Register new user automatically
-                const newUser = {
+
+              // Save user to PostgreSQL via backend
+              return fetch(`${API_BASE_URL}/auth/google`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
                   name: userInfo.name || userInfo.given_name || 'User',
-                  email: userInfo.email.toLowerCase(),
-                  provider: 'google',
-                  profilePicture: userInfo.picture || null,
+                  email: userInfo.email,
                   googleId: userInfo.id,
-                  createdAt: new Date().toISOString()
-                };
-                existingUsers.push(newUser);
-                localStorage.setItem('registered_users', JSON.stringify(existingUsers));
-                console.log('✅ New user registered:', userInfo.email);
-              } else {
-                // Update existing user's profile picture if available
-                const updatedUsers = existingUsers.map(u => {
-                  if (u.email.toLowerCase() === userInfo.email?.toLowerCase()) {
-                    return {
-                      ...u,
-                      profilePicture: userInfo.picture || u.profilePicture,
-                      name: userInfo.name || u.name
-                    };
-                  }
-                  return u;
+                  profilePicture: userInfo.picture || null,
+                }),
+              })
+                .then(r => r.json())
+                .then(data => {
+                  // Use backend-assigned id (or fall back to Google info)
+                  const session = data.success
+                    ? { id: data.userId, name: data.name, email: data.email, profilePicture: data.profilePicture }
+                    : { name: userInfo.name || 'User', email: userInfo.email, profilePicture: userInfo.picture || null };
+
+                  localStorage.setItem('current_user', JSON.stringify(session));
+                  localStorage.setItem('auth_token', 'authenticated');
+
+                  console.log('✅ Authentication successful, redirecting to home...');
+                  navigate('/home');
                 });
-                localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
-                console.log('✅ Existing user found:', userInfo.email);
-              }
-              
-              // Store user session
-              const userData = {
-                name: userInfo.name || userInfo.given_name || 'User',
-                email: userInfo.email,
-                profilePicture: userInfo.picture || null
-              };
-              localStorage.setItem('current_user', JSON.stringify(userData));
-              
-              console.log('✅ Authentication successful, redirecting to home...');
-              // Redirect to home
-              navigate('/home');
             })
             .catch(error => {
               console.error('❌ Error fetching user info:', error);

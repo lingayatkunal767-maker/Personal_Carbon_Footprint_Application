@@ -1,7 +1,7 @@
 // API Service for Backend Communication
 // Base URL - update this when deploying to production
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 // Helper function for API calls
 const fetchAPI = async (endpoint, options = {}) => {

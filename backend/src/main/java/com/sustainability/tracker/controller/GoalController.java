@@ -1,8 +1,8 @@
 package com.sustainability.tracker.controller;
 
-import com.sustainability.tracker.entity.Goal;
+import com.sustainability.tracker.dto.GoalRequest;
+import com.sustainability.tracker.dto.GoalResponse;
 import com.sustainability.tracker.service.GoalService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -18,21 +18,21 @@ public class GoalController {
 
     // GET /api/goals/user/{userId}
     @GetMapping("/user/{userId}")
-    public List<Goal> getByUser(@PathVariable Long userId) {
+    public List<GoalResponse> getByUser(@PathVariable Long userId) {
         return goalService.getGoalsByUser(userId);
     }
 
     // POST /api/goals
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public Goal create(@RequestBody @Valid Goal goal) {
-        return goalService.createGoal(goal);
+    public GoalResponse create(@RequestBody GoalRequest request) {
+        return goalService.createGoal(request);
     }
 
     // PUT /api/goals/{id}
     @PutMapping("/{id}")
-    public Goal update(@PathVariable Long id, @RequestBody @Valid Goal goal) {
-        return goalService.updateGoal(id, goal);
+    public GoalResponse update(@PathVariable Long id, @RequestBody GoalRequest request) {
+        return goalService.updateGoal(id, request);
     }
 
     // DELETE /api/goals/{id}

@@ -4,6 +4,7 @@ import React, { useState, useEffect, useRef } from 'react';
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "421764128567-r2p83571fkfforlcfms7066e9chbh0cn.apps.googleusercontent.com";
+const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 const FACTS = [
   "Global ocean temperatures have risen by 0.13°F per decade since 1901.",
@@ -113,7 +114,7 @@ export default function LoginPage() {
     };
   }, []);
 
-  const handleCredentialResponse = (response) => {
+  const handleCredentialResponse = async (response) => {
     try {
       // Decode JWT to get user info
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
@@ -121,37 +122,35 @@ export default function LoginPage() {
       const userEmail = payload.email;
       const fullName = payload.name || firstName;
       const profilePicture = payload.picture || null;
-      
-      // Check if user exists
-      const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-      const user = existingUsers.find(u => u.email.toLowerCase() === userEmail.toLowerCase());
-      
-      if (!user) {
-        showToast('⚠️ No account found. Please sign up first.');
+
+      // Call backend — upserts user (creates if new, logs in if existing)
+      const res = await fetch(`${API_BASE_URL}/auth/google`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: fullName,
+          email: userEmail,
+          googleId: payload.sub,
+          profilePicture,
+        }),
+      });
+      const data = await res.json();
+
+      if (!data.success) {
+        showToast(`⚠️ ${data.message}`);
         return;
       }
-      
-      // Update user's profile picture if available
-      if (profilePicture) {
-        const updatedUsers = existingUsers.map(u => {
-          if (u.email.toLowerCase() === userEmail.toLowerCase()) {
-            return { ...u, profilePicture };
-          }
-          return u;
-        });
-        localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
-      }
-      
+
       // Set current user session
-      localStorage.setItem('current_user', JSON.stringify({ 
-        name: fullName, 
-        email: userEmail.toLowerCase(),
-        profilePicture 
+      localStorage.setItem('current_user', JSON.stringify({
+        id: data.userId,
+        name: data.name,
+        email: data.email,
+        profilePicture: data.profilePicture,
       }));
       localStorage.setItem('auth_token', 'authenticated');
-      
+
       showToast(`Welcome back, ${firstName}! 🌿`);
-      
       setTimeout(() => {
         window.location.href = '/home';
       }, 1200);
@@ -171,7 +170,7 @@ export default function LoginPage() {
     }, 3000);
   };
 
-  const handleEmailLogin = (e) => {
+  const handleEmailLogin = async (e) => {
     e.preventDefault();
     
     // Validation
@@ -191,44 +190,40 @@ export default function LoginPage() {
     }
     
     setEmailLoading(true);
-    
-    // Check if user exists and validate credentials
-    setTimeout(() => {
-      const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-      const user = existingUsers.find(u => u.email.toLowerCase() === email.toLowerCase());
-      
-      if (!user) {
+
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: email.toLowerCase(), password }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        // Save session info
+        localStorage.setItem('current_user', JSON.stringify({
+          id: data.userId,
+          name: data.name,
+          email: data.email,
+          profilePicture: data.profilePicture
+        }));
+        localStorage.setItem('auth_token', 'authenticated');
         setEmailLoading(false);
-        showToast('⚠️ No account found with this email. Please sign up first.');
-        return;
-      }
-      
-      // Check if user registered with Google (no password stored)
-      if (user.provider === 'google') {
+        showToast(`${data.message} 🌿`);
+        setTimeout(() => { window.location.href = '/home'; }, 1200);
+      } else {
         setEmailLoading(false);
-        showToast('⚠️ This account uses Google sign-in. Please login with Google.');
-        return;
+        showToast(`⚠️ ${data.message}`);
       }
-      
-      // Validate password
-      if (user.password !== password) {
-        setEmailLoading(false);
-        showToast('⚠️ Incorrect password. Please try again.');
-        return;
-      }
-      
-      // Successful login
-      const userName = user.name || email.split('@')[0];
-      localStorage.setItem('current_user', JSON.stringify({ name: userName, email: user.email }));
-      localStorage.setItem('auth_token', 'authenticated');
-      
+    } catch (err) {
       setEmailLoading(false);
-      showToast(`Welcome back, ${userName}! 🌿`);
-      
-      setTimeout(() => {
-        window.location.href = '/home';
-      }, 1200);
-    }, 800);
+      const msg = err instanceof TypeError
+        ? '⚠️ Cannot reach backend (port 8081). Is Spring Boot running?'
+        : `⚠️ Login error: ${err.message}`;
+      showToast(msg);
+      console.error('Login error:', err);
+    }
   };
 
   const handleGoogleLogin = () => {

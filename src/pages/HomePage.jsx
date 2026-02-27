@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import HeroBanner from '../components/HeroBanner';
@@ -16,439 +16,514 @@ import NotificationsPanel from '../components/NotificationsPanel';
 import LogActivityModal from '../components/LogActivityModal';
 import '../styles/Dashboard.css';
 
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
 const DEFAULT_TAGS = ['🌿 Eco Hero', '🚗 Transport Pro', '⚡ Energy Saver'];
 
-const DEFAULT_GOALS = [
-  { id: 'goal-1', name: 'Reduce Monthly Emissions by 20%', progress: 40, color: 'linear-gradient(90deg,var(--g-mid),var(--g-light))' },
-  { id: 'goal-2', name: 'Switch to Renewable Energy', progress: 65, color: 'linear-gradient(90deg,#4a90d9,#81c784)' },
-  { id: 'goal-3', name: 'Plant 50 Trees This Year', progress: 28, color: 'linear-gradient(90deg,var(--gold),#f4c844)' }
-];
+const CATEGORY_COLORS = {
+  transport: '#2d7a4f',
+  energy:    '#5aaa72',
+  food:      '#e8a624',
+  shopping:  '#4a90d9',
+  waste:     '#4a90d9',
+  offset:    '#81c784',
+  other:     '#9e9e9e',
+};
 
-const DEFAULT_ACTIVITIES = [
-  { id: 'act-1', icon: '🚌', name: 'Took the bus to work', time: 'Today, 8:45 AM', deltaKg: -2.4, isPositive: true },
-  { id: 'act-2', icon: '✈️', name: 'Short-haul flight', time: 'Yesterday, 3:20 PM', deltaKg: 86, isPositive: false },
-  { id: 'act-3', icon: '🌱', name: 'Planted 2 trees', time: '2 days ago', deltaKg: -11, isPositive: true },
-  { id: 'act-4', icon: '🥗', name: 'Plant-based meal day', time: '3 days ago', deltaKg: -3.8, isPositive: true },
-  { id: 'act-5', icon: '🚲', name: 'Cycled to grocery store', time: '4 days ago', deltaKg: -1.2, isPositive: true }
+const CATEGORY_ICONS = {
+  transport: '🚗',
+  energy:    '⚡',
+  food:      '🍔',
+  shopping:  '🛍️',
+  waste:     '🛍️',
+  offset:    '🌳',
+  other:     '📋',
+};
+
+const GOAL_COLORS = [
+  'linear-gradient(90deg,var(--g-mid),var(--g-light))',
+  'linear-gradient(90deg,#4a90d9,#81c784)',
+  'linear-gradient(90deg,var(--gold),#f4c844)',
+  'linear-gradient(90deg,#e05c5c,#f4a261)',
 ];
 
 const DEFAULT_TIPS = [
-  {
-    id: 'tip-1',
-    icon: '🚲',
-    bg: '#d4edda',
-    title: 'Cycle to work twice a week',
-    description: 'Replaces short car trips under 5 km',
-    savings: 'Save ~18 kg CO₂/month'
-  },
-  {
-    id: 'tip-2',
-    icon: '🌡️',
-    bg: '#fef3d4',
-    title: 'Lower thermostat by 2°C',
-    description: 'Small change, big impact on heating bills',
-    savings: 'Save ~12 kg CO₂/month'
-  },
-  {
-    id: 'tip-3',
-    icon: '🥦',
-    bg: '#dceefb',
-    title: 'Try 3 meat-free days per week',
-    description: 'Significantly cuts food-related emissions',
-    savings: 'Save ~22 kg CO₂/month'
-  },
-  {
-    id: 'tip-4',
-    icon: '🛁',
-    bg: '#fde8e8',
-    title: 'Switch baths to 5-min showers',
-    description: 'Reduces water heating energy by up to 70%',
-    savings: 'Save ~8 kg CO₂/month'
+  { id: 'tip-1', icon: '🚲', bg: '#d4edda', title: 'Cycle to work twice a week', description: 'Replaces short car trips under 5 km', savings: 'Save ~18 kg CO₂/month' },
+  { id: 'tip-2', icon: '🌡️', bg: '#fef3d4', title: 'Lower thermostat by 2°C', description: 'Small change, big impact on heating bills', savings: 'Save ~12 kg CO₂/month' },
+  { id: 'tip-3', icon: '🥦', bg: '#dceefb', title: 'Try 3 meat-free days per week', description: 'Significantly cuts food-related emissions', savings: 'Save ~22 kg CO₂/month' },
+  { id: 'tip-4', icon: '🛁', bg: '#fde8e8', title: 'Switch baths to 5-min showers', description: 'Reduces water heating energy by up to 70%', savings: 'Save ~8 kg CO₂/month' },
+];
+
+function formatRelativeDate(dateStr) {
+  if (!dateStr) return 'Today';
+  const d = new Date(dateStr);
+  const now = new Date();
+  const diff = Math.floor((now - d) / 86400000);
+  if (diff === 0) return `Today, ${d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+  if (diff === 1) return 'Yesterday';
+  if (diff < 7) return `${diff} days ago`;
+  return d.toLocaleDateString();
+}
+
+function mapActivityToUI(a, index) {
+  const type = (a.activityType || 'other').toLowerCase();
+  return {
+    id: a.id,
+    icon: CATEGORY_ICONS[type] || '📋',
+    name: a.activityName,
+    time: formatRelativeDate(a.activityDate),
+    deltaKg: Number(a.carbonAmount),
+    isPositive: Number(a.carbonAmount) < 0,
+    categoryKey: type,
+    _dbId: a.id,
+  };
+}
+
+function mapGoalToUI(g, index) {
+  const target = Number(g.targetValue) || 100;
+  const current = Number(g.currentValue) || 0;
+  const progress = target > 0 ? Math.min(100, Math.round((current / target) * 100)) : current;
+  return {
+    id: g.id,
+    name: g.goalType,
+    progress,
+    color: GOAL_COLORS[index % GOAL_COLORS.length],
+    _dbId: g.id,
+    targetValue: target,
+  };
+}
+
+function buildFootprintFromActivities(activities) {
+  const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  const today = new Date();
+  const days = Array.from({ length: 7 }, (_, i) => {
+    const d = new Date(today);
+    d.setDate(today.getDate() - (6 - i));
+    return d;
+  });
+  const dayData = days.map(d => {
+    const dayStr = d.toISOString().split('T')[0];
+    const total = activities
+      .filter(a => a.activityDate === dayStr && Number(a.carbonAmount) > 0)
+      .reduce((sum, a) => sum + Number(a.carbonAmount), 0);
+    return Math.round(total * 10) / 10;
+  });
+  return {
+    week: { labels: days.map(d => DAY_LABELS[d.getDay()]), data: dayData },
+    month: { labels: ['Wk 1','Wk 2','Wk 3','Wk 4'], data: [0,0,0,0] },
+    year:  { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], data: Array(12).fill(0) },
+  };
+}
+
+function buildMonthlyChartData(monthlyStats) {
+  if (!monthlyStats || monthlyStats.length === 0) {
+    return {
+      labels: [],
+      datasets: [{ label: 'Emissions (kg)', data: [], backgroundColor: '#2d7a4f' }],
+    };
   }
-];
+  const labels = monthlyStats.map(m => {
+    const [year, month] = m.month.split('-');
+    return new Date(year, month - 1).toLocaleString('default', { month: 'short', year: '2-digit' });
+  });
+  return {
+    labels,
+    datasets: [{ label: 'Emissions (kg CO₂)', data: monthlyStats.map(m => Number(m.total)), backgroundColor: '#2d7a4f' }],
+  };
+}
 
-const DEFAULT_NOTIFICATIONS = [
-  { id: 'notif-1', type: 'alert', icon: '⚠️', text: 'Emissions up 12% this week!', detail: 'Try reducing transport to hit your goal.', isRead: false },
-  { id: 'notif-2', type: 'warn', icon: '🎯', text: 'Goal is 40% complete!', detail: "You're halfway to reducing monthly emissions.", isRead: false },
-  { id: 'notif-3', type: '', icon: '🏆', text: 'Team Green crossed 800 pts!', detail: 'Leaderboard updated 2 hours ago.', isRead: true },
-  { id: 'notif-4', type: '', icon: '🌱', text: 'New personalised Eco Tips ready', detail: 'Check the tips section for new recommendations.', isRead: true },
-  { id: 'notif-5', type: '', icon: '🏅', text: '"Transport Pro" badge earned!', detail: 'Congratulations on your 21-day streak!', isRead: true }
-];
-
-const DEFAULT_FOOTPRINT = {
-  week: { labels: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'], data: [260, 278, 305, 295, 330, 320, 348] },
-  month: { labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'], data: [1100, 1250, 1180, 1380] },
-  year: { labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], data: [4200, 4050, 3900, 4100, 3800, 3600, 3700, 3850, 3500, 3400, 3600, 3480] }
-};
-
-const DEFAULT_BREAKDOWN = [
-  { key: 'transport', icon: '🚗', label: 'Transport', value: 142, color: '#2d7a4f' },
-  { key: 'energy', icon: '⚡', label: 'Energy', value: 98, color: '#5aaa72' },
-  { key: 'food', icon: '🍔', label: 'Food', value: 72, color: '#e8a624' },
-  { key: 'shopping', icon: '🛍️', label: 'Shopping', value: 36, color: '#4a90d9' }
-];
-
-const DEFAULT_MONTHLY = {
-  labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-  datasets: [
-    { label: '2024', data: [420, 410, 390, 430, 380, 360], backgroundColor: '#d4edda' },
-    { label: '2025', data: [390, 370, 350, 400, 340, 320], backgroundColor: '#2d7a4f' }
-  ]
-};
-
-const DEFAULT_LEADERBOARD = [
-  { rank: '🥇', icon: '🌿', name: 'Team Green', score: 845, barWidth: '100%', bg: '#2d7a4f' },
-  { rank: '🥈', icon: '🌍', name: 'Team Earth', score: 720, barWidth: '85%', bg: '#e8a624' },
-  { rank: '🥉', icon: '♻️', name: 'Team Eco', score: 690, barWidth: '82%', bg: '#5aaa72' }
-];
-
-const DEFAULT_BADGES = [
-  { id: 'badge-1', icon: '🚗', label: 'Transport Pro', pts: '+200 pts', hexClass: 'bh1', locked: false },
-  { id: 'badge-2', icon: '⚡', label: 'Energy Saver', pts: '+150 pts', hexClass: 'bh2', locked: false },
-  { id: 'badge-3', icon: '🌳', label: 'Tree Planter', pts: '+180 pts', hexClass: 'bh3', locked: false },
-  { id: 'badge-4', icon: '🏃', label: 'Tree Runner', pts: '+120 pts', hexClass: 'bh4', locked: false },
-  { id: 'badge-5', icon: '🥦', label: 'Green Eater', pts: '+90 pts', hexClass: 'bh5', locked: false },
-  { id: 'badge-6', icon: '🔒', label: 'Solar Champ', pts: 'Locked', hexClass: 'bhL', locked: true },
-  { id: 'badge-7', icon: '🔒', label: 'Zero Waste', pts: 'Locked', hexClass: 'bhL', locked: true },
-  { id: 'badge-8', icon: '🔒', label: 'Bike Legend', pts: 'Locked', hexClass: 'bhL', locked: true }
-];
-
+function buildBreakdownFromAPI(breakdown) {
+  if (!breakdown || breakdown.length === 0) return [];
+  return breakdown.map(b => {
+    const type = (b.activityType || b.type || 'other').toLowerCase();
+    return {
+      key: type,
+      icon: CATEGORY_ICONS[type] || '📋',
+      label: type.charAt(0).toUpperCase() + type.slice(1),
+      value: Math.round(Number(b.totalCarbon || b.total || 0)),
+      color: CATEGORY_COLORS[type] || '#9e9e9e',
+    };
+  });
+}
+// ─── component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
+  const [userId, setUserId] = useState(null);
+  const [loading, setLoading] = useState(true);
+
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
-  const [profile, setProfile] = useState({
-    name: 'John',
-    email: '',
-    memberSince: 'Jan 12, 2022',
-    tags: DEFAULT_TAGS
-  });
-  const [goals, setGoals] = useState(DEFAULT_GOALS);
-  const [activities, setActivities] = useState(DEFAULT_ACTIVITIES);
-  const [tips, setTips] = useState(DEFAULT_TIPS);
-  const [notifications, setNotifications] = useState(DEFAULT_NOTIFICATIONS);
-  const [footprintData, setFootprintData] = useState(DEFAULT_FOOTPRINT);
-  const [breakdown, setBreakdown] = useState(DEFAULT_BREAKDOWN);
-  const [monthlyComparison, setMonthlyComparison] = useState(DEFAULT_MONTHLY);
-  const [leaderboard] = useState(DEFAULT_LEADERBOARD);
-  const [badges, setBadges] = useState(DEFAULT_BADGES);
-  const [weeklyEmissions, setWeeklyEmissions] = useState(348);
-  const [co2Saved, setCo2Saved] = useState(84);
-  const [ecoPoints, setEcoPoints] = useState(1240);
-  const [streakDays, setStreakDays] = useState(21);
 
-  // Authentication guard - check if user is logged in
+  const [profile, setProfile] = useState({ name: '', email: '', memberSince: '', tags: DEFAULT_TAGS, profilePicture: null });
+  const [goals, setGoals] = useState([]);
+  const [activities, setActivities] = useState([]);
+  const [tips, setTips] = useState(DEFAULT_TIPS);
+  const [notifications, setNotifications] = useState([]);
+  const [footprintData, setFootprintData] = useState({ week: { labels: [], data: [] }, month: { labels: [], data: [] }, year: { labels: [], data: [] } });
+  const [breakdown, setBreakdown] = useState([]);
+  const [monthlyComparison, setMonthlyComparison] = useState({ labels: [], datasets: [] });
+  const [badges, setBadges] = useState([]);
+
+  const [weeklyEmissions, setWeeklyEmissions] = useState(0);
+  const [co2Saved, setCo2Saved] = useState(0);
+  const [ecoPoints, setEcoPoints] = useState(0);
+  const [streakDays, setStreakDays] = useState(0);
+
+  // ── Auth guard + initial data load ────────────────────────────────────────
   useEffect(() => {
-    const authToken = localStorage.getItem('auth_token');
-    const currentUser = localStorage.getItem('current_user');
-    
-    if (!authToken || !currentUser) {
-      navigate('/login', { replace: true });
-      return;
-    }
-    
-    try {
-      const user = JSON.parse(currentUser);
-      setProfile((prev) => ({
-        ...prev,
-        name: user.name || 'John',
-        email: user.email || '',
-        memberSince: user.memberSince || prev.memberSince
-      }));
-    } catch (err) {
-      console.error('Error parsing user data:', err);
-      navigate('/login', { replace: true });
+    const token = localStorage.getItem('auth_token');
+    const stored = localStorage.getItem('current_user');
+    if (!token || !stored) { navigate('/login', { replace: true }); return; }
+
+    let user;
+    try { user = JSON.parse(stored); } catch { navigate('/login', { replace: true }); return; }
+
+    setProfile(prev => ({
+      ...prev,
+      name: user.name || '',
+      email: user.email || '',
+      profilePicture: user.profilePicture || null,
+      memberSince: user.memberSince || 'Recently joined',
+    }));
+
+    if (user.id) {
+      setUserId(user.id);
+    } else {
+      // No id stored — try fetching from backend by email
+      fetch(`${API_BASE}/users/email/${encodeURIComponent(user.email)}`)
+        .then(r => r.ok ? r.json() : null)
+        .then(data => {
+          if (data?.id) {
+            const updated = { ...user, id: data.id };
+            localStorage.setItem('current_user', JSON.stringify(updated));
+            setUserId(data.id);
+          } else {
+            setLoading(false);
+          }
+        })
+        .catch(() => setLoading(false));
     }
   }, [navigate]);
 
+  // ── Load all dashboard data once userId is available ──────────────────────
+  useEffect(() => {
+    if (!userId) return;
+
+    const loadAll = async () => {
+      setLoading(true);
+      try {
+        const [activitiesRes, goalsRes, statsRes, breakdownRes, monthlyRes, badgesRes] =
+          await Promise.allSettled([
+            fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json()),
+            fetch(`${API_BASE}/goals/user/${userId}`).then(r => r.json()),
+            fetch(`${API_BASE}/stats/user/${userId}`).then(r => r.json()),
+            fetch(`${API_BASE}/stats/user/${userId}/breakdown`).then(r => r.json()),
+            fetch(`${API_BASE}/stats/user/${userId}/monthly?months=6`).then(r => r.json()),
+            fetch(`${API_BASE}/badges/user/${userId}`).then(r => r.json()),
+          ]);
+
+        // Activities
+        if (activitiesRes.status === 'fulfilled' && Array.isArray(activitiesRes.value)) {
+          const uiActivities = activitiesRes.value.map(mapActivityToUI);
+          setActivities(uiActivities);
+          setFootprintData(buildFootprintFromActivities(activitiesRes.value));
+        }
+
+        // Goals
+        if (goalsRes.status === 'fulfilled' && Array.isArray(goalsRes.value)) {
+          setGoals(goalsRes.value.map(mapGoalToUI));
+        }
+
+        // Stats
+        if (statsRes.status === 'fulfilled' && statsRes.value) {
+          const s = statsRes.value;
+          setWeeklyEmissions(Number(s.weeklyEmissions) || 0);
+          setCo2Saved(Number(s.totalOffset) || 0);
+          setEcoPoints(Number(s.ecoPoints) || 0);
+          setStreakDays(Number(s.streakDays) || 0);
+        }
+
+        // Breakdown
+        if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value)) {
+          setBreakdown(buildBreakdownFromAPI(breakdownRes.value));
+        }
+
+        // Monthly
+        if (monthlyRes.status === 'fulfilled' && Array.isArray(monthlyRes.value)) {
+          setMonthlyComparison(buildMonthlyChartData(monthlyRes.value));
+        }
+
+        // Badges
+        if (badgesRes.status === 'fulfilled' && Array.isArray(badgesRes.value)) {
+          const ALL_BADGES = [
+            { icon: '🚗', label: 'Transport Pro', pts: '+200 pts', hexClass: 'bh1', type: 'transport' },
+            { icon: '⚡', label: 'Energy Saver',  pts: '+150 pts', hexClass: 'bh2', type: 'energy' },
+            { icon: '🌳', label: 'Tree Planter',  pts: '+180 pts', hexClass: 'bh3', type: 'offset' },
+            { icon: '🏃', label: 'Tree Runner',   pts: '+120 pts', hexClass: 'bh4', type: 'other' },
+            { icon: '🥦', label: 'Green Eater',   pts: '+90 pts',  hexClass: 'bh5', type: 'food' },
+            { icon: '🔒', label: 'Solar Champ',   pts: 'Locked',   hexClass: 'bhL', type: 'solar' },
+            { icon: '🔒', label: 'Zero Waste',    pts: 'Locked',   hexClass: 'bhL', type: 'waste' },
+            { icon: '🔒', label: 'Bike Legend',   pts: 'Locked',   hexClass: 'bhL', type: 'bike' },
+          ];
+          const earnedTypes = badgesRes.value.map(b => (b.badgeType || '').toLowerCase());
+          setBadges(ALL_BADGES.map(b => ({
+            ...b,
+            id: `badge-${b.type}`,
+            locked: !earnedTypes.includes(b.type) && b.pts === 'Locked',
+          })));
+        } else {
+          setBadges([
+            { id: 'badge-transport', icon: '🚗', label: 'Transport Pro', pts: '+200 pts', hexClass: 'bh1', locked: false },
+            { id: 'badge-energy',    icon: '⚡', label: 'Energy Saver',  pts: '+150 pts', hexClass: 'bh2', locked: false },
+            { id: 'badge-tree',      icon: '🌳', label: 'Tree Planter',  pts: '+180 pts', hexClass: 'bh3', locked: false },
+            { id: 'badge-runner',    icon: '🏃', label: 'Tree Runner',   pts: '+120 pts', hexClass: 'bh4', locked: false },
+            { id: 'badge-food',      icon: '🥦', label: 'Green Eater',   pts: '+90 pts',  hexClass: 'bh5', locked: false },
+            { id: 'badge-solar',     icon: '🔒', label: 'Solar Champ',   pts: 'Locked',   hexClass: 'bhL', locked: true },
+            { id: 'badge-waste',     icon: '🔒', label: 'Zero Waste',    pts: 'Locked',   hexClass: 'bhL', locked: true },
+            { id: 'badge-bike',      icon: '🔒', label: 'Bike Legend',   pts: 'Locked',   hexClass: 'bhL', locked: true },
+          ]);
+        }
+      } catch (err) {
+        console.error('Error loading dashboard data:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadAll();
+  }, [userId]);
+
+  // ── Handlers ──────────────────────────────────────────────────────────────
   const handleLogout = () => {
-    // Clear authentication data
     localStorage.removeItem('auth_token');
     localStorage.removeItem('current_user');
-    
-    // Redirect to login page
     navigate('/login', { replace: true });
   };
 
-  const handleProfileSave = (updatedProfile) => {
+  const handleProfileSave = async (updatedProfile) => {
     setProfile(updatedProfile);
-    const currentUser = JSON.parse(localStorage.getItem('current_user') || '{}');
-    const mergedUser = { 
-      ...currentUser, 
-      name: updatedProfile.name, 
-      email: updatedProfile.email, 
-      memberSince: updatedProfile.memberSince,
-      profilePicture: updatedProfile.profilePicture 
-    };
-    localStorage.setItem('current_user', JSON.stringify(mergedUser));
+    const stored = JSON.parse(localStorage.getItem('current_user') || '{}');
+    const merged = { ...stored, name: updatedProfile.name, email: updatedProfile.email, profilePicture: updatedProfile.profilePicture };
+    localStorage.setItem('current_user', JSON.stringify(merged));
 
-    const existingUsers = JSON.parse(localStorage.getItem('registered_users') || '[]');
-    const updatedUsers = existingUsers.map((user) => {
-      if (user.email?.toLowerCase() === currentUser.email?.toLowerCase()) {
-        return { 
-          ...user, 
-          name: updatedProfile.name, 
-          email: updatedProfile.email, 
-          memberSince: updatedProfile.memberSince,
-          profilePicture: updatedProfile.profilePicture 
-        };
+    if (userId) {
+      try {
+        await fetch(`${API_BASE}/users/${userId}/profile`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: updatedProfile.name, profilePicture: updatedProfile.profilePicture }),
+        });
+      } catch (err) {
+        console.error('Profile save error:', err);
       }
-      return user;
-    });
-    localStorage.setItem('registered_users', JSON.stringify(updatedUsers));
-  };
-
-  const handleOpenModal = () => {
-    setModalOpen(true);
-  };
-
-  const handleCloseModal = () => {
-    setModalOpen(false);
-  };
-
-  const handleToggleNotifications = () => {
-    setNotificationsOpen(!notificationsOpen);
-  };
-
-  const handleCloseNotifications = () => {
-    setNotificationsOpen(false);
-  };
-
-  const handleDismissNotification = (notifId) => {
-    setNotifications((prev) => prev.filter((notif) => notif.id !== notifId));
-  };
-
-  const handleMarkAllRead = () => {
-    setNotifications((prev) => prev.map((notif) => ({ ...notif, isRead: true })));
-  };
-
-  const handleRefreshTips = () => {
-    setTips((prev) => [...prev].sort(() => Math.random() - 0.5));
-  };
-
-  const handleAddGoal = (goal) => {
-    setGoals((prev) => [...prev, goal]);
-  };
-
-  const handleUpdateGoal = (goalId, updates) => {
-    setGoals((prev) => prev.map((goal) => (goal.id === goalId ? { ...goal, ...updates } : goal)));
-  };
-
-  const handleRemoveGoal = (goalId) => {
-    setGoals((prev) => prev.filter((goal) => goal.id !== goalId));
-  };
-
-  const handleRemoveActivity = (activityId) => {
-    setActivities((prev) => prev.filter((activity) => activity.id !== activityId));
-  };
-
-  const handleActivitySave = (activity) => {
-    setActivities((prev) => [activity, ...prev]);
-
-    setWeeklyEmissions((prev) => Math.max(0, prev + activity.deltaKg));
-    if (activity.deltaKg < 0) {
-      setCo2Saved((prev) => Math.max(0, prev + Math.abs(activity.deltaKg)));
-      setEcoPoints((prev) => prev + Math.max(1, Math.round(Math.abs(activity.deltaKg) * 2)));
-    } else {
-      setEcoPoints((prev) => Math.max(0, prev - Math.round(activity.deltaKg)));
     }
+  };
 
-    if (activity.categoryKey && activity.deltaKg > 0) {
-      setBreakdown((prev) => prev.map((item) => (
-        item.key === activity.categoryKey
-          ? { ...item, value: Math.max(0, item.value + activity.deltaKg) }
-          : item
-      )));
-    }
+  const handleActivitySave = async (activity) => {
+    // Optimistically add to UI immediately
+    const tempId = `temp-${Date.now()}`;
+    const uiActivity = { ...activity, id: tempId };
+    setActivities(prev => [uiActivity, ...prev]);
+    updateStatsFromActivity(activity.deltaKg);
 
-    setFootprintData((prev) => {
-      const updateSeries = (series) => {
-        const updated = [...series.data];
-        updated[updated.length - 1] = Math.max(0, updated[updated.length - 1] + activity.deltaKg);
-        return { ...series, data: updated };
-      };
-
-      return {
-        week: updateSeries(prev.week),
-        month: updateSeries(prev.month),
-        year: updateSeries(prev.year)
-      };
-    });
-
+    // Notification
     if (activity.deltaKg > 20) {
-      setNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}`,
-          type: 'alert',
-          icon: '⚠️',
-          text: 'High emission activity logged',
-          detail: `${activity.name} added ${activity.deltaKg.toFixed(1)} kg CO₂`,
-          isRead: false
-        },
-        ...prev
-      ]);
+      addNotification('alert', '⚠️', 'High emission activity logged', `${activity.name} added ${activity.deltaKg.toFixed(1)} kg CO₂`);
+    } else if (activity.deltaKg < 0) {
+      addNotification('', '🌿', 'Nice work! You offset emissions', `${Math.abs(activity.deltaKg).toFixed(1)} kg CO₂ saved`);
     }
 
-    if (activity.deltaKg < 0) {
-      setNotifications((prev) => [
-        {
-          id: `notif-${Date.now()}-offset`,
-          type: '',
-          icon: '🌿',
-          text: 'Nice work! You offset emissions',
-          detail: `${Math.abs(activity.deltaKg).toFixed(1)} kg CO₂ saved`,
-          isRead: false
-        },
-        ...prev
-      ]);
+    // Save to backend
+    if (!userId) return;
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      const payload = {
+        userId,
+        activityType: activity.categoryKey || 'other',
+        activityName: activity.name,
+        carbonAmount: activity.deltaKg,
+        activityDate: today,
+        description: '',
+      };
+      const res = await fetch(`${API_BASE}/activities`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        // Replace temp entry with real DB entry
+        setActivities(prev => prev.map(a => a.id === tempId ? mapActivityToUI(saved) : a));
+        // Update footprint chart with latest activities
+        const freshActivities = await fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json());
+        if (Array.isArray(freshActivities)) {
+          setFootprintData(buildFootprintFromActivities(freshActivities));
+        }
+      }
+    } catch (err) {
+      console.error('Save activity error:', err);
     }
   };
 
-  useEffect(() => {
-    if (ecoPoints >= 1500) {
-      setBadges((prev) => prev.map((badge) => (
-        badge.id === 'badge-6' ? { ...badge, locked: false, icon: '☀️', pts: '+220 pts', hexClass: 'bh2' } : badge
-      )));
+  const handleRemoveActivity = async (activityId) => {
+    setActivities(prev => prev.filter(a => a.id !== activityId));
+    // Delete from backend (only if it's a real DB id — not temp)
+    if (userId && typeof activityId === 'number') {
+      try {
+        await fetch(`${API_BASE}/activities/${activityId}`, { method: 'DELETE' });
+      } catch (err) {
+        console.error('Delete activity error:', err);
+      }
     }
-  }, [ecoPoints]);
+  };
 
+  const handleAddGoal = async (goal) => {
+    if (!userId) { setGoals(prev => [...prev, goal]); return; }
+    try {
+      const payload = {
+        userId,
+        goalType: goal.name,
+        targetValue: 100,
+        currentValue: goal.progress || 0,
+        status: 'active',
+      };
+      const res = await fetch(`${API_BASE}/goals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (res.ok) {
+        const saved = await res.json();
+        setGoals(prev => [...prev, mapGoalToUI(saved, prev.length)]);
+      } else {
+        setGoals(prev => [...prev, goal]);
+      }
+    } catch (err) {
+      console.error('Add goal error:', err);
+      setGoals(prev => [...prev, goal]);
+    }
+  };
+
+  const handleUpdateGoal = async (goalId, updates) => {
+    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, ...updates } : g));
+    if (!userId || typeof goalId !== 'number') return;
+    try {
+      const goal = goals.find(g => g.id === goalId);
+      if (!goal) return;
+      const newProgress = updates.progress !== undefined ? updates.progress : goal.progress;
+      const payload = {
+        userId,
+        goalType: goal.name,
+        targetValue: goal.targetValue || 100,
+        currentValue: newProgress,
+        status: newProgress >= 100 ? 'completed' : 'active',
+      };
+      await fetch(`${API_BASE}/goals/${goalId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+    } catch (err) {
+      console.error('Update goal error:', err);
+    }
+  };
+
+  const handleRemoveGoal = async (goalId) => {
+    setGoals(prev => prev.filter(g => g.id !== goalId));
+    if (!userId || typeof goalId !== 'number') return;
+    try {
+      await fetch(`${API_BASE}/goals/${goalId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Delete goal error:', err);
+    }
+  };
+
+  const updateStatsFromActivity = (deltaKg) => {
+    if (deltaKg > 0) {
+      setWeeklyEmissions(prev => prev + deltaKg);
+      setEcoPoints(prev => Math.max(0, prev - Math.round(deltaKg)));
+    } else {
+      setCo2Saved(prev => prev + Math.abs(deltaKg));
+      setEcoPoints(prev => prev + Math.max(1, Math.round(Math.abs(deltaKg) * 2)));
+    }
+    setBreakdown(prev => {
+      const key = 'transport'; // will be refreshed from API
+      return prev;
+    });
+  };
+
+  const addNotification = (type, icon, text, detail) => {
+    setNotifications(prev => [{
+      id: `notif-${Date.now()}`,
+      type, icon, text, detail, isRead: false,
+    }, ...prev]);
+  };
+
+  const handleRefreshTips = () => setTips(prev => [...prev].sort(() => Math.random() - 0.5));
+  const handleToggleNotifications = () => setNotificationsOpen(n => !n);
+  const handleCloseNotifications  = () => setNotificationsOpen(false);
+  const handleDismissNotification  = (id) => setNotifications(prev => prev.filter(n => n.id !== id));
+  const handleMarkAllRead          = () => setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const handleOpenModal  = () => setModalOpen(true);
+  const handleCloseModal = () => setModalOpen(false);
+
+  // ── Derived stats ──────────────────────────────────────────────────────────
   const unreadNotifications = useMemo(
-    () => notifications.filter((notif) => !notif.isRead).length,
-    [notifications]
+    () => notifications.filter(n => !n.isRead).length,
+    [notifications],
   );
 
   const weeklyTrend = useMemo(() => {
-    const data = footprintData.week.data;
+    const data = footprintData.week?.data || [];
+    if (data.length < 2) return '— no data yet';
     const last = data[data.length - 1] || 0;
     const prev = data[data.length - 2] || last;
+    if (prev === 0 && last === 0) return '— no data yet';
     const delta = last - prev;
-    const pct = prev === 0 ? 0 : Math.round((delta / prev) * 100);
-    const sign = delta >= 0 ? '▲' : '▼';
-    return `${sign} ${Math.abs(pct)}% vs last week`;
+    const pct = prev === 0 ? 100 : Math.round((delta / prev) * 100);
+    return `${delta >= 0 ? '▲' : '▼'} ${Math.abs(pct)}% vs yesterday`;
   }, [footprintData]);
 
   const stats = useMemo(() => ([
-    {
-      icon: '🌿',
-      iconClass: 'si-g',
-      value: Math.round(weeklyEmissions).toString(),
-      unit: 'kg',
-      label: 'Weekly Emissions',
-      change: weeklyTrend,
-      changeClass: weeklyTrend.includes('▲') ? 'up' : 'dn'
-    },
-    {
-      icon: '🔥',
-      iconClass: 'si-o',
-      value: streakDays.toString(),
-      unit: 'days',
-      label: 'Current Streak',
-      change: `▲ +${Math.min(3, streakDays)} this month`,
-      changeClass: 'dn'
-    },
-    {
-      icon: '🌳',
-      iconClass: 'si-b',
-      value: Math.round(co2Saved).toString(),
-      unit: 'kg',
-      label: 'CO₂ Saved',
-      change: `≈ ${Math.max(1, Math.round(co2Saved / 6))} trees offset`,
-      changeClass: 'dn'
-    },
-    {
-      icon: '⚡',
-      iconClass: 'si-r',
-      value: ecoPoints.toLocaleString(),
-      unit: '',
-      label: 'Eco Points',
-      change: `▲ ${Math.round(ecoPoints / 7)} pts this week`,
-      changeClass: 'dn'
-    }
-  ]), [weeklyEmissions, weeklyTrend, streakDays, co2Saved, ecoPoints]);
+    { icon: '🌿', iconClass: 'si-g', value: weeklyEmissions.toFixed(1), unit: 'kg', label: 'Weekly Emissions', change: weeklyTrend, changeClass: weeklyTrend.includes('▲') ? 'up' : 'dn' },
+    { icon: '🔥', iconClass: 'si-o', value: streakDays.toString(),       unit: 'days', label: 'Active Days (30d)', change: `${streakDays} distinct days logged`, changeClass: 'dn' },
+    { icon: '🌳', iconClass: 'si-b', value: co2Saved.toFixed(1),         unit: 'kg', label: 'CO₂ Saved',     change: `≈ ${Math.max(1, Math.round(co2Saved / 6))} trees offset`, changeClass: 'dn' },
+    { icon: '⚡', iconClass: 'si-r', value: ecoPoints.toLocaleString(),  unit: '',   label: 'Eco Points',   change: `${badges.filter(b => !b.locked).length} badges earned`, changeClass: 'dn' },
+  ]), [weeklyEmissions, weeklyTrend, streakDays, co2Saved, ecoPoints, badges]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
+  if (loading) {
+    return (
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
+        <div style={{ fontSize: '2.5rem' }}>🌿</div>
+        <p style={{ color: 'var(--g-dark)', fontWeight: 600 }}>Loading your dashboard…</p>
+      </div>
+    );
+  }
 
   return (
     <div>
-      {/* Top Navigation Bar */}
-      <TopBar 
-        onLogout={handleLogout} 
-        onOpenModal={handleOpenModal}
-        onOpenNotifications={handleToggleNotifications}
-        unreadCount={unreadNotifications}
-      />
-      
-      {/* Hero Banner */}
+      <TopBar onLogout={handleLogout} onOpenModal={handleOpenModal} onOpenNotifications={handleToggleNotifications} unreadCount={unreadNotifications} />
       <HeroBanner userName={profile.name} />
-      
-      {/* Statistics Summary Row */}
       <StatSummaryRow stats={stats} />
-      
-      {/* Main 2-Column Grid */}
+
       <div className="grid">
-        {/* Left Column - Profile */}
-        <ProfileCard 
-          profile={profile}
-          onSave={handleProfileSave}
-        />
-        
-        {/* Right Column - Goals */}
-        <GoalsCard
-          goals={goals}
-          onAddGoal={handleAddGoal}
-          onUpdateGoal={handleUpdateGoal}
-          onRemoveGoal={handleRemoveGoal}
-        />
-        
-        {/* Left Column - Carbon Footprint Log */}
-        <CarbonFootprintLog
-          data={footprintData}
-          weeklyTotal={weeklyEmissions}
-          trendLabel={weeklyTrend}
-        />
-        
-        {/* Right Column - Emissions Breakdown */}
-        <EmissionsBreakdown
-          breakdown={breakdown}
-        />
-        
-        {/* Left Column - Monthly Comparison */}
-        <MonthlyComparison
-          data={monthlyComparison}
-        />
-        
-        {/* Right Column - Recent Activity */}
-        <RecentActivity
-          activities={activities}
-          onRemove={handleRemoveActivity}
-        />
-        
-        {/* Left Column - Eco Tips */}
-        <EcoTips
-          tips={tips}
-          onRefresh={handleRefreshTips}
-        />
-        
-        {/* Right Column - Leaderboard + Badges */}
+        <ProfileCard profile={profile} onSave={handleProfileSave} />
+        <GoalsCard goals={goals} onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal} />
+        <CarbonFootprintLog data={footprintData} weeklyTotal={weeklyEmissions} trendLabel={weeklyTrend} />
+        <EmissionsBreakdown breakdown={breakdown} />
+        <MonthlyComparison data={monthlyComparison} />
+        <RecentActivity activities={activities} onRemove={handleRemoveActivity} />
+        <EcoTips tips={tips} onRefresh={handleRefreshTips} />
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
           <LeaderboardCard />
           <EcoBadgesCard badges={badges} />
         </div>
       </div>
-      
-      {/* Notifications Panel */}
-      <NotificationsPanel 
-        isOpen={notificationsOpen}
-        onClose={handleCloseNotifications}
-        notifications={notifications}
-        onDismiss={handleDismissNotification}
-        onMarkAllRead={handleMarkAllRead}
-      />
-      
-      {/* Log Activity Modal */}
-      <LogActivityModal 
-        isOpen={modalOpen}
-        onClose={handleCloseModal}
-        onSave={handleActivitySave}
-      />
+
+      <NotificationsPanel isOpen={notificationsOpen} onClose={handleCloseNotifications} notifications={notifications} onDismiss={handleDismissNotification} onMarkAllRead={handleMarkAllRead} />
+      <LogActivityModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleActivitySave} />
     </div>
   );
 }

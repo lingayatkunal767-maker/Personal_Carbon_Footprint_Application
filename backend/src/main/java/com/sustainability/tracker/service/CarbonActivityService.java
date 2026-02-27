@@ -1,5 +1,7 @@
 package com.sustainability.tracker.service;
 
+import com.sustainability.tracker.dto.ActivityRequest;
+import com.sustainability.tracker.dto.ActivityResponse;
 import com.sustainability.tracker.entity.CarbonActivity;
 import com.sustainability.tracker.entity.User;
 import com.sustainability.tracker.repository.CarbonActivityRepository;
@@ -10,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -19,24 +22,32 @@ public class CarbonActivityService {
     private final CarbonActivityRepository activityRepository;
     private final UserRepository userRepository;
 
-    public List<CarbonActivity> getActivitiesByUser(Long userId) {
-        return activityRepository.findByUserIdOrderByActivityDateDesc(userId);
+    public List<ActivityResponse> getActivitiesByUser(Long userId) {
+        return activityRepository.findByUserIdOrderByActivityDateDesc(userId)
+                .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    public List<CarbonActivity> getActivitiesByDateRange(Long userId,
-                                                          LocalDate start,
-                                                          LocalDate end) {
+    public List<ActivityResponse> getActivitiesByDateRange(Long userId,
+                                                           LocalDate start,
+                                                           LocalDate end) {
         return activityRepository
-                .findByUserIdAndActivityDateBetweenOrderByActivityDateDesc(userId, start, end);
+                .findByUserIdAndActivityDateBetweenOrderByActivityDateDesc(userId, start, end)
+                .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
-    public CarbonActivity createActivity(CarbonActivity activity) {
-        // Ensure the referenced user exists
-        Long userId = activity.getUser().getId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+    public ActivityResponse createActivity(ActivityRequest request) {
+        User user = userRepository.findById(request.getUserId())
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+
+        CarbonActivity activity = new CarbonActivity();
         activity.setUser(user);
-        return activityRepository.save(activity);
+        activity.setActivityType(request.getActivityType() != null ? request.getActivityType() : "other");
+        activity.setActivityName(request.getActivityName());
+        activity.setCarbonAmount(request.getCarbonAmount());
+        activity.setActivityDate(request.getActivityDate() != null ? request.getActivityDate() : LocalDate.now());
+        activity.setDescription(request.getDescription());
+
+        return toResponse(activityRepository.save(activity));
     }
 
     public void deleteActivity(Long id) {
@@ -44,5 +55,18 @@ public class CarbonActivityService {
             throw new RuntimeException("Activity not found with id: " + id);
         }
         activityRepository.deleteById(id);
+    }
+
+    private ActivityResponse toResponse(CarbonActivity a) {
+        return new ActivityResponse(
+                a.getId(),
+                a.getUser().getId(),
+                a.getActivityType(),
+                a.getActivityName(),
+                a.getCarbonAmount(),
+                a.getActivityDate(),
+                a.getDescription(),
+                a.getCreatedAt()
+        );
     }
 }

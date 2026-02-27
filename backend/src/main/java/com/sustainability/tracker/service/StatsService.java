@@ -13,7 +13,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,24 +32,36 @@ public class StatsService {
         if (totalCarbonSaved == null) totalCarbonSaved = BigDecimal.ZERO;
 
         LocalDate startOfMonth = LocalDate.now().withDayOfMonth(1);
-        BigDecimal monthlyCarbon = activityRepository
-                .sumCarbonByUserIdAndDateAfter(userId, startOfMonth);
+        BigDecimal monthlyCarbon = activityRepository.sumCarbonByUserIdAndDateAfter(userId, startOfMonth);
         if (monthlyCarbon == null) monthlyCarbon = BigDecimal.ZERO;
+
+        LocalDate sevenDaysAgo = LocalDate.now().minusDays(7);
+        BigDecimal weeklyEmissions = activityRepository.sumPositiveCarbonByUserIdAndDateAfter(userId, sevenDaysAgo);
+        if (weeklyEmissions == null) weeklyEmissions = BigDecimal.ZERO;
+
+        BigDecimal totalOffset = activityRepository.sumOffsetByUserId(userId);
+        if (totalOffset == null) totalOffset = BigDecimal.ZERO;
+
+        LocalDate thirtyDaysAgo = LocalDate.now().minusDays(30);
+        Long streakDays = activityRepository.countDistinctDaysByUserIdAndDateAfter(userId, thirtyDaysAgo);
+        if (streakDays == null) streakDays = 0L;
 
         long activeGoals = goalRepository.countByUserIdAndStatus(userId, "active");
         long badgeCount  = badgeRepository.countByUserId(userId);
 
+        long ecoPoints = badgeCount * 200L + totalActivities * 20L
+                       + totalOffset.longValue() * 5L;
+
         return new StatsDTO(totalActivities, totalCarbonSaved, monthlyCarbon,
-                            activeGoals, badgeCount);
+                            weeklyEmissions, totalOffset, activeGoals, badgeCount,
+                            ecoPoints, streakDays);
     }
 
     public List<MonthlyStatsDTO> getMonthlyComparison(Long userId, int months) {
         List<Object[]> rawData = activityRepository.monthlyTotals(userId, months);
         List<MonthlyStatsDTO> result = new ArrayList<>();
-        DateTimeFormatter fmt = DateTimeFormatter.ofPattern("yyyy-MM");
 
         for (Object[] row : rawData) {
-            // row[0] = java.sql.Timestamp (month truncated), row[1] = BigDecimal total
             String month = row[0].toString().substring(0, 7); // "yyyy-MM"
             BigDecimal total = row[1] != null
                     ? new BigDecimal(row[1].toString())
@@ -64,9 +75,9 @@ public class StatsService {
         List<Object[]> rawData = activityRepository.breakdownByType(userId);
         List<EmissionsBreakdownDTO> result = new ArrayList<>();
 
-        // Calculate grand total for percentage
         BigDecimal grandTotal = rawData.stream()
                 .map(row -> row[1] != null ? new BigDecimal(row[1].toString()) : BigDecimal.ZERO)
+                .filter(v -> v.compareTo(BigDecimal.ZERO) > 0)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
         for (Object[] row : rawData) {
@@ -74,6 +85,7 @@ public class StatsService {
             BigDecimal total = row[1] != null
                     ? new BigDecimal(row[1].toString())
                     : BigDecimal.ZERO;
+            if (total.compareTo(BigDecimal.ZERO) <= 0) continue; // skip offsets/negatives
             double pct = grandTotal.compareTo(BigDecimal.ZERO) == 0 ? 0
                     : total.divide(grandTotal, 4, RoundingMode.HALF_UP)
                            .multiply(BigDecimal.valueOf(100))

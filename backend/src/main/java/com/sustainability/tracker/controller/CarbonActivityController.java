@@ -1,8 +1,8 @@
 package com.sustainability.tracker.controller;
 
-import com.sustainability.tracker.entity.CarbonActivity;
+import com.sustainability.tracker.dto.ActivityRequest;
+import com.sustainability.tracker.dto.ActivityResponse;
 import com.sustainability.tracker.service.CarbonActivityService;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
@@ -20,13 +20,13 @@ public class CarbonActivityController {
 
     // GET /api/activities/user/{userId}
     @GetMapping("/user/{userId}")
-    public List<CarbonActivity> getByUser(@PathVariable Long userId) {
+    public List<ActivityResponse> getByUser(@PathVariable Long userId) {
         return activityService.getActivitiesByUser(userId);
     }
 
     // GET /api/activities/user/{userId}/range?start=2026-01-01&end=2026-01-31
     @GetMapping("/user/{userId}/range")
-    public List<CarbonActivity> getByDateRange(
+    public List<ActivityResponse> getByDateRange(
             @PathVariable Long userId,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate start,
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate end) {
@@ -36,8 +36,8 @@ public class CarbonActivityController {
     // POST /api/activities
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public CarbonActivity create(@RequestBody @Valid CarbonActivity activity) {
-        return activityService.createActivity(activity);
+    public ActivityResponse create(@RequestBody ActivityRequest request) {
+        return activityService.createActivity(request);
     }
 
     // DELETE /api/activities/{id}

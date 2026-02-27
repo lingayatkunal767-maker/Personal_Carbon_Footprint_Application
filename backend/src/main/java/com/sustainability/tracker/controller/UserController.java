@@ -1,5 +1,6 @@
 package com.sustainability.tracker.controller;
 
+import com.sustainability.tracker.dto.UserProfileRequest;
 import com.sustainability.tracker.entity.User;
 import com.sustainability.tracker.service.UserService;
 import jakarta.validation.Valid;
@@ -39,6 +40,13 @@ public class UserController {
     @ResponseStatus(HttpStatus.CREATED)
     public User createUser(@RequestBody @Valid User user) {
         return userService.createUser(user);
+    }
+
+    // PATCH /api/users/{id}/profile  — lightweight profile update (name + picture)
+    @PatchMapping("/{id}/profile")
+    public User updateProfile(@PathVariable Long id,
+                               @RequestBody UserProfileRequest request) {
+        return userService.updateProfile(id, request);
     }
 
     // PUT /api/users/{id}

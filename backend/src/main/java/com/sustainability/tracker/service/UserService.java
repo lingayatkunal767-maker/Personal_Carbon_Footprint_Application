@@ -1,5 +1,6 @@
 package com.sustainability.tracker.service;
 
+import com.sustainability.tracker.dto.UserProfileRequest;
 import com.sustainability.tracker.entity.User;
 import com.sustainability.tracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -40,6 +41,17 @@ public class UserService {
         User existing = getUserById(id);
         existing.setName(updatedUser.getName());
         existing.setProfilePicture(updatedUser.getProfilePicture());
+        return userRepository.save(existing);
+    }
+
+    public User updateProfile(Long id, UserProfileRequest req) {
+        User existing = getUserById(id);
+        if (req.getName() != null && !req.getName().isBlank()) {
+            existing.setName(req.getName().trim());
+        }
+        if (req.getProfilePicture() != null) {
+            existing.setProfilePicture(req.getProfilePicture());
+        }
         return userRepository.save(existing);
     }
 

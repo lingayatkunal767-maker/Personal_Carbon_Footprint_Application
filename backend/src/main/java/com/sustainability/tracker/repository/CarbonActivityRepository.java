@@ -26,6 +26,23 @@ public interface CarbonActivityRepository extends JpaRepository<CarbonActivity, 
     BigDecimal sumCarbonByUserIdAndDateAfter(@Param("userId") Long userId,
                                              @Param("startDate") LocalDate startDate);
 
+    // Positive emissions only (last 7 days)
+    @Query("SELECT SUM(a.carbonAmount) FROM CarbonActivity a " +
+           "WHERE a.user.id = :userId AND a.activityDate >= :startDate AND a.carbonAmount > 0")
+    BigDecimal sumPositiveCarbonByUserIdAndDateAfter(@Param("userId") Long userId,
+                                                     @Param("startDate") LocalDate startDate);
+
+    // Total offset (sum of absolute negatives)
+    @Query("SELECT SUM(ABS(a.carbonAmount)) FROM CarbonActivity a " +
+           "WHERE a.user.id = :userId AND a.carbonAmount < 0")
+    BigDecimal sumOffsetByUserId(@Param("userId") Long userId);
+
+    // Count of distinct activity days in last N days
+    @Query("SELECT COUNT(DISTINCT a.activityDate) FROM CarbonActivity a " +
+           "WHERE a.user.id = :userId AND a.activityDate >= :startDate")
+    Long countDistinctDaysByUserIdAndDateAfter(@Param("userId") Long userId,
+                                               @Param("startDate") LocalDate startDate);
+
     @Query("SELECT COUNT(a) FROM CarbonActivity a WHERE a.user.id = :userId")
     Long countByUserId(@Param("userId") Long userId);
 
@@ -35,7 +52,7 @@ public interface CarbonActivityRepository extends JpaRepository<CarbonActivity, 
                SUM(carbon_amount) AS total
         FROM carbon_activities
         WHERE user_id = :userId
-          AND activity_date >= CURRENT_DATE - INTERVAL ':months months'
+          AND activity_date >= CURRENT_DATE - CAST(:months || ' months' AS INTERVAL)
         GROUP BY 1 ORDER BY 1
         """, nativeQuery = true)
     List<Object[]> monthlyTotals(@Param("userId") Long userId, @Param("months") int months);
