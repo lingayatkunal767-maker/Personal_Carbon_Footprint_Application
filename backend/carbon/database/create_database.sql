@@ -68,3 +68,43 @@ COMMENT ON COLUMN users.email IS 'Unique email address for login';
 COMMENT ON COLUMN users.password IS 'BCrypt encrypted password';
 COMMENT ON COLUMN emission_records.id IS 'Primary key, auto-increment';
 COMMENT ON COLUMN emission_records.user_id IS 'Foreign key to users table';
+
+-- //Surveys Table//
+
+CREATE TABLE IF NOT EXISTS surveys (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    transport_mode VARCHAR(50) NOT NULL,
+    average_distance DOUBLE PRECISION NOT NULL,
+    fuel_type VARCHAR(50),
+    diet_type VARCHAR(50) NOT NULL,
+    meals_per_day INT NOT NULL,
+    eating_out_frequency VARCHAR(50),
+    energy_usage DOUBLE PRECISION NOT NULL,
+    renewable_energy BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT fk_survey_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
+
+-- //Carbon Logs Table//
+
+CREATE TABLE IF NOT EXISTS carbon_logs (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    date DATE NOT NULL,
+    transport_emission DOUBLE PRECISION NOT NULL,
+    food_emission DOUBLE PRECISION NOT NULL,
+    energy_emission DOUBLE PRECISION NOT NULL,
+    total_emission DOUBLE PRECISION NOT NULL,
+
+    CONSTRAINT unique_user_date UNIQUE (user_id, date),
+
+    CONSTRAINT fk_carbon_log_user
+        FOREIGN KEY (user_id)
+        REFERENCES users(id)
+        ON DELETE CASCADE
+);
