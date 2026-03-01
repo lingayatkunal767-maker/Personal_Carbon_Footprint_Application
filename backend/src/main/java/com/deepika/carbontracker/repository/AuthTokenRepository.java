@@ -1,0 +1,10 @@
+package com.deepika.carbontracker.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import com.deepika.carbontracker.model.AuthToken;
+import java.util.Optional;
+
+public interface AuthTokenRepository extends JpaRepository<AuthToken, Long> {
+
+    Optional<AuthToken> findByRefreshToken(String refreshToken);
+}
