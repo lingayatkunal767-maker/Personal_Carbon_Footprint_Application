@@ -1,0 +1,25 @@
+package com.carbon.carbontracker.repository;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
+
+import java.time.LocalDate;
+import java.util.Optional;
+import java.util.List;
+
+import com.carbon.carbontracker.model.CarbonLog;
+import com.carbon.carbontracker.model.User;
+
+@Repository
+public interface CarbonLogRepository extends JpaRepository<CarbonLog, Long> {
+
+    Optional<CarbonLog> findByUserAndDate(User user, LocalDate date);
+
+    List<CarbonLog> findByUserAndDateBetween(
+            User user,
+            LocalDate startDate,
+            LocalDate endDate
+    );
+
+    List<CarbonLog> findByUser(User user);  
+}
