@@ -5,6 +5,8 @@ import Login from "./pages/Login";
 import Dashboard from "./pages/Dashboard";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
+import LifestyleSurvey from "./pages/LifestyleSurvey";
+import CarbonHistory from "./pages/CarbonHistory";
 
 function App() {
   return (
@@ -21,6 +23,12 @@ function App() {
 
         {/* Dashboard */}
         <Route path="/dashboard" element={<Dashboard />} />
+
+        {/* Lifestyle Survey */}
+        <Route path="/lifestyle-survey" element={<LifestyleSurvey />} />
+
+        {/* Carbon History */}
+        <Route path="/carbon-history" element={<CarbonHistory />} />
       </Routes>
     </BrowserRouter>
   );

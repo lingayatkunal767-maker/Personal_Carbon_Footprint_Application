@@ -12,16 +12,18 @@ function Register() {
     password: "",
     confirmPassword: "",
   });
-  const [otp, setOtp] = useState("");
-  const [otpSent, setOtpSent] = useState(false);
-  const [otpVerified, setOtpVerified] = useState(false);
   const [errors, setErrors] = useState({});
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState("");
 
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error for this field as user types
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
   };
 
   const validate = () => {
@@ -49,49 +51,21 @@ function Register() {
     return errs;
   };
 
-  // Step 1: Send OTP
-  const handleSendOtp = async (e) => {
+  // Direct Registration (No OTP Required)
+  const handleRegister = async (e) => {
     e.preventDefault();
     setSuccess("");
+    setErrors({});
+    
     const validationErrors = validate();
-    setErrors(validationErrors);
-    if (Object.keys(validationErrors).length > 0) return;
-
-    setLoading(true);
-    try {
-      const data = await apiFetch("/api/auth/send-otp", {
-        method: "POST",
-        body: JSON.stringify({ email: formData.email }),
-      });
-      setOtpSent(true);
-      setSuccess(data.message || "OTP sent! Check your email (or backend console).");
-    } catch (err) {
-      setErrors({ api: err.message || "Failed to send OTP." });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Step 2: Verify OTP & Register
-  const handleVerifyAndRegister = async (e) => {
-    e.preventDefault();
-    setSuccess("");
-    if (!otp || otp.length !== 6) {
-      setErrors({ otp: "Enter the 6-digit OTP sent to your email" });
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
       return;
     }
 
     setLoading(true);
     try {
-      // Verify OTP first
-      await apiFetch("/api/auth/verify-otp", {
-        method: "POST",
-        body: JSON.stringify({ email: formData.email, otp }),
-      });
-      setOtpVerified(true);
-
-      // Now register
-      await apiFetch("/api/auth/register", {
+      const response = await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
           name: formData.name,
@@ -99,11 +73,15 @@ function Register() {
           password: formData.password,
         }),
       });
-
+      
       setSuccess("Account created successfully! Redirecting to login...");
       setTimeout(() => navigate("/login"), 2000);
     } catch (err) {
-      setErrors({ api: err.message || "Verification failed." });
+      if (err.status === 409) {
+        setErrors({ api: "Email already registered. Please login or use a different email." });
+      } else {
+        setErrors({ api: err.message || "Registration failed. Please try again." });
+      }
     } finally {
       setLoading(false);
     }
@@ -116,51 +94,53 @@ function Register() {
           <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
           Home
         </Link>
-        <div className="text-center mb-5">
-          <Link to="/" className="inline-flex items-center gap-2 mb-3">
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
             <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
             <span className="text-xl">🌱</span>
           </Link>
           <h1 className="text-2xl font-bold text-green-800 mb-1">Create account</h1>
           <p className="text-gray-500 text-sm">
-            We'll send you a secure OTP to verify your email.
+            Join us to track your carbon footprint
           </p>
         </div>
 
         {errors.api && (
-          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.api}</p>
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg font-medium">{errors.api}</p>
         )}
         {success && (
-          <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg">{success}</p>
+          <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg font-medium">{success}</p>
         )}
 
-        <form onSubmit={otpSent ? handleVerifyAndRegister : handleSendOtp} className="space-y-3.5">
-          {/* Name */}
+        <form onSubmit={handleRegister} className="space-y-4">
+          {/* Full Name */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
             <input
               type="text"
               name="name"
-              placeholder="Enter your name"
+              placeholder="John Doe"
               value={formData.name}
               onChange={handleChange}
-              disabled={otpSent}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.name ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
             />
             {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
           </div>
 
           {/* Email */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
             <input
               type="email"
               name="email"
               placeholder="you@example.com"
               value={formData.email}
               onChange={handleChange}
-              disabled={otpSent}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.email ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
             />
             {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
           </div>
@@ -168,15 +148,25 @@ function Register() {
           {/* Password */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-            <input
-              type={showPassword ? "text" : "password"}
-              name="password"
-              placeholder="Min 8 chars, letter + number + special"
-              value={formData.password}
-              onChange={handleChange}
-              disabled={otpSent}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Min 8 chars, 1 letter, 1 number, 1 special char"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                  errors.password ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3.5 text-gray-500 hover:text-gray-700 text-sm"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
             {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
           </div>
 
@@ -189,74 +179,35 @@ function Register() {
               placeholder="Re-enter your password"
               value={formData.confirmPassword}
               onChange={handleChange}
-              disabled={otpSent}
-              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-500 text-sm"
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.confirmPassword ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
             />
             {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
           </div>
 
-          {/* Show password checkbox */}
-          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
-            <input
-              type="checkbox"
-              checked={showPassword}
-              onChange={() => setShowPassword(!showPassword)}
-              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
-            />
-            Show password
-          </label>
-
-          {/* OTP Input (step 2) */}
-          {otpSent && !otpVerified && (
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Enter OTP</label>
-              <input
-                type="text"
-                maxLength={6}
-                placeholder="6-digit OTP"
-                value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-center text-base tracking-widest font-mono"
-              />
-              {errors.otp && <p className="text-red-500 text-xs mt-1">{errors.otp}</p>}
-              <button
-                type="button"
-                onClick={async () => {
-                  setLoading(true);
-                  try {
-                    await apiFetch("/api/auth/send-otp", {
-                      method: "POST",
-                      body: JSON.stringify({ email: formData.email }),
-                    });
-                    setSuccess("New OTP sent!");
-                  } catch (err) {
-                    setErrors({ api: err.message || "Failed to resend OTP." });
-                  } finally {
-                    setLoading(false);
-                  }
-                }}
-                className="text-xs text-green-600 hover:underline mt-1"
-                disabled={loading}
-              >
-                Resend OTP
-              </button>
-            </div>
-          )}
-
           {/* Submit Button */}
           <button
             type="submit"
-            className="w-full py-3 rounded-xl text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
             disabled={loading}
+            className="w-full py-3 rounded-lg text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-6"
           >
-            {loading ? "Please wait..." : otpSent ? "Verify & Create Account" : "Send OTP"}
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Creating account...
+              </span>
+            ) : (
+              "Create Account"
+            )}
           </button>
         </form>
 
-        <p className="text-center text-sm mt-5 text-gray-500">
+        {/* Login Link */}
+        <p className="text-center text-sm text-gray-600 mt-5">
           Already have an account?{" "}
-          <Link to="/login" className="text-green-600 font-semibold hover:underline">
-            Login
+          <Link to="/login" className="text-green-600 font-semibold hover:text-green-700 transition">
+            Login here
           </Link>
         </p>
       </div>
