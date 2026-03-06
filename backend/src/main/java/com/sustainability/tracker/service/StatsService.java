@@ -6,6 +6,7 @@ import com.sustainability.tracker.dto.StatsDTO;
 import com.sustainability.tracker.repository.BadgeRepository;
 import com.sustainability.tracker.repository.CarbonActivityRepository;
 import com.sustainability.tracker.repository.GoalRepository;
+import com.sustainability.tracker.entity.CarbonActivity; // Import CarbonActivity
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +16,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -93,5 +95,11 @@ public class StatsService {
             result.add(new EmissionsBreakdownDTO(type, total, pct));
         }
         return result;
+    }
+
+    public List<CarbonActivity> getCarbonLogs(Long userId, LocalDate from, LocalDate to) {
+        LocalDate startDate = Optional.ofNullable(from).orElse(LocalDate.MIN);
+        LocalDate endDate = Optional.ofNullable(to).orElse(LocalDate.MAX);
+        return activityRepository.findByUserIdAndActivityDateBetweenOrderByActivityDateDesc(userId, startDate, endDate);
     }
 }

@@ -9,6 +9,7 @@ import org.springframework.stereotype.Repository;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface CarbonActivityRepository extends JpaRepository<CarbonActivity, Long> {
@@ -17,6 +18,8 @@ public interface CarbonActivityRepository extends JpaRepository<CarbonActivity, 
 
     List<CarbonActivity> findByUserIdAndActivityDateBetweenOrderByActivityDateDesc(
             Long userId, LocalDate start, LocalDate end);
+
+    Optional<CarbonActivity> findByUserIdAndActivityTypeAndActivityDate(Long userId, String activityType, LocalDate activityDate);
 
     @Query("SELECT SUM(a.carbonAmount) FROM CarbonActivity a WHERE a.user.id = :userId")
     BigDecimal sumCarbonByUserId(@Param("userId") Long userId);

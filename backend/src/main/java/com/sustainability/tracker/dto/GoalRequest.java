@@ -1,15 +1,26 @@
 package com.sustainability.tracker.dto;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.NoArgsConstructor;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
 @Data
+@NoArgsConstructor
+@AllArgsConstructor
 public class GoalRequest {
+
     private Long userId;
-    private String goalType;        // goal name / description
-    private BigDecimal targetValue; // target value (e.g. 100 for 100%)
-    private BigDecimal currentValue;// current progress
+
+    // example: "transport", "food", "energy", "total"
+    private String goalType;
+
+    private BigDecimal targetValue;   // <-- MUST MATCH service usage
+    private BigDecimal currentValue;  // optional from client
     private LocalDate deadline;
-    private String status;          // active, completed, failed
+
+    // example: "Active", "Completed"
+    private String status;
 }

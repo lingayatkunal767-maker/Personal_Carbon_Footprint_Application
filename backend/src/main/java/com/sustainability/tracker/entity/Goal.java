@@ -1,10 +1,7 @@
 package com.sustainability.tracker.entity;
 
 import jakarta.persistence.*;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -14,41 +11,34 @@ import java.time.LocalDateTime;
 @Table(name = "goals")
 @Data
 @NoArgsConstructor
+@AllArgsConstructor
 public class Goal {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id", nullable = false)
-    private User user;
-
-    @NotBlank
-    @Column(name = "goal_type", length = 50, nullable = false)
     private String goalType;
 
-    @NotNull
-    @Column(name = "target_value", nullable = false, precision = 10, scale = 2)
     private BigDecimal targetValue;
 
-    @Column(name = "current_value", precision = 10, scale = 2)
-    private BigDecimal currentValue = BigDecimal.ZERO;
+    private BigDecimal currentValue;
 
-    @Column(name = "deadline")
+    // ✅ ADD: deadline + status (GoalService expects these)
     private LocalDate deadline;
 
-    @Column(length = 20)
-    private String status = "active"; // active, completed, failed
+    private String status; // ex: "Active", "Completed"
 
-    @Column(name = "created_at", updatable = false)
-    private LocalDateTime createdAt = LocalDateTime.now();
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id")
+    private User user;
 
-    @Column(name = "updated_at")
-    private LocalDateTime updatedAt = LocalDateTime.now();
+    private LocalDateTime createdAt;
 
-    @PreUpdate
-    public void preUpdate() {
-        this.updatedAt = LocalDateTime.now();
+    @PrePersist
+    public void onCreate() {
+        if (createdAt == null) createdAt = LocalDateTime.now();
+        if (currentValue == null) currentValue = BigDecimal.ZERO;
+        if (status == null) status = "Active";
     }
 }
