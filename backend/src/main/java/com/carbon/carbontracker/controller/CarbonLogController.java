@@ -10,6 +10,8 @@ import java.time.LocalDate;
 import com.carbon.carbontracker.repository.CarbonLogRepository;
 import com.carbon.carbontracker.repository.UserRepository;
 import com.carbon.carbontracker.model.User;
+import com.carbon.carbontracker.model.CarbonLog;
+
 @RestController
 @RequestMapping("/api/carbon")
 public class CarbonLogController {
@@ -28,7 +30,6 @@ public class CarbonLogController {
     ) {
 
         String email = authentication.getName();
-
         User user = userRepository.findByEmail(email).orElseThrow();
 
         if (from != null && to != null) {
@@ -45,4 +46,6 @@ public class CarbonLogController {
                 carbonLogRepository.findByUser(user)
         );
     }
+
+
 }

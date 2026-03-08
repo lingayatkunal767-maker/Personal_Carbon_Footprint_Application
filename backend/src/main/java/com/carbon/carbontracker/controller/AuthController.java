@@ -119,4 +119,45 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
     public String test() {
         return "Protected API working!";
     }
+
+    @GetMapping("/me")
+public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
+
+    String token = authHeader.replace("Bearer ", "");
+    String email = jwtUtil.extractEmail(token);
+
+    Optional<?> userOpt = userService.getUserByEmail(email);
+
+    if (userOpt.isEmpty()) {
+        return ResponseEntity.status(404).body("User not found");
+    }
+
+    var user = userOpt.get();
+
+    return ResponseEntity.ok(Map.of(
+            "name", ((com.carbon.carbontracker.model.User) user).getName(),
+            "email", ((com.carbon.carbontracker.model.User) user).getEmail()
+    ));
+}
+
+@PutMapping("/profile")
+public ResponseEntity<?> updateProfile(
+        @RequestHeader("Authorization") String authHeader,
+        @RequestBody Map<String, String> body) {
+
+    String token = authHeader.replace("Bearer ", "");
+    String email = jwtUtil.extractEmail(token);
+
+    String name = body.get("name");
+    String newEmail = body.get("email");
+    String password = body.get("password");
+
+    boolean updated = userService.updateUserProfile(email, name, newEmail, password);
+
+    if (!updated) {
+        return ResponseEntity.badRequest().body("Profile update failed");
+    }
+
+    return ResponseEntity.ok("Profile updated successfully");
+}
 }
