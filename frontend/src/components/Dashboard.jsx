@@ -1,157 +1,276 @@
-import React from 'react';
-import { 
-  LogOut, 
-  Leaf, 
-  Trophy, 
-  ChevronRight, 
-  TrendingUp, 
-  ShieldCheck, 
-  Zap, 
-  Car, 
-  TreePine 
-} from 'lucide-react';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import {
+  LogOut, Leaf, Zap, Car, LayoutDashboard, 
+  ClipboardList, History, Settings, Search, 
+  Bell, Plus, Utensils, TrendingUp, MoreHorizontal
+} from "lucide-react";
 
-const Dashboard = () => {
-  // Mock data - in a real app, you'd fetch this from localStorage or an API
-  const user = JSON.parse(localStorage.getItem('user')) || { username: 'John Doe', email: 'john@email.com' };
+// --- NEW SUB-COMPONENT: SMOOTH TREND CHART ---
+const SmoothTrendChart = ({ data }) => {
+  // Normalize data points for a 300x100 coordinate system
+  const points = data.map((val, i) => ({
+    x: (i / (data.length - 1)) * 300,
+    y: 100 - val // Invert because SVG y-axis goes down
+  }));
+
+  // Create the path string for the smooth line
+  const pathData = points.reduce((acc, point, i, str) => {
+    if (i === 0) return `M ${point.x},${point.y}`;
+    // Simple smoothing using curve logic
+    const prev = str[i - 1];
+    const cx = (prev.x + point.x) / 2;
+    return `${acc} C ${cx},${prev.y} ${cx},${point.y} ${point.x},${point.y}`;
+  }, "");
+
+  // Path for the filled area (must close the shape at the bottom)
+  const areaData = `${pathData} L 300,100 L 0,100 Z`;
 
   return (
-    <div className="min-h-screen bg-[#F1F7F0] font-sans pb-10">
-      {/* Navigation Bar */}
-      <nav className="flex justify-between items-center px-8 py-4 bg-white/50 backdrop-blur-md sticky top-0 z-10">
-        <div className="flex items-center gap-2">
-          <div className="bg-green-600 p-1.5 rounded-lg">
-            <Leaf className="text-white w-6 h-6" />
-          </div>
-          <span className="text-2xl font-bold text-gray-800 tracking-tight">EcoTrack</span>
-        </div>
-        <button 
-          onClick={() => { localStorage.clear(); window.location.href = '/'; }}
-          className="flex items-center gap-2 bg-[#5E8C61] hover:bg-[#4A6E4D] text-white px-5 py-2 rounded-lg transition-colors font-semibold"
-        >
-          <LogOut size={18} /> Logout
-        </button>
-      </nav>
+    <div className="w-full h-48 relative mt-4">
+      <svg viewBox="0 0 300 100" preserveAspectRatio="none" className="w-full h-full">
+        <defs>
+          <linearGradient id="gradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+            <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {/* The Filled Area */}
+        <path d={areaData} fill="url(#gradient)" />
+        {/* The Main Line */}
+        <path d={pathData} fill="none" stroke="#10b981" strokeWidth="2" strokeLinecap="round" />
+        
+        {/* Active Point Indicator (last point) */}
+        <circle 
+          cx={points[points.length - 1].x} 
+          cy={points[points.length - 1].y} 
+          r="3" 
+          fill="#10b981" 
+          stroke="white" 
+          strokeWidth="1" 
+        />
+      </svg>
+      
+      {/* X-Axis Labels */}
+      <div className="flex justify-between mt-2 text-[10px] font-bold text-gray-400 uppercase tracking-widest px-1">
+        <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+      </div>
+    </div>
+  );
+};
 
-      <main className="max-w-6xl mx-auto px-6 mt-8">
-        {/* Hero Section */}
-        <section className="mb-10">
-          <h1 className="text-4xl font-bold text-[#2D4A31]">Welcome back, {user.username.split(' ')[0]}!</h1>
-          <p className="text-gray-600 mt-1 text-lg">Your Carbon Footprint Tracker</p>
-        </section>
+const EcoTrack = () => {
+  const navigate = useNavigate();
+  const [user, setUser] = useState({ name: "Alex", email: "alex@eco.com" });
+  const [footprintData, setFootprintData] = useState({
+    total: "450.5",
+    transport: "142",
+    food: "98",
+    energy: "210"
+  });
 
-        {/* Top Grid: Profile & Goals */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 mb-6">
-          {/* Profile Card */}
-          <div className="md:col-span-5 bg-white rounded-3xl p-8 shadow-sm border border-green-100 flex items-center gap-6">
-            <div className="w-24 h-24 bg-[#DDEEE0] rounded-full flex items-center justify-center overflow-hidden border-4 border-white shadow-inner">
-               <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${user.username}`} alt="avatar" />
-            </div>
-            <div>
-              <h2 className="text-2xl font-bold text-gray-800">{user.username}</h2>
-              <p className="text-gray-500 text-sm">{user.email}</p>
-              <p className="text-gray-400 text-xs mt-2 uppercase tracking-wider font-semibold">Member Since: Jan 12, 2022</p>
-            </div>
-          </div>
+  // Mock data for the 7-day trend
+  const weeklyTrend = [40, 55, 35, 75, 50, 60, 45];
 
-          {/* Goals Card */}
-          <div className="md:col-span-7 bg-white rounded-3xl p-8 shadow-sm border border-green-100">
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-800">Your Goals</h3>
-            </div>
-            <p className="text-[#4A6E4D] font-medium mb-3">Reduce Monthly Emission by 20%</p>
-            <div className="w-full bg-gray-100 h-4 rounded-full mb-6 overflow-hidden">
-              <div className="bg-[#5E8C61] h-full w-[40%] rounded-full shadow-sm"></div>
-            </div>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-1 text-green-700 font-bold">
-                  <Leaf size={20} /> 40%
+  useEffect(() => {
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    if (storedUser.username || storedUser.name) {
+      setUser({
+        name: storedUser.username || storedUser.name,
+        email: storedUser.email || "user@email.com"
+      });
+    }
+  }, []);
+
+  const handleLogout = () => {
+    localStorage.clear();
+    navigate("/");
+  };
+
+  const categories = [
+    { label: "Transport", value: `${footprintData.transport} kg`, change: "+12.2%", icon: Car, data: [40, 60, 45, 70, 50, 65, 55], color: "rose" },
+    { label: "Food & Diet", value: `${footprintData.food} kg`, change: "-2.4%", icon: Utensils, data: [30, 25, 35, 20, 30, 25, 20], color: "emerald" },
+    { label: "Energy Usage", value: `${footprintData.energy} kg`, change: "+1.8%", icon: Zap, data: [60, 55, 65, 60, 70, 65, 60], color: "rose" },
+  ];
+
+  const recentActivity = [
+    { date: "May 12, 2024", category: "Transport", desc: "Commute to Office", emission: "12.4 kg" },
+    { date: "May 11, 2024", category: "Energy", desc: "Monthly Electricity Bill", emission: "85.0 kg" },
+    { date: "May 10, 2024", category: "Food", desc: "Grocery Shopping", emission: "4.2 kg" },
+    { date: "May 09, 2024", category: "Transport", desc: "Weekend Road Trip", emission: "45.8 kg" },
+    { date: "May 08, 2024", category: "Food", desc: "Dining Out", emission: "8.1 kg" },
+  ];
+
+  return (
+    <div className="flex min-h-screen bg-[#F8FAF9] font-sans text-slate-700">
+      <main className="flex-1">
+        <div className="p-8 max-w-7xl mx-auto">
+          {/* Welcome Section */}
+          <section className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-800">Welcome back, {user.name.split(' ')[0]}!</h1>
+            <p className="text-gray-500 mt-1">Here's your environmental impact summary for this week.</p>
+          </section>
+
+          {/* Top Cards Row */}
+          <div className="grid grid-cols-12 gap-6 mb-8">
+            <div className="col-span-12 lg:col-span-8 grid grid-cols-2 gap-6">
+                <div className="bg-[#EDF5ED] p-8 rounded-[32px] relative overflow-hidden flex flex-col justify-center">
+                    <p className="text-sm font-semibold text-gray-600">Total Footprint</p>
+                    <h2 className="text-4xl font-black text-gray-800 mt-2">{footprintData.total} <span className="text-lg font-medium text-gray-500">kg CO2e</span></h2>
+                    <p className="text-xs text-rose-500 font-bold mt-3">↑ +12% from previous week</p>
+                    <Leaf className="absolute -right-6 -bottom-6 w-32 h-32 text-emerald-600/10 rotate-12" />
                 </div>
-                <ShieldCheck className="text-green-500" />
-                <div className="text-green-600 font-bold">$</div>
+                
+                <div className="bg-white border border-gray-100 p-8 rounded-[32px] flex flex-col justify-center">
+                    <p className="text-sm font-bold text-gray-800 mb-4">Quick Actions</p>
+                    <div className="flex gap-3">
+                        <button onClick={() => navigate("/survey")} className="flex-1 flex items-center justify-center gap-2 border border-gray-200 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors">
+                            <Plus size={14}/> Add Log
+                        </button>
+                        <button onClick={() => navigate("/goals")} className="flex-1 flex items-center justify-center gap-2 border border-gray-200 py-2.5 rounded-xl text-xs font-bold hover:bg-gray-50 transition-colors">
+                            <TrendingUp size={14}/> New Goal
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <div className="col-span-12 lg:col-span-4 bg-white border border-gray-100 p-8 rounded-[32px]">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-800">Monthly Goal</h3>
+                <span className="text-[10px] bg-emerald-100 text-emerald-700 px-2.5 py-1 rounded-full font-bold uppercase">Active</span>
               </div>
-              <button className="bg-[#5E8C61] text-white px-4 py-2 rounded-lg flex items-center gap-2 text-sm font-semibold hover:bg-[#4A6E4D] transition">
-                Manage Goals <ChevronRight size={16} />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Bottom Grid: Stats, Leaderboard, Badges */}
-        <div className="grid grid-cols-1 md:grid-cols-12 gap-6">
-          {/* Chart Section */}
-          <div className="md:col-span-6 bg-white rounded-3xl shadow-sm border border-green-100 overflow-hidden">
-            <div className="p-8 pb-0">
-               <div className="flex justify-between items-center mb-4">
-                 <h3 className="text-xl font-bold text-gray-800">Carbon Footprint Log</h3>
-                 <button className="text-xs font-bold text-gray-500 border px-3 py-1 rounded-full uppercase tracking-tighter">All Last Week</button>
-               </div>
-               <div className="flex items-baseline gap-2">
-                 <span className="text-4xl font-bold text-[#2D4A31]">348</span>
-                 <span className="text-gray-500 font-medium text-lg">kg CO₂e / Week</span>
-                 <span className="text-red-500 text-sm font-bold ml-2">+12% from last week</span>
-               </div>
-            </div>
-            {/* Visual placeholder for the graph */}
-            <div className="h-48 mt-4 bg-gradient-to-t from-green-50 to-transparent relative flex items-end px-8">
-               <div className="w-full h-32 border-b-2 border-green-200 relative">
-                  {/* Mock line path */}
-                  <svg className="absolute bottom-0 left-0 w-full h-full" viewBox="0 0 100 100" preserveAspectRatio="none">
-                    <path d="M0,80 L25,70 L50,55 L75,45 L100,30" fill="none" stroke="#5E8C61" strokeWidth="2" />
-                  </svg>
-               </div>
-            </div>
-            <div className="flex justify-between p-4 bg-gray-50/50 border-t border-green-50">
-              <button className="text-green-700 text-sm font-bold hover:underline">View Full History</button>
-              <button className="text-green-700 text-sm font-bold hover:underline">View Full History</button>
+              <div className="flex justify-between text-xs font-bold mb-2 text-gray-600">
+                <span>Reduce transport emission by 20%</span>
+                <span className="text-emerald-600">65%</span>
+              </div>
+              <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden mb-4">
+                <div className="bg-emerald-500 h-full w-[65%]"></div>
+              </div>
+              <p className="text-[11px] text-gray-400 leading-relaxed mb-5">You've saved <span className="text-emerald-600 font-bold">34kg CO2e</span> so far. Keep it up!</p>
+              <button onClick={() => navigate("/goals")} className="w-full py-2.5 bg-gray-50 text-gray-600 rounded-xl text-xs font-bold hover:bg-gray-100 transition-colors">Manage Goals</button>
             </div>
           </div>
 
-          {/* Leaderboard */}
-          <div className="md:col-span-3 bg-white rounded-3xl p-8 shadow-sm border border-green-100 flex flex-col">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Leaderboard</h3>
-            <div className="space-y-5 flex-grow">
-              {[
-                { name: 'Team Green', score: 845, icon: 'text-green-500' },
-                { name: 'Team Earth', score: 720, icon: 'text-orange-400' },
-                { name: 'Team Eco', score: 690, icon: 'text-green-300' }
-              ].map((team, i) => (
-                <div key={i} className="flex justify-between items-center">
-                  <div className="flex items-center gap-3">
-                    <Trophy className={`${team.icon}`} size={18} />
-                    <span className="font-semibold text-gray-700">{team.name}</span>
-                  </div>
-                  <span className="text-gray-500 font-mono font-bold">{team.score}</span>
+          {/* Category Breakdown */}
+          <h3 className="font-bold text-gray-800 mb-4">Category Breakdown</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+            {categories.map((cat, i) => (
+              <CategoryCard key={i} {...cat} />
+            ))}
+          </div>
+
+          {/* Emission Trend Section - REPLACED WITH SMOOTH CHART */}
+          <div className="grid grid-cols-12 gap-6">
+            <div className="col-span-12 lg:col-span-8 bg-white border border-gray-100 rounded-[32px] p-8">
+              <div className="flex justify-between items-start mb-2">
+                <div>
+                    <h3 className="font-bold text-gray-800">Emission Trend</h3>
+                    <p className="text-xs text-gray-400 mt-0.5">Visualizing your carbon output over the last 7 days.</p>
                 </div>
-              ))}
+                <div className="flex gap-1.5 items-center">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                    <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider">Current Range</span>
+                </div>
+              </div>
+              
+              {/* Using the new Smooth Chart component */}
+              <SmoothTrendChart data={weeklyTrend} />
             </div>
-            <button className="mt-8 text-green-700 text-sm font-bold hover:underline text-center">View Leaderboard</button>
+
+            <div className="col-span-12 lg:col-span-4 bg-white border border-gray-100 rounded-[32px] p-8">
+              <h3 className="font-bold text-gray-800 mb-6">Eco Badges</h3>
+              <div className="grid grid-cols-2 gap-4">
+                  <BadgeItem icon={Car} label="Transport Pro" color="bg-blue-50 text-blue-500" onClick={() => navigate("/badges/transport")} />
+                  <BadgeItem icon={Zap} label="Energy Saver" color="bg-yellow-50 text-yellow-600" onClick={() => navigate("/badges/energy")} />
+                  <BadgeItem icon={Leaf} label="Tree Planter" color="bg-emerald-50 text-emerald-500" onClick={() => navigate("/badges/tree")} />
+                  <BadgeItem icon={TrendingUp} label="Eco Master" color="bg-purple-50 text-purple-500" onClick={() => navigate("/badges/master")} />
+              </div>
+              <div className="mt-8 p-4 bg-gray-50 rounded-2xl italic text-[11px] text-center text-gray-400 leading-relaxed">
+                "The greatest threat to our planet is the belief that someone else will save it."
+              </div>
+            </div>
           </div>
 
-          {/* Eco Badges */}
-          <div className="md:col-span-3 bg-white rounded-3xl p-8 shadow-sm border border-green-100">
-            <h3 className="text-xl font-bold text-gray-800 mb-6">Eco Badges</h3>
-            <div className="grid grid-cols-2 gap-4">
-              <BadgeItem Icon={Car} label="Transport Pro" />
-              <BadgeItem Icon={Zap} label="Energy Saver" />
-              <BadgeItem Icon={Leaf} label="Tree Planter" />
-              <BadgeItem Icon={TreePine} label="Tree Runner" />
+          {/* Recent Activity Table */}
+          <div className="mt-8 bg-white border border-gray-100 rounded-[32px] p-8">
+            <div className="flex justify-between items-center mb-8">
+                <h3 className="font-bold text-gray-800">Recent Activity</h3>
+                <button onClick={() => navigate("/history")} className="text-xs text-emerald-600 font-bold hover:underline">View All History</button>
             </div>
+            <table className="w-full text-left">
+              <thead>
+                <tr className="text-gray-400 text-[10px] uppercase tracking-widest border-b border-gray-50">
+                  <th className="pb-5 font-bold">Date</th>
+                  <th className="pb-5 font-bold">Category</th>
+                  <th className="pb-5 font-bold">Activity Description</th>
+                  <th className="pb-5 font-bold text-right">Emission</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-50">
+                {recentActivity.map((row, i) => (
+                  <tr key={i} className="group hover:bg-gray-50/50 transition-colors">
+                    <td className="py-5 text-sm text-gray-500">{row.date}</td>
+                    <td className="py-5">
+                        <span className="px-3 py-1 bg-gray-100 text-[10px] rounded-full font-bold text-gray-500">{row.category}</span>
+                    </td>
+                    <td className="py-5 text-sm font-semibold text-gray-700">{row.desc}</td>
+                    <td className="py-5 text-right font-bold text-gray-800 flex items-center justify-end gap-2">
+                      {row.emission}
+                      <MoreHorizontal size={14} className="text-gray-300 cursor-pointer" />
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
+          
+          <footer className="mt-12 py-6 text-center border-t border-gray-100">
+            <p className="text-[10px] text-gray-400">© 2026 EcoTrack • Environmentally Conscious Tracking</p>
+          </footer>
         </div>
       </main>
     </div>
   );
 };
 
-const BadgeItem = ({ Icon, label }) => (
-  <div className="flex flex-col items-center gap-2">
-    <div className="w-14 h-16 bg-[#F1F7F0] border-2 border-green-200 rounded-xl flex items-center justify-center text-green-600 shadow-sm">
-      <Icon size={28} />
+// --- SUB-COMPONENTS ---
+const CategoryCard = ({ label, value, change, icon: Icon, data, color }) => (
+  <div className="bg-white border border-gray-100 p-6 rounded-[32px]">
+    <div className="flex justify-between items-start mb-5">
+      <div className="p-2.5 bg-gray-50 rounded-xl text-emerald-600"><Icon size={20} /></div>
+      <span className={`text-[10px] font-bold px-2 py-1 rounded-full ${color === 'rose' ? 'bg-rose-50 text-rose-500' : 'bg-emerald-50 text-emerald-600'}`}>
+        {change}
+      </span>
     </div>
-    <span className="text-[10px] uppercase font-bold text-gray-500 text-center leading-tight">{label}</span>
+    <p className="text-xs text-gray-400 font-bold uppercase tracking-wider">{label}</p>
+    <p className="text-2xl font-black text-gray-800 mt-1">{value}</p>
+    <div className="flex gap-1.5 mt-5 h-10 items-end">
+      {data.map((h, i) => (
+        <div 
+          key={i} 
+          className={`flex-1 rounded-sm ${h > 50 ? 'bg-rose-400' : 'bg-emerald-400'}`} 
+          style={{ height: `${h}%` }}
+        ></div>
+      ))}
+    </div>
   </div>
 );
 
-export default Dashboard;
+const BadgeItem = ({ icon: Icon, label, color, onClick }) => (
+  <button
+    onClick={onClick}
+    className={`flex flex-col items-center justify-center p-5 rounded-[24px] 
+    ${color.split(" ")[0]} border border-white shadow-sm
+    hover:scale-105 hover:shadow-md 
+    transition-all duration-200 cursor-pointer`}
+  >
+    <div className={`mb-3 ${color.split(" ")[1]}`}>
+      <Icon size={28} />
+    </div>
+    <span className="text-[9px] uppercase font-black text-center tracking-tighter leading-tight text-gray-600">
+      {label}
+    </span>
+  </button>
+);
+
+export default EcoTrack;

@@ -2,6 +2,8 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useNavigate, Link } from 'react-router-dom';
 import loginImg from "../assets/login-image.png";
+import { FcGoogle } from "react-icons/fc";
+import { FaGithub, FaLeaf } from "react-icons/fa6"; // Added FaLeaf for theme consistency
 
 const LoginPage = () => {
   const [formData, setFormData] = useState({ email: '', password: '' });
@@ -16,23 +18,27 @@ const LoginPage = () => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      const res = await axios.post(
-        'http://localhost:5000/api/users/login',
-        formData
-      );
-
+      // POST request to your Spring Boot Login Endpoint
+      const res = await axios.post('http://localhost:8080/api/auth/login', formData);
+      
+      // Destructure user and token from the AuthResponse DTO
       const { user, token } = res.data;
 
+      // Persist to local storage
       localStorage.setItem('user', JSON.stringify(user));
       localStorage.setItem('token', token);
 
-      navigate(
-        user.role.toLowerCase() === 'admin'
-          ? '/admin-dashboard'
-          : '/dashboard'
-      );
+      // Clean up any old reset session data
+      localStorage.removeItem("resetEmail");
+
+      // Role-based navigation
+      const userRole = user?.role?.toLowerCase();
+      navigate(userRole === 'admin' ? '/admin-dashboard' : '/dashboard');
+      
     } catch (err) {
-      alert(err.response?.data?.message || 'Login failed.');
+      // Catching Spring Boot's error responses: Map.of("error", "message")
+      const errorMsg = err.response?.data?.error || err.response?.data?.message || 'Login failed. Please try again.';
+      alert(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -40,10 +46,8 @@ const LoginPage = () => {
 
   return (
     <div className="flex min-h-screen bg-white font-sans overflow-x-hidden">
-
-      {/* LEFT SIDE */}
-<div className="hidden md:flex flex-1 bg-linear-to-br from-emerald-100 via-teal-50 to-sky-100 relative items-center justify-center p-12">
-
+      {/* LEFT SIDE - BRANDING */}
+      <div className="hidden md:flex flex-1 bg-gradient-to-br from-emerald-100 via-teal-50 to-sky-100 relative items-center justify-center p-12">
         <div className="z-10 text-center mb-20">
           <h1 className="text-4xl lg:text-5xl font-black text-emerald-900 leading-tight">
             Your <span className="text-emerald-600">Personal</span> <br />
@@ -52,94 +56,101 @@ const LoginPage = () => {
               Application
             </span>
           </h1>
-
           <p className="mt-4 text-emerald-800 font-bold text-lg opacity-80 italic">
             "Small changes, massive impact."
           </p>
         </div>
-
         <div className="absolute bottom-0 w-full flex justify-center">
-          <img
-            src={loginImg}
-            alt="Sustainability"
-            className="w-2/3 max-w-sm h-auto translate-y-4 drop-shadow-2xl"
+          <img 
+            src={loginImg} 
+            alt="Sustainability" 
+            className="w-2/3 max-w-sm h-auto translate-y-4 drop-shadow-2xl" 
           />
         </div>
       </div>
 
-      {/* RIGHT SIDE */}
+      {/* RIGHT SIDE - FORM */}
       <div className="flex-1 md:w-1/2 flex items-center justify-center p-8 bg-white">
         <div className="w-full max-w-md p-10 rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.1)] border border-emerald-50 bg-white">
-
-          {/* Logo Section */}
           <div className="flex flex-col items-center mb-10">
             <div className="w-16 h-16 bg-emerald-600 rounded-2xl flex items-center justify-center shadow-lg mb-4">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 text-white"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"
-                />
-              </svg>
+               {/* Updated to use a leaf icon to match the sustainability theme */}
+               <FaLeaf className="text-white text-3xl" />
             </div>
-
-            <h2 className="text-3xl font-black text-slate-800">
-              EcoTrack
-            </h2>
-            <p className="text-emerald-600 font-medium">
-              Login to your dashboard
-            </p>
+            <h2 className="text-3xl font-black text-slate-800">EcoTrack</h2>
+            <p className="text-emerald-600 font-medium">Login to your dashboard</p>
           </div>
 
-          {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-5">
-            <input
-              name="email"
-              type="email"
-              placeholder="Email Address"
-              onChange={handleChange}
-              className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:border-emerald-500 transition-all"
-              required
-            />
+            <div>
+              <input 
+                name="email" 
+                type="email" 
+                placeholder="Email Address" 
+                onChange={handleChange} 
+                className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all" 
+                required 
+              />
+            </div>
+            
+            <div>
+              <input 
+                name="password" 
+                type="password" 
+                placeholder="Password" 
+                onChange={handleChange} 
+                className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-100 transition-all" 
+                required 
+              />
+              <div className="flex justify-end mt-2">
+                <Link 
+                  to="/forgot-password" 
+                  className="text-sm text-emerald-600 font-semibold hover:underline transition-all"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
+            </div>
 
-            <input
-              name="password"
-              type="password"
-              placeholder="Password"
-              onChange={handleChange}
-              className="w-full px-5 py-4 rounded-2xl border border-slate-200 bg-slate-50 outline-none focus:border-emerald-500 transition-all"
-              required
-            />
-
-            <button
-              type="submit"
-              disabled={isLoading}
-              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-xl transition-all active:scale-95 uppercase tracking-widest"
+            <button 
+              type="submit" 
+              disabled={isLoading} 
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black rounded-2xl shadow-xl transition-all active:scale-95 uppercase tracking-widest disabled:opacity-70"
             >
-              {isLoading ? 'Loading...' : 'Login'}
+              {isLoading ? 'Authenticating...' : 'Login'}
             </button>
           </form>
 
-          {/* Signup */}
           <div className="mt-8 text-center">
             <p className="text-slate-500 text-sm">
-              New to the mission?{' '}
-              <Link
-                to="/signup"
-                className="text-emerald-600 font-bold hover:underline"
-              >
-                Join the cause
-              </Link>
+              New to the mission? <Link to="/signup" className="text-emerald-600 font-bold hover:underline">Join the cause</Link>
             </p>
           </div>
 
+          <div className="mt-6 space-y-3">
+            <div className="flex items-center gap-3">
+              <hr className="flex-grow border-slate-200" />
+              <span className="text-sm text-slate-400">OR</span>
+              <hr className="flex-grow border-slate-200" />
+            </div>
+            
+            {/* OAuth Links */}
+            <a 
+              href="http://localhost:8080/oauth2/authorization/google" 
+              className="flex items-center justify-center gap-3 w-full py-3 bg-white border border-slate-300 rounded-2xl shadow-sm hover:shadow-md transition active:scale-[0.98]"
+            >
+              <FcGoogle size={22} />
+              <span className="font-semibold text-slate-700">Continue with Google</span>
+            </a>
+            
+            <a 
+              href="http://localhost:8080/oauth2/authorization/github" 
+              className="flex items-center justify-center gap-3 w-full py-3 bg-black text-white rounded-2xl shadow-sm hover:bg-gray-900 transition active:scale-[0.98]"
+            >
+              <FaGithub size={20} />
+              <span className="font-semibold">Continue with GitHub</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
