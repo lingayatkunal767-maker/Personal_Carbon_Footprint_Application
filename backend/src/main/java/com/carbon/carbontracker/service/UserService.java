@@ -25,6 +25,31 @@ public class UserService {
     @Autowired
     private EmailService emailService;
 
+    public Optional<User> getUserByEmail(String email) {
+    return userRepository.findByEmail(email);
+    }
+
+    public boolean updateUserProfile(String email, String name, String newEmail, String password) {
+
+    Optional<User> userOpt = userRepository.findByEmail(email);
+
+    if (userOpt.isEmpty()) {
+        return false;
+    }
+
+    User user = userOpt.get();
+
+    user.setName(name);
+    user.setEmail(newEmail);
+
+    if (password != null && !password.isBlank()) {
+        user.setPassword(passwordEncoder.encode(password));
+    }
+
+    userRepository.save(user);
+
+    return true;
+    }
 
     public String registerUser(RegisterRequest request) {
         if (!PasswordValidator.isValid(request.getPassword())) {

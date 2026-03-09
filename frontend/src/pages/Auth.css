@@ -68,6 +68,53 @@ input {
   font-size: 15px;
 }
 
+/* Password field with show/hide eye button */
+.password-field {
+  position: relative;
+  display: flex;
+  align-items: center;
+  margin-bottom: 18px;
+}
+
+.password-field input {
+  padding-right: 44px;
+  margin-bottom: 0;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 36px;
+  height: 36px;
+  background: none;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #666;
+  transition: color 0.2s, background 0.2s;
+}
+
+.password-toggle:hover {
+  color: #2e7d32;
+  background: rgba(46, 125, 50, 0.08);
+}
+
+.password-toggle:focus {
+  outline: none;
+}
+
+.password-toggle .icon-eye {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
 input:focus {
   outline: none;
   border-color: #2e7d32;
