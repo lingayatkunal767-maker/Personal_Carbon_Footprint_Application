@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Dashboard from "./pages/Dashboard";
 import LifestyleSurvey from "./pages/LifestyleSurvey";
 import CarbonHistory from "./pages/CarbonHistory";
+import CarbonLogDetails from "./pages/CarbonLogDetails";
 import Profile from "./pages/Profile";
 import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
@@ -24,6 +25,7 @@ function App() {
         <Route path="/survey" element={<LifestyleSurvey />} />
         <Route path="/lifestyle-survey" element={<Navigate to="/survey" replace />} />
         <Route path="/carbon-history" element={<CarbonHistory />} />
+        <Route path="/carbon-details/:id" element={<CarbonLogDetails />} />
         <Route path="/profile" element={<Profile />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />

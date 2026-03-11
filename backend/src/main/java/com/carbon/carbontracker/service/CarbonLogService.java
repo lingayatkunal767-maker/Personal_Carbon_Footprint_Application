@@ -15,12 +15,13 @@ public class CarbonLogService {
     private CarbonLogRepository carbonLogRepository;
 
     public void createOrUpdateLog(
-        User user,
-        double transport,
-        double food,
-        double energy,
-        double total
-) {
+            User user,
+            double transport,
+            double food,
+            double energy,
+            double total,
+            com.carbon.carbontracker.dto.SurveyRequest request
+    ) {
 
     LocalDate today = LocalDate.now();
 
@@ -40,6 +41,16 @@ public class CarbonLogService {
         log.setEnergyEmission(energyBD);
         log.setTotalEmission(totalBD);
 
+        // snapshot lifestyle choices
+        log.setTransportMode(request.getTransportMode());
+        log.setDistancePerDay(request.getDistancePerDay());
+        log.setFuelType(request.getFuelType());
+        log.setDietType(request.getDietType());
+        log.setMealsPerDay(request.getMealsPerDay());
+        log.setEatingOutFrequency(request.getEatingOutFrequency());
+        log.setMonthlyElectricity(request.getMonthlyElectricity());
+        log.setRenewable(request.getRenewable());
+
         carbonLogRepository.save(log);
 
     } else {
@@ -51,6 +62,14 @@ public class CarbonLogService {
                 .foodEmission(foodBD)
                 .energyEmission(energyBD)
                 .totalEmission(totalBD)
+                .transportMode(request.getTransportMode())
+                .distancePerDay(request.getDistancePerDay())
+                .fuelType(request.getFuelType())
+                .dietType(request.getDietType())
+                .mealsPerDay(request.getMealsPerDay())
+                .eatingOutFrequency(request.getEatingOutFrequency())
+                .monthlyElectricity(request.getMonthlyElectricity())
+                .renewable(request.getRenewable())
                 .build();
 
         carbonLogRepository.save(log);
