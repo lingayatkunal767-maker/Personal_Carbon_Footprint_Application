@@ -42,22 +42,19 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
     private final PasswordResetTokenRepository resetTokenRepository;
     private final OtpTokenRepository otpTokenRepository;
-    private final EmailService emailService;
 
     public AuthController(UserRepository userRepository,
                           AuthenticationManager authenticationManager,
                           JwtUtil jwtUtil,
                           PasswordEncoder passwordEncoder,
                           PasswordResetTokenRepository resetTokenRepository,
-                          OtpTokenRepository otpTokenRepository,
-                          EmailService emailService) {
+                          OtpTokenRepository otpTokenRepository) {
         this.userRepository = userRepository;
         this.authenticationManager = authenticationManager;
         this.jwtUtil = jwtUtil;
         this.passwordEncoder = passwordEncoder;
         this.resetTokenRepository = resetTokenRepository;
         this.otpTokenRepository = otpTokenRepository;
-        this.emailService = emailService;
     }
 
     @PostMapping("/register")

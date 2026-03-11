@@ -3,7 +3,6 @@ package com.carbon.carbon.security;
 
 import com.carbon.carbon.entity.User;
 import com.carbon.carbon.repository.UserRepository;
-import com.carbon.carbon.security.JwtUtil;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;

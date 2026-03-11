@@ -92,10 +92,9 @@ CREATE TABLE IF NOT EXISTS surveys (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
-<<<<<<< HEAD
 
-=======
->>>>>>> c70f7575a24c50a3934e8b1514ca6583e5919b3b
+CREATE INDEX IF NOT EXISTS idx_surveys_user_id ON surveys(user_id);
+
 -- //Carbon Logs Table//
 
 CREATE TABLE IF NOT EXISTS carbon_logs (
@@ -113,8 +112,147 @@ CREATE TABLE IF NOT EXISTS carbon_logs (
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
-<<<<<<< HEAD
 );
-=======
+
+CREATE INDEX IF NOT EXISTS idx_carbon_logs_user_id ON carbon_logs(user_id);
+CREATE INDEX IF NOT EXISTS idx_carbon_logs_date ON carbon_logs(date);
+
+-- ============================================================================
+-- PHASE 1: NEW TABLES ADDITION (Do not modify existing tables above)
+-- ============================================================================
+
+-- //Marketplace Table//
+-- Standalone table for marketplace items used in carbon credit trading
+
+CREATE TABLE IF NOT EXISTS marketplace (
+    id BIGSERIAL PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    item_price NUMERIC(10, 2) NOT NULL,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
->>>>>>> c70f7575a24c50a3934e8b1514ca6583e5919b3b
+
+CREATE INDEX IF NOT EXISTS idx_marketplace_item_name ON marketplace(item_name);
+
+COMMENT ON TABLE marketplace IS 'Stores marketplace items for carbon credit trading';
+COMMENT ON COLUMN marketplace.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN marketplace.item_name IS 'Name of the marketplace item';
+COMMENT ON COLUMN marketplace.item_price IS 'Price of the item in carbon credits';
+COMMENT ON COLUMN marketplace.description IS 'Detailed description of the item';
+COMMENT ON COLUMN marketplace.created_at IS 'Timestamp when item was added';
+
+-- //Leaderboards Table//
+-- Stores user rankings and team scores for carbon reduction competitions
+
+CREATE TABLE IF NOT EXISTS leaderboards (
+    id BIGSERIAL PRIMARY KEY,
+    team_name VARCHAR(255) NOT NULL,
+    user_id BIGINT NOT NULL UNIQUE,
+    score NUMERIC(10, 2) DEFAULT 0,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_leaderboard_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(id) 
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_leaderboards_user_id ON leaderboards(user_id);
+CREATE INDEX IF NOT EXISTS idx_leaderboards_score ON leaderboards(score DESC);
+CREATE INDEX IF NOT EXISTS idx_leaderboards_team_name ON leaderboards(team_name);
+
+COMMENT ON TABLE leaderboards IS 'Stores user rankings and team scores for competitions';
+COMMENT ON COLUMN leaderboards.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN leaderboards.team_name IS 'Name of the team user belongs to';
+COMMENT ON COLUMN leaderboards.user_id IS 'Unique foreign key to users table';
+COMMENT ON COLUMN leaderboards.score IS 'Carbon reduction score for ranking';
+COMMENT ON COLUMN leaderboards.updated_at IS 'Timestamp of last score update';
+
+-- //Transactions Table//
+-- Records all marketplace transactions (purchases of carbon credits)
+
+CREATE TABLE IF NOT EXISTS transactions (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    marketplace_item_id BIGINT NOT NULL,
+    amount NUMERIC(10, 2) NOT NULL,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_transaction_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(id) 
+        ON DELETE CASCADE,
+    CONSTRAINT fk_transaction_marketplace 
+        FOREIGN KEY (marketplace_item_id) 
+        REFERENCES marketplace(id) 
+        ON DELETE RESTRICT
+);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_marketplace_item_id ON transactions(marketplace_item_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_created_at ON transactions(created_at);
+
+COMMENT ON TABLE transactions IS 'Stores marketplace transaction history';
+COMMENT ON COLUMN transactions.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN transactions.user_id IS 'Foreign key to users table';
+COMMENT ON COLUMN transactions.marketplace_item_id IS 'Foreign key to marketplace table';
+COMMENT ON COLUMN transactions.amount IS 'Transaction amount';
+COMMENT ON COLUMN transactions.created_at IS 'Timestamp of transaction';
+
+-- //Goals Table//
+-- Stores user carbon reduction goals and progress tracking
+
+CREATE TABLE IF NOT EXISTS goals (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    goal_title VARCHAR(255) NOT NULL,
+    target_emission NUMERIC(10, 2) NOT NULL,
+    current_emission NUMERIC(10, 2) DEFAULT 0,
+    status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'abandoned')),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_goal_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(id) 
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_goals_user_id ON goals(user_id);
+CREATE INDEX IF NOT EXISTS idx_goals_status ON goals(status);
+CREATE INDEX IF NOT EXISTS idx_goals_created_at ON goals(created_at);
+
+COMMENT ON TABLE goals IS 'Stores user carbon reduction goals and tracking';
+COMMENT ON COLUMN goals.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN goals.user_id IS 'Foreign key to users table';
+COMMENT ON COLUMN goals.goal_title IS 'Title of the carbon reduction goal';
+COMMENT ON COLUMN goals.target_emission IS 'Target carbon emission limit in kg CO2';
+COMMENT ON COLUMN goals.current_emission IS 'Current carbon emission progress';
+COMMENT ON COLUMN goals.status IS 'Goal status: active, completed, or abandoned';
+COMMENT ON COLUMN goals.created_at IS 'Timestamp when goal was created';
+
+-- //Badges Table//
+-- Stores achievement badges awarded to users for milestones
+
+CREATE TABLE IF NOT EXISTS badges (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    badge_name VARCHAR(255) NOT NULL,
+    description TEXT,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    
+    CONSTRAINT fk_badge_user 
+        FOREIGN KEY (user_id) 
+        REFERENCES users(id) 
+        ON DELETE CASCADE
+);
+
+CREATE INDEX IF NOT EXISTS idx_badges_user_id ON badges(user_id);
+CREATE INDEX IF NOT EXISTS idx_badges_badge_name ON badges(badge_name);
+CREATE INDEX IF NOT EXISTS idx_badges_awarded_at ON badges(awarded_at);
+
+COMMENT ON TABLE badges IS 'Stores achievement badges earned by users';
+COMMENT ON COLUMN badges.id IS 'Primary key, auto-increment';
+COMMENT ON COLUMN badges.user_id IS 'Foreign key to users table';
+COMMENT ON COLUMN badges.badge_name IS 'Name of the achievement badge';
+COMMENT ON COLUMN badges.description IS 'Description of what the badge represents';
+COMMENT ON COLUMN badges.awarded_at IS 'Timestamp when badge was awarded';
