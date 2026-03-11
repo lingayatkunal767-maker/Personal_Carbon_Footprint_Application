@@ -3,8 +3,12 @@ import React, { useState, useEffect, useRef } from 'react';
 // ═══════════════════════════════════════════════════════════════════
 // CONFIGURATION
 // ═══════════════════════════════════════════════════════════════════
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "421764128567-r2p83571fkfforlcfms7066e9chbh0cn.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com";
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+
+console.log('🔐 Google Auth Configuration:');
+console.log('   Client ID:', GOOGLE_CLIENT_ID ? GOOGLE_CLIENT_ID.substring(0, 30) + '...' : 'NOT SET');
+console.log('   API URL:', API_BASE_URL);
 
 const FACTS = [
   "Global ocean temperatures have risen by 0.13°F per decade since 1901.",
@@ -70,20 +74,47 @@ export default function LoginPage() {
 
   // Load Google Identity Services script
   useEffect(() => {
+    console.log('📦 Loading Google Identity Services...');
+    
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    document.body.appendChild(script);
-
+    
     script.onload = () => {
-      if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
-        window.google?.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse
-        });
+      console.log('✅ Google Identity Services loaded');
+      
+      if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
+        console.error('❌ Google Client ID not configured!');
+        console.error('   Please add VITE_GOOGLE_CLIENT_ID to your .env file');
+        showToast('⚠️ Google Sign-In not configured. Please check setup.');
+        return;
+      }
+      
+      if (window.google?.accounts?.id) {
+        try {
+          window.google.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleCredentialResponse,
+            auto_select: false,
+            cancel_on_tap_outside: true
+          });
+          console.log('✅ Google One Tap initialized');
+        } catch (error) {
+          console.error('❌ Failed to initialize Google One Tap:', error);
+          showToast('⚠️ Google authentication setup error');
+        }
+      } else {
+        console.error('❌ Google Identity Services API not available');
       }
     };
+    
+    script.onerror = () => {
+      console.error('❌ Failed to load Google Identity Services script');
+      showToast('⚠️ Failed to load Google Sign-In. Check your internet connection.');
+    };
+    
+    document.body.appendChild(script);
 
     return () => {
       if (document.body.contains(script)) {
@@ -115,14 +146,30 @@ export default function LoginPage() {
   }, []);
 
   const handleCredentialResponse = async (response) => {
+    console.log('📥 Received Google credential response');
+    
+    if (!response.credential) {
+      console.error('❌ No credential in response');
+      showToast('⚠️ Authentication failed: No credential received');
+      return;
+    }
+    
     try {
       // Decode JWT to get user info
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      console.log('✅ Decoded JWT payload:', {
+        email: payload.email,
+        name: payload.name,
+        sub: payload.sub
+      });
+      
       const firstName = payload.given_name || 'there';
       const userEmail = payload.email;
       const fullName = payload.name || firstName;
       const profilePicture = payload.picture || null;
 
+      console.log('📡 Sending to backend:', `${API_BASE_URL}/auth/google`);
+      
       // Call backend — upserts user (creates if new, logs in if existing)
       const res = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
@@ -134,7 +181,13 @@ export default function LoginPage() {
           profilePicture,
         }),
       });
+      
+      if (!res.ok) {
+        throw new Error(`Backend returned ${res.status}: ${res.statusText}`);
+      }
+      
       const data = await res.json();
+      console.log('✅ Backend response:', { success: data.success, message: data.message });
 
       if (!data.success) {
         showToast(`⚠️ ${data.message}`);
@@ -142,21 +195,26 @@ export default function LoginPage() {
       }
 
       // Set current user session
-      localStorage.setItem('current_user', JSON.stringify({
+      const userData = {
         id: data.userId,
         name: data.name,
         email: data.email,
         profilePicture: data.profilePicture,
-      }));
+      };
+      
+      localStorage.setItem('current_user', JSON.stringify(userData));
       localStorage.setItem('auth_token', 'authenticated');
+      
+      console.log('✅ User session created:', userData);
 
       showToast(`Welcome back, ${firstName}! 🌿`);
       setTimeout(() => {
+        console.log('➡️ Redirecting to /home');
         window.location.href = '/home';
       }, 1200);
     } catch (error) {
-      console.error('Authentication error:', error);
-      showToast('Authentication failed. Please try again.');
+      console.error('❌ Authentication error:', error);
+      showToast(`⚠️ Authentication failed: ${error.message}`);
     }
   };
 

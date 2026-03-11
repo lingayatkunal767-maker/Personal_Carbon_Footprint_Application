@@ -1,103 +1,108 @@
-# 🌿 Personal Footprint - Sustainability Tracker
+# 🌿 Sustainability Tracker
 
-A production-grade React application with Google OAuth authentication for tracking and reducing carbon emissions.
+A full-stack web application for tracking and reducing personal carbon footprint with Google OAuth authentication.
 
-![Personal Footprint Login](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat&logo=react)
-![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=flat&logo=vite)
-![License](https://img.shields.io/badge/License-MIT-green)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green?style=flat&logo=springboot)
+![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat&logo=react)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue?style=flat&logo=postgresql)
 
 ## ✨ Features
 
-- 🔐 **Google OAuth 2.0** authentication with One Tap login
-- 🎨 **Beautiful split-panel design** with animated gradients
-- 📊 **Carbon footprint statistics** and rotating eco-facts
-- 📱 **Fully responsive** (desktop, tablet, mobile)
-- ⚡ **Fast & modern** (Vite + React 18)
-- 🌍 **Sustainability-focused** UI with earth-tone palette
-- 🎭 **Smooth animations** (CSS keyframes, no libraries)
+- 🔐 **Google OAuth 2.0** authentication
+- 📊 **Carbon footprint tracking** (transport, diet, energy)
+- 🎯 **Personal reduction goals** and progress tracking
+- 🏆 **Eco-badges** and leaderboard
+- 📈 **Monthly comparison** and insights
+- 🔔 **Personalized notifications** and eco-tips
+
+## 🏗️ Tech Stack
+
+**Frontend**
+- React 18 + Vite
+- Tailwind CSS
+- React Router
+
+**Backend**
+- Spring Boot 3.2
+- Spring Data JPA
+- PostgreSQL
+
+**Authentication**
+- Google OAuth 2.0
+- JWT tokens
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 16+
+- Java 17+
+- PostgreSQL 15+
+- Maven
 
-- Node.js 16+ and npm
-- Google Cloud Console account
-- Basic knowledge of React
+### Setup
+1. **Database**: Run `.\setup-database.ps1` or see [SETUP.md](SETUP.md)
+2. **Backend**: Run `.\start-backend.bat` or `cd backend && mvn spring-boot:run`
+3. **Frontend**: Run `cd frontend && npm install && npm run dev`
+4. **Configure Google OAuth**: See [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md)
 
-### 1. Install Dependencies
-
-\`\`\`bash
-npm install
-\`\`\`
-
-### 2. Configure Google OAuth
-
-**IMPORTANT:** The app runs on port **5173** (not 3000).
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project and enable Google+ API
-3. Create OAuth 2.0 credentials
-4. Add authorized origins: 
-   - `http://localhost:5173`
-   - `http://127.0.0.1:5173`
-5. Add redirect URIs: 
-   - `http://localhost:5173/auth/callback`
-   - `http://127.0.0.1:5173/auth/callback`
-6. Copy your Client ID
-
-**📖 See [GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md) for detailed setup instructions**
-
-### 3. Set Up Environment Variables
-
-Your `.env` file is already configured with a Google Client ID. If you need to change it:
-
-\`\`\`bash
-# Edit .env file
-VITE_GOOGLE_CLIENT_ID=your_actual_client_id_here
-\`\`\`
-
-### 4. Start Development Server
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-Open [http://localhost:5173](http://localhost:5173) to view the app! 🎉
+**📖 Full setup instructions: [SETUP.md](SETUP.md)**
 
 ## 📁 Project Structure
 
-\`\`\`
-personal-footprint-app/
-├── index.html              # HTML entry point
-├── main.jsx                # React entry point
-├── App.jsx                 # Router configuration
-├── LoginPage.jsx           # Login page component ⭐
-├── HomePage.jsx            # Dashboard page
-├── AuthCallback.jsx        # OAuth redirect handler
-├── package.json            # Dependencies
-├── vite.config.js          # Vite configuration
-├── .env.example            # Environment template
-├── .gitignore              # Git ignore rules
-├── SETUP_INSTRUCTIONS.md   # Detailed setup guide
-└── README.md               # This file
-\`\`\`
+```
+infosys-project/
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   └── services/     # API service layer
+│   └── package.json
+├── backend/               # Spring Boot API
+│   ├── src/main/java/
+│   │   └── com/sustainability/tracker/
+│   │       ├── controller/   # REST endpoints
+│   │       ├── service/      # Business logic
+│   │       ├── entity/       # Database models
+│   │       └── repository/   # Data access
+│   └── pom.xml
+├── database/              # SQL scripts
+│   ├── schema.sql        # Database schema
+│   └── seed-data.sql     # Sample data
+└── docs/                  # Documentation
+```
+
+## 🔧 Configuration
+
+**Frontend** (`frontend/.env`):
+```env
+VITE_GOOGLE_CLIENT_ID=your_client_id_here
+VITE_API_URL=http://localhost:8081/api
+```
+
+**Backend** (`backend/src/main/resources/application.properties`):
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/sustainability_tracker
+spring.datasource.username=tracker_user
+spring.datasource.password=tracker123
+server.port=8081
+```
+
+## 📚 Documentation
+
+- [Complete Setup Guide](SETUP.md)
+- [Google OAuth Setup](docs/GOOGLE_AUTH.md)
+- [Backend API Documentation](backend/README.md)
 
 ## 🎨 Design System
 
-### Color Palette
-- **Forest Green** (`#1a3d2b`) - Primary dark
-- **Moss** (`#2e5e42`) - Medium green
-- **Sage** (`#5a8a6a`) - Accent green
-- **Fern** (`#89bb97`) - Light green highlights
-- **Warm Off-White** (`#faf7f2`) - Background
+**Color Palette**
+- Forest Green (`#1a3d2b`) - Primary
+- Sage (`#5a8a6a`) - Accent
+- Warm Off-White (`#faf7f2`) - Background
 
-### Typography
-- **Headlines**: Playfair Display (serif)
-- **Body/UI**: DM Sans (sans-serif)
-
-### Animations
-- Mesh gradient shift (12s loop)
-- Floating leaves (15-28s per leaf)
+**Typography**
+- Headlines: Playfair Display
+- Body: DM Sans
 - Card entrance animation
 - Rotating fact ticker (5s interval)
 - Loading spinner
