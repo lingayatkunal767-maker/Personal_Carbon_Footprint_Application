@@ -14,7 +14,7 @@ import com.carbon.carbon.repository.OtpTokenRepository;
 import com.carbon.carbon.repository.PasswordResetTokenRepository;
 import com.carbon.carbon.repository.UserRepository;
 import com.carbon.carbon.security.JwtUtil;
-import com.carbon.carbon.service.EmailService;
+// import com.carbon.carbon.service.EmailService;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
