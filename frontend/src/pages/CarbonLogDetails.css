@@ -1,0 +1,176 @@
+.carbon-details-page {
+  max-width: 560px;
+  margin: 0 auto;
+}
+
+.carbon-details-header {
+  margin-bottom: 24px;
+}
+
+.carbon-details-title {
+  margin: 0 0 6px 0;
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--color-text);
+  letter-spacing: -0.03em;
+  padding-bottom: 8px;
+  border-bottom: 3px solid var(--color-primary);
+  display: inline-block;
+}
+
+.carbon-details-subtitle {
+  margin: 8px 0 12px 0;
+  font-size: 15px;
+  color: var(--color-text-muted);
+}
+
+.carbon-details-back {
+  display: inline-block;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--color-primary);
+  text-decoration: none;
+  margin-top: 8px;
+}
+
+.carbon-details-back:hover {
+  text-decoration: underline;
+}
+
+.carbon-details-loading {
+  text-align: center;
+  color: var(--color-text-muted);
+  font-size: 15px;
+  margin: 24px 0;
+}
+
+.carbon-details-error-card {
+  padding: 32px;
+  text-align: center;
+}
+
+.carbon-details-error-title {
+  margin: 0 0 12px 0;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--color-text);
+}
+
+.carbon-details-error-text {
+  margin: 0 0 12px 0;
+  font-size: 15px;
+  color: var(--color-accent-red);
+}
+
+.carbon-details-error-hint {
+  margin: 0 0 20px 0;
+  font-size: 14px;
+  color: var(--color-text-muted);
+}
+
+.carbon-details-error-card .carbon-details-btn-primary {
+  display: inline-block;
+}
+
+.carbon-details-form.card {
+  padding: 24px;
+}
+
+.carbon-details-form-error {
+  margin: 0 0 16px 0;
+  padding: 10px 12px;
+  background: rgba(239, 68, 68, 0.1);
+  color: var(--color-accent-red);
+  border-radius: var(--radius-md);
+  font-size: 14px;
+}
+
+.carbon-details-field {
+  margin-bottom: 20px;
+}
+
+.carbon-details-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.carbon-details-input {
+  width: 100%;
+  max-width: 320px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  font-size: 15px;
+  font-family: var(--font-sans);
+  color: var(--color-text);
+  background: var(--color-surface);
+  box-sizing: border-box;
+}
+
+.carbon-details-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+.carbon-details-input-readonly {
+  background: var(--color-bg);
+  color: var(--color-text-muted);
+  cursor: default;
+}
+
+.carbon-details-hint {
+  display: block;
+  font-size: 12px;
+  color: var(--color-text-muted);
+  margin-top: 4px;
+}
+
+.carbon-details-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid var(--color-border);
+}
+
+.carbon-details-btn {
+  padding: 10px 20px;
+  border-radius: var(--radius-md);
+  font-size: 14px;
+  font-weight: 600;
+  font-family: var(--font-sans);
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-block;
+  border: none;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+
+.carbon-details-btn:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.carbon-details-btn-primary {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.carbon-details-btn-primary:hover:not(:disabled) {
+  filter: brightness(1.05);
+}
+
+.carbon-details-btn-secondary {
+  background: var(--color-surface);
+  color: var(--color-text);
+  border: 1px solid var(--color-border);
+}
+
+.carbon-details-btn-secondary:hover {
+  border-color: var(--color-primary);
+  color: var(--color-primary);
+}

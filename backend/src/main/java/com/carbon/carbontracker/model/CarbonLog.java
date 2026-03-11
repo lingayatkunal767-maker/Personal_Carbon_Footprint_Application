@@ -26,6 +26,21 @@ public class CarbonLog {
     private BigDecimal energyEmission;
     private BigDecimal totalEmission;
 
+    // Snapshot of lifestyle survey choices that produced this log
+    // Transport
+    private String transportMode;      // CAR, BIKE, PUBLIC, WALK, WFH
+    private Double distancePerDay;
+    private String fuelType;           // PETROL, DIESEL, ELECTRIC, HYBRID
+
+    // Food
+    private String dietType;           // VEG, NON_VEG, VEGAN
+    private Integer mealsPerDay;
+    private String eatingOutFrequency; // RARELY, WEEKLY, OFTEN, DAILY
+
+    // Energy
+    private Double monthlyElectricity;
+    private Boolean renewable;
+
     // Many logs → one user
     // Many logs → one user
 @JsonIgnoreProperties({"carbonLogs", "authTokens", "password"})

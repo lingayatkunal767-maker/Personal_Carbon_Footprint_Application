@@ -27,7 +27,7 @@ public class SurveyService {
 
         double total = transport + food + energy;
 
-        carbonLogService.createOrUpdateLog(user, transport, food, energy, total);
+        carbonLogService.createOrUpdateLog(user, transport, food, energy, total, request);
 
         Survey survey = Survey.builder()
                 .transportMode(request.getTransportMode())

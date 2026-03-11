@@ -304,8 +304,8 @@ function LifestyleSurvey() {
               <h2 className="survey-section-title">Home energy</h2>
             </div>
             <div className="survey-fields">
-              <label className="survey-label">
-                Monthly electricity usage (kWh per month)
+            <label className="survey-label">
+                Electricity usage (kWh)
                 <input
                   type="number"
                   name="monthlyElectricityKwh"
