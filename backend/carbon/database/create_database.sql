@@ -74,14 +74,17 @@ COMMENT ON COLUMN emission_records.user_id IS 'Foreign key to users table';
 CREATE TABLE IF NOT EXISTS surveys (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
+
     transport_mode VARCHAR(50) NOT NULL,
-    average_distance DOUBLE PRECISION NOT NULL,
+    distance DOUBLE PRECISION NOT NULL,
     fuel_type VARCHAR(50),
+
     diet_type VARCHAR(50) NOT NULL,
     meals_per_day INT NOT NULL,
-    eating_out_frequency VARCHAR(50),
-    energy_usage DOUBLE PRECISION NOT NULL,
-    renewable_energy BOOLEAN DEFAULT FALSE,
+
+    monthly_kwh DOUBLE PRECISION NOT NULL,
+    renewable BOOLEAN DEFAULT FALSE,
+
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
 
     CONSTRAINT fk_survey_user
@@ -89,7 +92,10 @@ CREATE TABLE IF NOT EXISTS surveys (
         REFERENCES users(id)
         ON DELETE CASCADE
 );
+<<<<<<< HEAD
 
+=======
+>>>>>>> c70f7575a24c50a3934e8b1514ca6583e5919b3b
 -- //Carbon Logs Table//
 
 CREATE TABLE IF NOT EXISTS carbon_logs (
@@ -107,4 +113,8 @@ CREATE TABLE IF NOT EXISTS carbon_logs (
         FOREIGN KEY (user_id)
         REFERENCES users(id)
         ON DELETE CASCADE
+<<<<<<< HEAD
 );
+=======
+);
+>>>>>>> c70f7575a24c50a3934e8b1514ca6583e5919b3b

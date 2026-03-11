@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useEffect, useState } from "react";
 import { apiFetch } from "../utils/api";
+import { LineChart, Line, XAxis, YAxis, Tooltip, ResponsiveContainer } from "recharts";
 
 const CATEGORIES = ["Transport", "Energy", "Food", "Waste", "Other"];
 const CATEGORY_COLORS = {
@@ -28,7 +29,12 @@ export default function Dashboard() {
   const [loading, setLoading] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
   const [editingId, setEditingId] = useState(null);
-
+  const [logs, setLogs] = useState([]);
+  const latestLog = logs.length > 0 ? logs[0] : null;
+  const chartData = logs.map(log => ({
+  date: log.date,
+  emission: log.totalEmission
+}));
   // Rotate eco tip
   useEffect(() => {
     setTipIndex(Math.floor(Math.random() * ECO_TIPS.length));
@@ -71,7 +77,18 @@ export default function Dashboard() {
     load();
     return () => { mounted = false; };
   }, [navigate]);
+  useEffect(() => {
+  async function loadLogs() {
+    try {
+      const data = await apiFetch("/api/carbon/logs");
+      setLogs(data);
+    } catch (err) {
+      console.error(err);
+    }
+  }
 
+  loadLogs();
+}, []);
   // Add emission handler
   const handleAddEmission = async (e) => {
     e.preventDefault();
@@ -230,7 +247,23 @@ export default function Dashboard() {
             <p className="text-green-800 mt-2">Loading your emissions...</p>
           </div>
         )}
+        {latestLog && (
+  <div className="bg-white/90 rounded-2xl shadow-md p-6 mb-6">
+    <h2 className="text-lg font-bold text-green-900 mb-2">
+      Today's Carbon Footprint
+    </h2>
 
+    <p className="text-3xl font-bold text-green-700">
+      {latestLog.totalEmission} kg CO₂
+    </p>
+
+    <div className="flex gap-6 mt-3 text-sm text-gray-600">
+      <span>🚗 Transport: {latestLog.transportEmission}</span>
+      <span>🥗 Food: {latestLog.foodEmission}</span>
+      <span>⚡ Energy: {latestLog.energyEmission}</span>
+    </div>
+  </div>
+)}
         {/* Summary Cards */}
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-green-500">
@@ -281,7 +314,20 @@ export default function Dashboard() {
             </div>
           </div>
         </div>
+        <div className="bg-white/90 rounded-2xl shadow-md p-6 mb-8">
+  <h2 className="text-lg font-bold text-green-900 mb-4">
+    Carbon Emission History
+  </h2>
 
+  <ResponsiveContainer width="100%" height={300}>
+    <LineChart data={chartData}>
+      <XAxis dataKey="date" />
+      <YAxis />
+      <Tooltip />
+      <Line type="monotone" dataKey="emission" stroke="#16a34a" strokeWidth={3} />
+    </LineChart>
+  </ResponsiveContainer>
+</div>
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
           {/* Add Emission Form */}
           <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-6">

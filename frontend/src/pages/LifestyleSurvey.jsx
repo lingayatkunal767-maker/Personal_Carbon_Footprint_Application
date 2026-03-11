@@ -104,61 +104,26 @@ export default function LifestyleSurvey() {
     setLoading(true);
 
     try {
-      // Calculate carbon emissions from lifestyle data
-      const transportEmission =
-        (parseInt(formData.averageDailyDistance) * 30 * 0.21) / 1000; // kg CO2 per month
-      const dietEmission =
-        {
-          Vegan: 1.5,
-          Vegetarian: 2.5,
-          Pescatarian: 3.0,
-          "Mixed (Occasional Meat)": 3.5,
-          "Regular Meat Eater": 4.5,
-          "High Meat Consumption": 5.5,
-        }[formData.dietType] * parseInt(formData.mealsPerDay) * 30; // kg CO2 per month
 
-      const energyEmission =
-        (parseInt(formData.monthlyElectricity) * 0.45) /
-        (formData.renewableEnergy ? 1.5 : 1); // kg CO2 per month (reduced if renewable)
+  await apiFetch("/api/survey", {
+    method: "POST",
+    body: JSON.stringify({
+      transportMode: formData.primaryMode,
+      distance: parseInt(formData.averageDailyDistance),
+      fuelType: "Petrol",
+      dietType: formData.dietType,
+      mealsPerDay: parseInt(formData.mealsPerDay),
+      monthlyKwh: parseInt(formData.monthlyElectricity),
+      renewable: formData.renewableEnergy
+    })
+  });
 
-      // Create emissions for each category
-      const emissions = [
-        {
-          category: "Transport",
-          activityType: formData.primaryMode,
-          quantity: parseInt(formData.averageDailyDistance),
-          carbonOutput: parseInt(transportEmission),
-        },
-        {
-          category: "Food",
-          activityType: formData.dietType,
-          quantity: parseInt(formData.mealsPerDay),
-          carbonOutput: parseInt(dietEmission),
-        },
-        {
-          category: "Energy",
-          activityType: formData.renewableEnergy
-            ? "Renewable Energy"
-            : "Grid Energy",
-          quantity: parseInt(formData.monthlyElectricity),
-          carbonOutput: parseInt(energyEmission),
-        },
-      ];
+  navigate("/dashboard");
 
-      // Save each emission
-      for (const emission of emissions) {
-        await apiFetch("/api/emissions", {
-          method: "POST",
-          body: JSON.stringify(emission),
-        });
-      }
-
-      // Redirect to dashboard
-      navigate("/dashboard");
-    } catch (err) {
-      if (err.status === 401) navigate("/login");
-      else setError(err.message || "Failed to calculate footprint.");
-    } finally {
+} catch (err) {
+  if (err.status === 401) navigate("/login");
+  else setError(err.message || "Failed to calculate footprint.");
+} finally {
       setLoading(false);
     }
   };

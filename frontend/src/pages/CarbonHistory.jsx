@@ -39,6 +39,8 @@ export default function CarbonHistory() {
       }
     };
     load();
+
+    
     return () => {
       mounted = false;
     };

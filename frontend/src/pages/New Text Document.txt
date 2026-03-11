@@ -1,0 +1,2295 @@
+import { useState, useEffect } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+
+export default function CarbonHistory() {
+  const navigate = useNavigate();
+
+  const [emissions, setEmissions] = useState([]);
+  const [filteredEmissions, setFilteredEmissions] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("All Categories");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
+  const ITEMS_PER_PAGE = 5;
+
+  // Fetch emissions on mount
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        navigate("/login");
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await apiFetch("/api/emissions");
+        if (mounted) {
+          setEmissions(data || []);
+        }
+      } catch (err) {
+        if (err.status === 401) navigate("/login");
+        else setError(err.message || "Could not load emissions.");
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+
+    
+    return () => {
+      mounted = false;
+    };
+  }, [navigate]);
+
+  // Filter emissions based on category and date range
+  useEffect(() => {
+    let filtered = emissions || [];
+
+    // Filter by category
+    if (selectedCategory !== "All Categories") {
+      filtered = filtered.filter((e) => e.category === selectedCategory);
+    }
+
+    // Filter by date range
+    if (startDate) {
+      const start = new Date(startDate);
+      filtered = filtered.filter((e) => {
+        const eDate = new Date(e.createdAt || e.date);
+        return eDate >= start;
+      });
+    }
+
+    if (endDate) {
+      const end = new Date(endDate);
+      end.setHours(23, 59, 59, 999);
+      filtered = filtered.filter((e) => {
+        const eDate = new Date(e.createdAt || e.date);
+        return eDate <= end;
+      });
+    }
+
+    setFilteredEmissions(filtered);
+    setCurrentPage(1); // Reset to first page when filtering
+  }, [emissions, selectedCategory, startDate, endDate]);
+
+  // Calculate pagination
+  const totalPages = Math.ceil(filteredEmissions.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const displayedEmissions = filteredEmissions.slice(
+    startIndex,
+    startIndex + ITEMS_PER_PAGE
+  );
+
+  // Calculate summary stats
+  const totalEmission = emissions.reduce(
+    (sum, e) => sum + (e.carbonOutput || 0),
+    0
+  );
+  const monthsOfData =
+    emissions.length > 0 ? Math.ceil(emissions.length / 30) : 1;
+  const averageMonthly = totalEmission / monthsOfData;
+
+  const categoryTotals = emissions.reduce((acc, e) => {
+    const cat = e.category || "Other";
+    acc[cat] = (acc[cat] || 0) + (e.carbonOutput || 0);
+    return acc;
+  }, {});
+  const bestCategory = Object.keys(categoryTotals).length
+    ? Object.entries(categoryTotals).reduce((a, b) =>
+        a[1] < b[1] ? a : b
+      )[0]
+    : "N/A";
+
+  // Export to CSV
+  const handleExportCSV = () => {
+    const headers = ["Date", "Category", "Activity Type", "Quantity", "CO2 (kg)"];
+    const rows = filteredEmissions.map((e) => [
+      new Date(e.createdAt || e.date).toLocaleDateString(),
+      e.category || "-",
+      e.activityType || "-",
+      e.quantity || "-",
+      e.carbonOutput || "-",
+    ]);
+
+    const csvContent =
+      [headers, ...rows].map((row) => row.join(",")).join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "carbon-history.csv";
+    a.click();
+  };
+
+  // Delete emission
+  const handleDeleteEmission = async (id) => {
+    if (!confirm("Are you sure you want to delete this record?")) return;
+    try {
+      await apiFetch(`/api/emissions/${id}`, {
+        method: "DELETE",
+      });
+      setEmissions((prev) => prev.filter((e) => e.id !== id));
+    } catch (err) {
+      if (err.status === 401) navigate("/login");
+      else setError(err.message || "Failed to delete record.");
+    }
+  };
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem("token");
+    navigate("/login");
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578] flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-12 h-12 border-4 border-white border-t-green-700 rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-white font-semibold">Loading your carbon history...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578]">
+      {/* Navbar */}
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link to="/dashboard" className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-green-800">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <div className="flex items-center gap-6">
+            <div className="flex gap-4">
+              <Link
+                to="/dashboard"
+                className="text-sm text-green-800 hover:text-green-900 font-semibold transition"
+              >
+                Dashboard
+              </Link>
+              <span className="text-sm text-green-800 font-semibold border-b-2 border-green-600 pb-0.5">
+                Carbon History
+              </span>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="ml-2 bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-lg transition font-medium"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Page Header */}
+        <div className="flex justify-between items-start mb-8">
+          <div>
+            <h1 className="text-3xl font-bold text-green-900">Carbon History</h1>
+            <p className="text-green-800/70 mt-1">
+              Analyze your environmental progress and historical log data.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <button
+              onClick={handleExportCSV}
+              className="flex items-center gap-2 bg-white/90 hover:bg-white text-green-700 font-semibold px-4 py-3 rounded-lg shadow-md transition"
+            >
+              <span>📥</span> Export CSV
+            </button>
+            <Link
+              to="/lifestyle-survey"
+              className="flex items-center gap-2 bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-3 rounded-lg shadow-md transition"
+            >
+              <span>📝</span> Update Profile
+            </Link>
+          </div>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <p className="text-red-700 font-medium text-sm">{error}</p>
+          </div>
+        )}
+
+        {/* Date Range Picker */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
+          <div className="flex items-center gap-4">
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Start Date
+              </label>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+              />
+            </div>
+            <div className="flex-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                End Date
+              </label>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                className="w-full px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+              />
+            </div>
+            <button
+              onClick={() => {
+                setStartDate("");
+                setEndDate("");
+              }}
+              className="self-end bg-gray-200 hover:bg-gray-300 text-gray-700 font-semibold px-6 py-2 rounded-lg transition"
+            >
+              Clear
+            </button>
+          </div>
+        </div>
+
+        {/* Category Filter Buttons */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md p-6 mb-6">
+          <div className="flex items-center gap-3 flex-wrap">
+            {["All Categories", "Transport", "Food", "Energy"].map(
+              (category) => (
+                <button
+                  key={category}
+                  onClick={() => setSelectedCategory(category)}
+                  className={`px-5 py-2 rounded-lg font-semibold transition ${
+                    selectedCategory === category
+                      ? "bg-green-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  }`}
+                >
+                  {category === "All Categories" ? "📊" : ""}
+                  {category === "Transport" ? "🚗" : ""}
+                  {category === "Food" ? "🥗" : ""}
+                  {category === "Energy" ? "⚡" : ""} {category}
+                </button>
+              )
+            )}
+          </div>
+        </div>
+
+        {/* Detailed Logs Table */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md overflow-hidden mb-6">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gradient-to-r from-green-50 to-blue-50 border-b-2 border-gray-200">
+                <tr>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Date
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Category
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Activity Type
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Quantity
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    CO₂ (kg)
+                  </th>
+                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {displayedEmissions.length > 0 ? (
+                  displayedEmissions.map((emission, idx) => (
+                    <tr
+                      key={emission.id}
+                      className={`border-b border-gray-100 transition hover:bg-green-50 ${
+                        idx % 2 === 0 ? "bg-white" : "bg-gray-50/50"
+                      }`}
+                    >
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {new Date(
+                          emission.createdAt || emission.date
+                        ).toLocaleDateString()}
+                      </td>
+                      <td className="px-6 py-4">
+                        <span
+                          className={`inline-block px-3 py-1 rounded-full text-xs font-semibold ${
+                            emission.category === "Transport"
+                              ? "bg-blue-100 text-blue-700"
+                              : emission.category === "Food"
+                              ? "bg-orange-100 text-orange-700"
+                              : emission.category === "Energy"
+                              ? "bg-yellow-100 text-yellow-700"
+                              : "bg-gray-100 text-gray-700"
+                          }`}
+                        >
+                          {emission.category || "Other"}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {emission.activityType || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-gray-700">
+                        {emission.quantity || "-"}
+                      </td>
+                      <td className="px-6 py-4 text-sm font-semibold text-gray-900">
+                        {emission.carbonOutput || "-"}
+                      </td>
+                      <td className="px-6 py-4">
+                        <button
+                          onClick={() => handleDeleteEmission(emission.id)}
+                          className="text-red-600 hover:text-red-800 hover:bg-red-50 px-3 py-1 rounded transition text-sm font-medium"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))
+                ) : (
+                  <tr>
+                    <td colSpan="6" className="px-6 py-8 text-center">
+                      <p className="text-gray-500 font-medium">
+                        No emissions recorded for the selected filters.
+                      </p>
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="px-6 py-4 border-t border-gray-200 flex items-center justify-between bg-gray-50/50">
+              <p className="text-sm text-gray-600">
+                Showing {startIndex + 1} of{" "}
+                {Math.min(startIndex + ITEMS_PER_PAGE, filteredEmissions.length)}{" "}
+                entries
+              </p>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                  disabled={currentPage === 1}
+                  className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  ←
+                </button>
+                {Array.from({ length: Math.min(5, totalPages) }).map(
+                  (_, idx) => {
+                    const pageNum =
+                      totalPages <= 5
+                        ? idx + 1
+                        : Math.max(1, currentPage - 2) + idx;
+                    return pageNum <= totalPages ? (
+                      <button
+                        key={pageNum}
+                        onClick={() => setCurrentPage(pageNum)}
+                        className={`px-3 py-1 rounded font-medium transition ${
+                          currentPage === pageNum
+                            ? "bg-green-600 text-white"
+                            : "border border-gray-300 text-gray-700 hover:bg-gray-100"
+                        }`}
+                      >
+                        {pageNum}
+                      </button>
+                    ) : null;
+                  }
+                )}
+                <button
+                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                  disabled={currentPage === totalPages}
+                  className="px-3 py-1 rounded border border-gray-300 text-gray-700 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                >
+                  →
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
+
+        {/* Summary Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md p-6">
+            <p className="text-gray-600 text-sm font-semibold mb-2">
+              AVERAGE MONTHLY
+            </p>
+            <p className="text-3xl font-bold text-green-700">
+              {averageMonthly.toFixed(0)} kg CO₂e
+            </p>
+          </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md p-6">
+            <p className="text-gray-600 text-sm font-semibold mb-2">
+              BEST CATEGORY
+            </p>
+            <p className="text-3xl font-bold text-green-700">{bestCategory}</p>
+          </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-md p-6">
+            <p className="text-gray-600 text-sm font-semibold mb-2">
+              TOTAL AUDITED
+            </p>
+            <p className="text-3xl font-bold text-green-700">
+              {totalEmission.toFixed(0)} kg CO₂e
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <footer className="text-center py-6 mt-12 text-white/80 text-sm">
+        © 2024 CarbonCalc · Environmentally Conscious Tracking
+      </footer>
+    </div>
+  );
+}
+
+CarbonHistory.
+
+import { Link, useNavigate } from "react-router-dom";
+import { useEffect, useState } from "react";
+import { apiFetch } from "../utils/api";
+
+const CATEGORIES = ["Transport", "Energy", "Food", "Waste", "Other"];
+const CATEGORY_COLORS = {
+  Transport: { bg: "bg-blue-100", text: "text-blue-700", bar: "bg-blue-500" },
+  Energy: { bg: "bg-yellow-100", text: "text-yellow-700", bar: "bg-yellow-500" },
+  Food: { bg: "bg-orange-100", text: "text-orange-700", bar: "bg-orange-500" },
+  Waste: { bg: "bg-red-100", text: "text-red-700", bar: "bg-red-500" },
+  Other: { bg: "bg-gray-100", text: "text-gray-700", bar: "bg-gray-500" },
+};
+
+const ECO_TIPS = [
+  "🚲 Cycling 10 km instead of driving saves ~2.6 kg CO₂",
+  "💡 Switching to LED bulbs can cut lighting energy by 75%",
+  "🥦 A plant-based meal produces ~50% less CO₂ than a meat-based one",
+  "♻️ Recycling 1 kg of plastic saves ~1.5 kg CO₂",
+  "🌳 A single tree absorbs ~22 kg of CO₂ per year",
+  "🔌 Unplugging idle devices can save up to 10% on electricity",
+];
+
+export default function Dashboard() {
+  const navigate = useNavigate();
+  const [emissions, setEmissions] = useState([]);
+  const [form, setForm] = useState({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+  const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [tipIndex, setTipIndex] = useState(0);
+  const [editingId, setEditingId] = useState(null);
+
+  // Rotate eco tip
+  useEffect(() => {
+    setTipIndex(Math.floor(Math.random() * ECO_TIPS.length));
+    const interval = setInterval(() => {
+      setTipIndex(prev => (prev + 1) % ECO_TIPS.length);
+    }, 8000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Handle OAuth redirect token from URL
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const urlToken = params.get('token');
+    if (urlToken) {
+      localStorage.setItem('token', urlToken);
+      window.history.replaceState({}, document.title, '/dashboard');
+    }
+  }, []);
+
+  // Fetch emissions on mount
+  useEffect(() => {
+    let mounted = true;
+    const load = async () => {
+      const token = localStorage.getItem('token');
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      setLoading(true);
+      try {
+        const data = await apiFetch('/api/emissions');
+        if (mounted) setEmissions(data || []);
+      } catch (err) {
+        if (err.status === 401) navigate('/login');
+        else setError(err.message || 'Could not load emissions.');
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+    return () => { mounted = false; };
+  }, [navigate]);
+
+  // Add emission handler
+  const handleAddEmission = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const newEmission = await apiFetch('/api/emissions', {
+        method: 'POST',
+        body: JSON.stringify({
+          category: form.category,
+          activityType: form.activityType,
+          quantity: parseFloat(form.quantity),
+          carbonOutput: parseFloat(form.carbonOutput)
+        })
+      });
+      setEmissions(prev => [...prev, newEmission]);
+      setForm({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+    } catch (err) {
+      if (err.status === 401) navigate('/login');
+      else setError(err.message || 'Failed to add emission.');
+    }
+  };
+
+  // Start editing an emission
+  const startEditing = (emission) => {
+    setEditingId(emission.id);
+    setForm({
+      category: emission.category || '',
+      activityType: emission.activityType || '',
+      quantity: emission.quantity?.toString() || '',
+      carbonOutput: emission.carbonOutput?.toString() || '',
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Cancel editing
+  const cancelEditing = () => {
+    setEditingId(null);
+    setForm({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+  };
+
+  // Update emission handler
+  const handleUpdateEmission = async (e) => {
+    e.preventDefault();
+    setError('');
+    try {
+      const updated = await apiFetch(`/api/emissions/${editingId}`, {
+        method: 'PUT',
+        body: JSON.stringify({
+          category: form.category,
+          activityType: form.activityType,
+          quantity: parseFloat(form.quantity),
+          carbonOutput: parseFloat(form.carbonOutput)
+        })
+      });
+      setEmissions(prev => prev.map(em => em.id === editingId ? updated : em));
+      setEditingId(null);
+      setForm({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+    } catch (err) {
+      if (err.status === 401) navigate('/login');
+      else setError(err.message || 'Failed to update emission.');
+    }
+  };
+
+  // Delete emission handler
+  const handleDeleteEmission = async (id, index) => {
+    try {
+      await apiFetch(`/api/emissions/${id}`, { method: 'DELETE' });
+      setEmissions(prev => prev.filter((_, i) => i !== index));
+    } catch (err) {
+      if (err.status === 401) navigate('/login');
+      else setError(err.message || 'Failed to delete emission.');
+    }
+  };
+
+  // Logout
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/login');
+  };
+
+  // Calculate summary
+  const totalEmission = emissions.reduce((sum, e) => sum + (e.carbonOutput || 0), 0);
+  const thisMonth = totalEmission;
+  const goalProgress = totalEmission > 0 ? Math.min(100, Math.round((totalEmission / 200) * 100)) : 0;
+  const recordCount = emissions.length;
+
+  // Category breakdown
+  const categoryTotals = emissions.reduce((acc, e) => {
+    const cat = e.category || "Other";
+    acc[cat] = (acc[cat] || 0) + (e.carbonOutput || 0);
+    return acc;
+  }, {});
+  const maxCategoryTotal = Math.max(...Object.values(categoryTotals), 1);
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578]">
+      {/* Navbar */}
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-green-800">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <div className="flex items-center gap-6">
+            <div className="flex gap-6">
+              <span className="text-sm text-green-800 font-semibold border-b-2 border-green-600 pb-0.5">Dashboard</span>
+              <Link to="/lifestyle-survey" className="text-sm text-green-800 hover:text-green-900 font-semibold transition">
+                Lifestyle Survey
+              </Link>
+              <Link to="/carbon-history" className="text-sm text-green-800 hover:text-green-900 font-semibold transition">
+                Carbon History
+              </Link>
+            </div>
+            <button
+              onClick={handleLogout}
+              className="ml-2 bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-lg transition font-medium"
+            >
+              Logout
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-7xl mx-auto px-6 py-8">
+        {/* Welcome + Eco Tip */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-green-900">Welcome back 👋</h1>
+          <p className="text-green-800/70 mt-1">Track, manage, and reduce your carbon footprint.</p>
+          <div className="mt-4 flex items-center justify-between gap-4">
+            <div className="bg-white/60 backdrop-blur-sm rounded-xl px-5 py-3 inline-flex items-center gap-3 shadow-sm">
+              <span className="text-lg">💡</span>
+              <span className="text-sm text-green-900 font-medium">{ECO_TIPS[tipIndex]}</span>
+            </div>
+            {/* Quick Actions */}
+            <div className="flex gap-3">
+              <Link
+                to="/lifestyle-survey"
+                className="bg-white/80 hover:bg-white text-green-700 font-semibold px-4 py-2 rounded-lg shadow-sm transition flex items-center gap-2"
+              >
+                + Add Log
+              </Link>
+              <Link
+                to="/carbon-history"
+                className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition"
+              >
+                + New Goal
+              </Link>
+            </div>
+          </div>
+        </div>
+
+        {/* Loading indicator */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="inline-block w-8 h-8 border-4 border-green-300 border-t-green-700 rounded-full animate-spin" />
+            <p className="text-green-800 mt-2">Loading your emissions...</p>
+          </div>
+        )}
+
+        {/* Summary Cards */}
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-green-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Emissions</p>
+                <p className="text-2xl font-bold text-gray-800 mt-1">{totalEmission.toFixed(1)} <span className="text-sm font-normal text-gray-500">kg CO₂</span></p>
+              </div>
+              <div className="w-11 h-11 bg-green-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-blue-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">This Month</p>
+                <p className="text-2xl font-bold text-blue-700 mt-1">{thisMonth.toFixed(1)} <span className="text-sm font-normal text-gray-500">kg CO₂</span></p>
+              </div>
+              <div className="w-11 h-11 bg-blue-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-purple-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Records</p>
+                <p className="text-2xl font-bold text-purple-700 mt-1">{recordCount} <span className="text-sm font-normal text-gray-500">entries</span></p>
+              </div>
+              <div className="w-11 h-11 bg-purple-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/></svg>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-amber-500">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Goal Progress</p>
+                <p className="text-2xl font-bold text-amber-700 mt-1">{goalProgress}%</p>
+              </div>
+              <div className="w-11 h-11 bg-amber-100 rounded-xl flex items-center justify-center">
+                <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+              </div>
+            </div>
+            <div className="mt-3 w-full bg-gray-200 rounded-full h-2">
+              <div className="bg-amber-500 h-2 rounded-full transition-all duration-500" style={{ width: `${goalProgress}%` }} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          {/* Add Emission Form */}
+          <div className="lg:col-span-2 bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-6">
+            <h2 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
+              {editingId ? 'Update Emission' : 'Add New Emission'}
+            </h2>
+            {error && <p className="text-red-500 text-sm mb-3 bg-red-50 p-3 rounded-lg">{error}</p>}
+            <form onSubmit={editingId ? handleUpdateEmission : handleAddEmission} className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Category</label>
+                  <select
+                    value={form.category}
+                    onChange={e => setForm(f => ({ ...f, category: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm bg-white"
+                    required
+                  >
+                    <option value="" disabled>Select category</option>
+                    {CATEGORIES.map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Activity Type</label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Car commute, Heating..."
+                    value={form.activityType}
+                    onChange={e => setForm(f => ({ ...f, activityType: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Quantity</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 50"
+                    value={form.quantity}
+                    onChange={e => setForm(f => ({ ...f, quantity: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                    required
+                    min="0"
+                    step="any"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Carbon Output (kg CO₂)</label>
+                  <input
+                    type="number"
+                    placeholder="e.g. 12.5"
+                    value={form.carbonOutput}
+                    onChange={e => setForm(f => ({ ...f, carbonOutput: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+                    required
+                    min="0"
+                    step="any"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="submit"
+                  className={`sm:w-auto text-white px-8 py-2.5 rounded-xl font-semibold transition shadow-md ${
+                    editingId
+                      ? 'bg-blue-600 hover:bg-blue-700'
+                      : 'bg-green-800 hover:bg-green-900'
+                  }`}
+                >
+                  {editingId ? 'Update Emission' : '+ Add Emission'}
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    onClick={cancelEditing}
+                    className="sm:w-auto bg-gray-200 hover:bg-gray-300 text-gray-700 px-6 py-2.5 rounded-xl font-semibold transition"
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* Category Breakdown */}
+          <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-6">
+            <h2 className="text-lg font-bold text-green-900 mb-4 flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"/><path strokeLinecap="round" strokeLinejoin="round" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"/></svg>
+              By Category
+            </h2>
+            {Object.keys(categoryTotals).length === 0 ? (
+              <p className="text-gray-400 text-sm text-center py-8">No data yet. Add emissions to see breakdown.</p>
+            ) : (
+              <div className="space-y-3">
+                {Object.entries(categoryTotals)
+                  .sort((a, b) => b[1] - a[1])
+                  .map(([cat, total]) => {
+                    const colors = CATEGORY_COLORS[cat] || CATEGORY_COLORS.Other;
+                    const pct = Math.round((total / maxCategoryTotal) * 100);
+                    return (
+                      <div key={cat}>
+                        <div className="flex items-center justify-between mb-1">
+                          <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>{cat}</span>
+                          <span className="text-xs font-medium text-gray-600">{total.toFixed(1)} kg</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2">
+                          <div className={`${colors.bar} h-2 rounded-full transition-all duration-500`} style={{ width: `${pct}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+              </div>
+            )}
+          </div>
+        </div>
+
+        {/* Emission Records Table */}
+        <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+              Emission Records
+            </h2>
+            <span className="text-xs text-gray-500 bg-gray-100 px-3 py-1 rounded-full font-medium">{recordCount} record{recordCount !== 1 ? 's' : ''}</span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="min-w-full">
+              <thead>
+                <tr className="bg-green-50/80">
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-green-800 uppercase tracking-wide rounded-tl-lg">#</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-green-800 uppercase tracking-wide">Category</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-green-800 uppercase tracking-wide">Activity</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-green-800 uppercase tracking-wide">Quantity</th>
+                  <th className="py-3 px-4 text-left text-xs font-semibold text-green-800 uppercase tracking-wide">CO₂ (kg)</th>
+                  <th className="py-3 px-4 text-right text-xs font-semibold text-green-800 uppercase tracking-wide rounded-tr-lg">Action</th>
+                </tr>
+              </thead>
+              <tbody>
+                {emissions.length === 0 && !loading ? (
+                  <tr>
+                    <td colSpan="6" className="py-10 text-center">
+                      <div className="text-gray-400">
+                        <svg className="w-12 h-12 mx-auto mb-3 text-gray-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m0 12.75h7.5m-7.5 3H12M10.5 2.25H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z"/></svg>
+                        <p className="text-sm">No emission records yet.</p>
+                        <p className="text-xs mt-1">Add your first emission above to get started!</p>
+                      </div>
+                    </td>
+                  </tr>
+                ) : (
+                  emissions.map((e, i) => {
+                    const colors = CATEGORY_COLORS[e.category] || CATEGORY_COLORS.Other;
+                    return (
+                      <tr key={e.id || i} className="border-t border-gray-100 hover:bg-green-50/40 transition">
+                        <td className="py-3 px-4 text-sm text-gray-400">{i + 1}</td>
+                        <td className="py-3 px-4">
+                          <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${colors.bg} ${colors.text}`}>{e.category}</span>
+                        </td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{e.activityType}</td>
+                        <td className="py-3 px-4 text-sm text-gray-700">{e.quantity}</td>
+                        <td className="py-3 px-4 text-sm font-semibold text-gray-800">{e.carbonOutput}</td>
+                        <td className="py-3 px-4 text-right">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => startEditing(e)}
+                              className="text-blue-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition"
+                              title="Edit"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                            </button>
+                            <button
+                              onClick={() => handleDeleteEmission(e.id, i)}
+                              className="text-red-400 hover:text-red-600 hover:bg-red-50 p-1.5 rounded-lg transition"
+                              title="Delete"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/></svg>
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Dashboard
+
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
+
+function ForgotPassword() {
+  const [email, setEmail] = useState("");
+  const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const validate = () => {
+    if (!email) return "Email is required";
+    if (!/\S+@\S+\.\S+/.test(email)) return "Invalid email format";
+    return "";
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationError = validate();
+    setError(validationError);
+    setSuccess("");
+    if (validationError) return;
+
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/auth/forgot-password", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setSuccess(data.message || "Password reset link sent to your email.");
+      setEmail("");
+    } catch (err) {
+      setError(err.message || "Something went wrong. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden max-w-md w-full px-8 py-8">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium mb-4 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Home
+        </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-green-800 mb-1">Forgot Password?</h1>
+          <p className="text-gray-500 text-sm">
+            Enter your registered email to receive a reset link.
+          </p>
+        </div>
+
+        {error && (
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{error}</p>
+        )}
+        {success && (
+          <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg">{success}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            />
+          </div>
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? "Sending..." : "Send Reset Link"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm mt-5 text-gray-500">
+          Remember your password?{" "}
+          <Link to="/login" className="text-green-600 font-semibold hover:underline">
+            Back to Login
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default ForgotPassword;
+
+ForgotPassword.
+
+import { Link } from "react-router-dom";
+
+export default function Home() {
+  return (
+    <div
+      className="h-screen relative overflow-hidden flex flex-col"
+      style={{
+        background:
+          "linear-gradient(160deg, #d4edda 0%, #b8e6c8 30%, #8fd4a4 60%, #5cb578 100%)",
+      }}
+    >
+      {/* Background decorative illustration — realistic leaves */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        {/* Large leaf top-right */}
+        <svg className="absolute right-10 top-12 w-[360px] h-[360px] opacity-[0.10]" viewBox="0 0 120 120" fill="none">
+          <path d="M60 10 C40 15, 15 35, 12 65 C10 85, 25 105, 55 108 C65 109, 75 100, 85 85 C100 60, 95 30, 60 10Z" fill="#22a34a"/>
+          <path d="M55 108 L48 118" stroke="#1a6e30" strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M55 108 C50 85, 48 60, 60 20" stroke="#1a6e30" strokeWidth="1.8" fill="none"/>
+          <path d="M52 90 C42 85, 30 88, 20 82" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M50 75 C40 68, 28 70, 18 62" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M48 58 C38 52, 28 52, 22 45" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M52 42 C45 38, 38 38, 32 32" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M55 80 C65 75, 78 78, 88 72" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M52 65 C62 58, 75 58, 85 50" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M54 48 C62 42, 72 40, 82 34" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M58 32 C65 28, 72 26, 78 22" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+        </svg>
+        {/* Medium leaf mid-right */}
+        <svg className="absolute right-52 top-[55%] w-[220px] h-[220px] opacity-[0.08] rotate-[35deg]" viewBox="0 0 120 120" fill="none">
+          <path d="M60 10 C40 15, 15 35, 12 65 C10 85, 25 105, 55 108 C65 109, 75 100, 85 85 C100 60, 95 30, 60 10Z" fill="#22a34a"/>
+          <path d="M55 108 L48 118" stroke="#1a6e30" strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M55 108 C50 85, 48 60, 60 20" stroke="#1a6e30" strokeWidth="1.8" fill="none"/>
+          <path d="M52 90 C42 85, 30 88, 20 82" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M50 75 C40 68, 28 70, 18 62" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M48 58 C38 52, 28 52, 22 45" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M55 80 C65 75, 78 78, 88 72" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M52 65 C62 58, 75 58, 85 50" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M54 48 C62 42, 72 40, 82 34" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+        </svg>
+        {/* Small leaf bottom-right */}
+        <svg className="absolute right-4 bottom-16 w-[160px] h-[160px] opacity-[0.09] -rotate-[25deg]" viewBox="0 0 120 120" fill="none">
+          <path d="M60 10 C40 15, 15 35, 12 65 C10 85, 25 105, 55 108 C65 109, 75 100, 85 85 C100 60, 95 30, 60 10Z" fill="#22a34a"/>
+          <path d="M55 108 L48 118" stroke="#1a6e30" strokeWidth="2.5" strokeLinecap="round"/>
+          <path d="M55 108 C50 85, 48 60, 60 20" stroke="#1a6e30" strokeWidth="1.8" fill="none"/>
+          <path d="M50 75 C40 68, 28 70, 18 62" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M55 80 C65 75, 78 78, 88 72" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+          <path d="M52 65 C62 58, 75 58, 85 50" stroke="#1a6e30" strokeWidth="1" fill="none"/>
+        </svg>
+        <div className="absolute -top-32 -left-32 w-96 h-96 bg-white/10 rounded-full blur-3xl" />
+        <div className="absolute -bottom-40 -right-40 w-[30rem] h-[30rem] bg-white/5 rounded-full blur-3xl" />
+      </div>
+
+      {/* ── Navbar ── */}
+      <nav className="relative z-20 flex items-center justify-between px-8 md:px-16 py-5 shrink-0">
+        <Link to="/" className="flex items-center gap-2">
+          <span className="text-3xl font-bold text-green-900 tracking-tight">CarbonCalc</span>
+          <span className="text-2xl">🌱</span>
+        </Link>
+        <div className="flex items-center gap-5">
+          <Link
+            to="/login"
+            className="text-lg text-green-900 font-medium hover:text-green-700 transition"
+          >
+            Login
+          </Link>
+          <Link
+            to="/register"
+            className="px-6 py-2.5 bg-green-800 text-white font-semibold rounded-full hover:bg-green-900 transition shadow-md text-lg"
+          >
+            Register
+          </Link>
+        </div>
+      </nav>
+
+      {/* ── Main Content ── */}
+      <div className="relative z-10 flex-1 flex items-center px-8 md:px-16">
+        <div className="flex flex-col lg:flex-row items-start gap-10 max-w-7xl mx-auto w-full">
+          {/* Left Column – Hero */}
+          <div className="flex-1 max-w-2xl">
+            {/* Badge */}
+            <span className="inline-block px-5 py-1.5 bg-green-900/10 text-green-900 text-sm font-bold uppercase tracking-widest rounded-full mb-5">
+              Track Carbon, Real Impact
+            </span>
+
+            {/* Headline */}
+            <h1 className="text-4xl md:text-5xl lg:text-6xl font-extrabold text-green-950 leading-tight mb-5">
+              Reduce your footprint, build a greener future.
+            </h1>
+
+            {/* Description */}
+            <p className="text-base md:text-lg text-green-900/70 leading-relaxed mb-8 max-w-lg">
+              Track and reduce your personal carbon emissions with a simple dashboard.
+              Build sustainable habits and lower your environmental impact.
+            </p>
+
+            {/* CTA Buttons */}
+            <div className="flex flex-wrap gap-4 mb-10">
+              <Link
+                to="/register"
+                className="px-8 py-3 bg-green-800 text-white font-semibold rounded-full hover:bg-green-900 transition shadow-lg text-base"
+              >
+                Create account
+              </Link>
+              <Link
+                to="/login"
+                className="px-8 py-3 border-2 border-green-900 text-green-900 font-semibold rounded-full hover:bg-green-900/5 transition text-base"
+              >
+                I already have an account
+              </Link>
+            </div>
+
+            {/* Bottom Info Cards */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-sm">
+                <h4 className="font-bold text-green-800 text-base mb-1.5">Why it matters</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  The average person produces 4.7 tonnes of CO₂ per year.
+                </p>
+              </div>
+              <div className="bg-white/70 backdrop-blur-sm rounded-xl p-5 shadow-sm">
+                <h4 className="font-bold text-green-800 text-base mb-1.5">What we do</h4>
+                <p className="text-gray-600 text-sm leading-relaxed">
+                  Track emissions from transport, energy, food, and daily habits.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Right Column – Feature Cards (stacked) */}
+          <div className="flex-1 max-w-md w-full flex flex-col gap-5 lg:pt-6">
+            {/* Card 1 */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-7 py-6 shadow-md hover:shadow-lg transition">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-green-900 text-lg">Track your emissions</h3>
+              </div>
+              <p className="text-gray-600 text-base leading-relaxed">
+                Log daily activities — transport, electricity, food — and see your CO₂ footprint clearly.
+              </p>
+            </div>
+
+            {/* Card 2 */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-7 py-6 shadow-md hover:shadow-lg transition">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-green-900 text-lg">Reduce your impact</h3>
+              </div>
+              <p className="text-gray-600 text-base leading-relaxed">
+                Get personalized tips and insights to lower your footprint each week.
+              </p>
+            </div>
+
+            {/* Card 3 */}
+            <div className="bg-white/80 backdrop-blur-sm rounded-2xl px-7 py-6 shadow-md hover:shadow-lg transition">
+              <div className="flex items-center gap-3 mb-2">
+                <div className="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center shrink-0">
+                  <svg className="w-5 h-5 text-green-700" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                </div>
+                <h3 className="font-bold text-green-900 text-lg">Go green together</h3>
+              </div>
+              <p className="text-gray-600 text-base leading-relaxed">
+                Join a community working towards a sustainable planet. Every step counts.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+Home
+
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+
+const TRANSPORT_MODES = [
+  "Car",
+  "Public Transit",
+  "Bicycle",
+  "Walk",
+  "Mixed Mode",
+];
+
+const DIET_TYPES = [
+  "Vegan",
+  "Vegetarian",
+  "Pescatarian",
+  "Mixed (Occasional Meat)",
+  "Regular Meat Eater",
+  "High Meat Consumption",
+];
+
+const EATING_FREQUENCIES = [
+  "Daily",
+  "3-4 times a week",
+  "2-3 times a week",
+  "Once a week",
+  "Less frequently",
+];
+
+export default function LifestyleSurvey() {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    primaryMode: "",
+    averageDailyDistance: "",
+    dietType: "",
+    mealsPerDay: "",
+    eatingFrequency: "",
+    monthlyElectricity: "",
+    renewableEnergy: false,
+  });
+
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [step, setStep] = useState("transport");
+
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    setError("");
+  };
+
+  const validateTransport = () => {
+    if (!formData.primaryMode) {
+      setError("Please select a primary transport mode");
+      return false;
+    }
+    if (!formData.averageDailyDistance || formData.averageDailyDistance <= 0) {
+      setError("Please enter valid average daily distance");
+      return false;
+    }
+    return true;
+  };
+
+  const validateDiet = () => {
+    if (!formData.dietType) {
+      setError("Please select a diet type");
+      return false;
+    }
+    if (!formData.mealsPerDay || formData.mealsPerDay <= 0) {
+      setError("Please enter valid meals per day");
+      return false;
+    }
+    if (!formData.eatingFrequency) {
+      setError("Please select eating frequency");
+      return false;
+    }
+    return true;
+  };
+
+  const validateEnergy = () => {
+    if (!formData.monthlyElectricity || formData.monthlyElectricity <= 0) {
+      setError("Please enter valid monthly electricity usage");
+      return false;
+    }
+    return true;
+  };
+
+  const handleNextStep = (nextStep) => {
+    const currentStep = step;
+    if (currentStep === "transport" && !validateTransport()) return;
+    if (currentStep === "diet" && !validateDiet()) return;
+    setStep(nextStep);
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (!validateEnergy()) return;
+
+    setError("");
+    setLoading(true);
+
+    try {
+      // Calculate carbon emissions from lifestyle data
+      const transportEmission =
+        (parseInt(formData.averageDailyDistance) * 30 * 0.21) / 1000; // kg CO2 per month
+      const dietEmission =
+        {
+          Vegan: 1.5,
+          Vegetarian: 2.5,
+          Pescatarian: 3.0,
+          "Mixed (Occasional Meat)": 3.5,
+          "Regular Meat Eater": 4.5,
+          "High Meat Consumption": 5.5,
+        }[formData.dietType] * parseInt(formData.mealsPerDay) * 30; // kg CO2 per month
+
+      const energyEmission =
+        (parseInt(formData.monthlyElectricity) * 0.45) /
+        (formData.renewableEnergy ? 1.5 : 1); // kg CO2 per month (reduced if renewable)
+
+      // Create emissions for each category
+      const emissions = [
+        {
+          category: "Transport",
+          activityType: formData.primaryMode,
+          quantity: parseInt(formData.averageDailyDistance),
+          carbonOutput: parseInt(transportEmission),
+        },
+        {
+          category: "Food",
+          activityType: formData.dietType,
+          quantity: parseInt(formData.mealsPerDay),
+          carbonOutput: parseInt(dietEmission),
+        },
+        {
+          category: "Energy",
+          activityType: formData.renewableEnergy
+            ? "Renewable Energy"
+            : "Grid Energy",
+          quantity: parseInt(formData.monthlyElectricity),
+          carbonOutput: parseInt(energyEmission),
+        },
+      ];
+
+      // Save each emission
+      for (const emission of emissions) {
+        await apiFetch("/api/emissions", {
+          method: "POST",
+          body: JSON.stringify(emission),
+        });
+      }
+
+      // Redirect to dashboard
+      navigate("/dashboard");
+    } catch (err) {
+      if (err.status === 401) navigate("/login");
+      else setError(err.message || "Failed to calculate footprint.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCancel = () => {
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578]">
+      {/* Navbar */}
+      <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
+        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
+          <Link to="/" className="flex items-center gap-2">
+            <span className="text-2xl font-bold text-green-800">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <div className="flex items-center gap-4">
+            <span className="text-sm text-green-800 font-semibold">
+              Lifestyle Assessment
+            </span>
+            <button
+              onClick={() => navigate("/dashboard")}
+              className="ml-2 bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-lg transition font-medium"
+            >
+              Dashboard
+            </button>
+          </div>
+        </div>
+      </nav>
+
+      <div className="max-w-4xl mx-auto px-6 py-8">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-green-900">
+            Lifestyle Assessment
+          </h1>
+          <p className="text-green-800/70 mt-1">
+            Help us calculate your personal carbon footprint by answering a few
+            questions about your daily habits.
+          </p>
+        </div>
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+            <p className="text-red-700 font-medium text-sm">{error}</p>
+          </div>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-6">
+          {/* TRANSPORT INFORMATION */}
+          {(step === "transport" || step === "diet" || step === "energy") && (
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
+              <div className="flex items-start gap-3 mb-6">
+                <div className="text-2xl">🚗</div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Transport Information
+                  </h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    How do you get around on a daily basis?
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {/* Primary Mode */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Primary Mode
+                  </label>
+                  <select
+                    name="primaryMode"
+                    value={formData.primaryMode}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                  >
+                    <option value="">Select mode...</option>
+                    {TRANSPORT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Average Daily Distance */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Average Daily Distance (km)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="averageDailyDistance"
+                      value={formData.averageDailyDistance}
+                      onChange={handleChange}
+                      placeholder="e.g. 15"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                    />
+                    <span className="absolute right-4 top-3.5 text-gray-500 text-sm font-medium">
+                      km
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-1">
+                    For mixed journeys, calculate combined distance
+                  </p>
+                </div>
+              </div>
+
+              {step === "transport" && (
+                <button
+                  type="button"
+                  onClick={() => handleNextStep("diet")}
+                  className="w-full mt-8 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition"
+                >
+                  Next: Food & Diet →
+                </button>
+              )}
+            </div>
+          )}
+
+          {/* FOOD & DIET INFORMATION */}
+          {(step === "diet" || step === "energy") && (
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
+              <div className="flex items-start gap-3 mb-6">
+                <div className="text-2xl">🥗</div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Food & Diet Information
+                  </h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    What does your typical plate look like?
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {/* Diet Type */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Diet Type
+                  </label>
+                  <select
+                    name="dietType"
+                    value={formData.dietType}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                  >
+                    <option value="">Select diet...</option>
+                    {DIET_TYPES.map((diet) => (
+                      <option key={diet} value={diet}>
+                        {diet}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Meals Per Day */}
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Meals Per Day
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="number"
+                        name="mealsPerDay"
+                        value={formData.mealsPerDay}
+                        onChange={handleChange}
+                        placeholder="3"
+                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Eating Frequency */}
+                  <div>
+                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                      Outside Eating Frequency
+                    </label>
+                    <select
+                      name="eatingFrequency"
+                      value={formData.eatingFrequency}
+                      onChange={handleChange}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                    >
+                      <option value="">Select frequency...</option>
+                      {EATING_FREQUENCIES.map((freq) => (
+                        <option key={freq} value={freq}>
+                          {freq}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              {step === "diet" && (
+                <div className="flex gap-4 mt-8">
+                  <button
+                    type="button"
+                    onClick={() => setStep("transport")}
+                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg transition"
+                  >
+                    ← Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleNextStep("energy")}
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition"
+                  >
+                    Next: Energy →
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* HOME ENERGY USAGE */}
+          {(step === "energy") && (
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
+              <div className="flex items-start gap-3 mb-6">
+                <div className="text-2xl">⚡</div>
+                <div>
+                  <h2 className="text-xl font-bold text-gray-800">
+                    Home Energy Usage
+                  </h2>
+                  <p className="text-gray-600 text-sm mt-1">
+                    Understanding your utility footprint
+                  </p>
+                </div>
+              </div>
+
+              <div className="space-y-5">
+                {/* Monthly Electricity */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    Monthly Electricity (kWh)
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      name="monthlyElectricity"
+                      value={formData.monthlyElectricity}
+                      onChange={handleChange}
+                      placeholder="e.g. 250"
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                    />
+                    <span className="absolute right-4 top-3.5 text-gray-500 text-sm font-medium">
+                      kWh
+                    </span>
+                  </div>
+                </div>
+
+                {/* Renewable Energy Toggle */}
+                <div className="flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
+                  <div>
+                    <p className="font-semibold text-gray-800">
+                      Renewable Energy Source
+                    </p>
+                    <p className="text-sm text-gray-600 mt-1">
+                      Do you use solar panels or a green energy provider?
+                    </p>
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="checkbox"
+                      name="renewableEnergy"
+                      checked={formData.renewableEnergy}
+                      onChange={handleChange}
+                      className="w-6 h-6 cursor-pointer"
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex gap-4 mt-8">
+                <button
+                  type="button"
+                  onClick={handleCancel}
+                  disabled={loading}
+                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg transition disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={loading}
+                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
+                >
+                  {loading ? (
+                    <>
+                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      Calculating...
+                    </>
+                  ) : (
+                    "Calculate Footprint 🌱"
+                  )}
+                </button>
+              </div>
+            </div>
+          )}
+        </form>
+      </div>
+    </div>
+  );
+}
+
+LifestyleSurvey
+
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
+
+export default function Login() {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({ email: "", password: "" });
+  const [errors, setErrors] = useState({});
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const handleChange = (e) => {
+    const updated = { ...formData, [e.target.name]: e.target.value };
+    setFormData(updated);
+    setErrors(validate(updated));
+  };
+
+  const validate = (data = formData) => {
+    const errs = {};
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    if (!data.email) errs.email = "Email is required";
+    else if (!emailRegex.test(data.email)) errs.email = "Enter a valid email address";
+    if (!data.password) errs.password = "Password is required";
+    else if (data.password.length < 8) errs.password = "Password must be 8+ characters";
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (!formData.email || !formData.password) return;
+
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(formData),
+      });
+      if (data && data.token) {
+        localStorage.setItem("token", data.token);
+        navigate("/dashboard");
+      } else {
+        setErrors({ api: "Login succeeded but no token returned." });
+      }
+    } catch (err) {
+      if (err.status === 401) setErrors({ api: "Invalid email or password." });
+      else setErrors({ api: err.message || "Network error. Please try again later." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden max-w-md w-full px-8 py-8">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium mb-4 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Home
+        </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-green-800 mb-1">Welcome back</h1>
+          <p className="text-gray-500 text-sm">
+            Sign in to your account
+          </p>
+        </div>
+
+        {errors.api && (
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.api}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="password"
+              placeholder="Enter your password"
+              value={formData.password}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            />
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+          </div>
+
+          {/* Show password & Forgot */}
+          <div className="flex items-center justify-between">
+            <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={showPassword}
+                onChange={() => setShowPassword(!showPassword)}
+                className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+              />
+              Show password
+            </label>
+            <Link to="/forgot-password" className="text-sm text-green-600 hover:underline">
+              Forgot Password?
+            </Link>
+          </div>
+
+          {/* Login Button */}
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-70"
+            disabled={loading}
+          >
+            {loading ? "Logging in..." : "Login"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm mt-5 text-gray-500">
+          Don't have an account?{" "}
+          <Link to="/register" className="text-green-600 font-semibold hover:underline">
+            Sign up
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+Login
+
+import { useState } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
+
+function Register() {
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
+  const [errors, setErrors] = useState({});
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [success, setSuccess] = useState("");
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData({ ...formData, [name]: value });
+    // Clear error for this field as user types
+    if (errors[name]) {
+      setErrors({ ...errors, [name]: "" });
+    }
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.name.trim()) errs.name = "Full name is required";
+    const emailRegex = /^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$/;
+    if (!formData.email) errs.email = "Email is required";
+    else if (!emailRegex.test(formData.email)) errs.email = "Enter a valid email address";
+    if (!formData.password) {
+      errs.password = "Password is required";
+    } else if (formData.password.length < 8) {
+      errs.password = "Password must be at least 8 characters";
+    } else if (!/[A-Za-z]/.test(formData.password)) {
+      errs.password = "Must include at least one letter";
+    } else if (!/\d/.test(formData.password)) {
+      errs.password = "Must include at least one number";
+    } else if (!/[@$!%*#?&]/.test(formData.password)) {
+      errs.password = "Must include a special character (@$!%*#?&)";
+    }
+    if (!formData.confirmPassword) {
+      errs.confirmPassword = "Please confirm your password";
+    } else if (formData.password !== formData.confirmPassword) {
+      errs.confirmPassword = "Passwords do not match";
+    }
+    return errs;
+  };
+
+  // Direct Registration (No OTP Required)
+  const handleRegister = async (e) => {
+    e.preventDefault();
+    setSuccess("");
+    setErrors({});
+    
+    const validationErrors = validate();
+    if (Object.keys(validationErrors).length > 0) {
+      setErrors(validationErrors);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const response = await apiFetch("/api/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          password: formData.password,
+        }),
+      });
+      
+      setSuccess("Account created successfully! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 2000);
+    } catch (err) {
+      if (err.status === 409) {
+        setErrors({ api: "Email already registered. Please login or use a different email." });
+      } else {
+        setErrors({ api: err.message || "Registration failed. Please try again." });
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <AuthLayout>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden max-w-md w-full px-8 py-8">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium mb-4 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Home
+        </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-green-800 mb-1">Create account</h1>
+          <p className="text-gray-500 text-sm">
+            Join us to track your carbon footprint
+          </p>
+        </div>
+
+        {errors.api && (
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg font-medium">{errors.api}</p>
+        )}
+        {success && (
+          <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg font-medium">{success}</p>
+        )}
+
+        <form onSubmit={handleRegister} className="space-y-4">
+          {/* Full Name */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
+            <input
+              type="text"
+              name="name"
+              placeholder="John Doe"
+              value={formData.name}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.name ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name}</p>}
+          </div>
+
+          {/* Email */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Email Address</label>
+            <input
+              type="email"
+              name="email"
+              placeholder="you@example.com"
+              value={formData.email}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.email ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email}</p>}
+          </div>
+
+          {/* Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                name="password"
+                placeholder="Min 8 chars, 1 letter, 1 number, 1 special char"
+                value={formData.password}
+                onChange={handleChange}
+                className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                  errors.password ? "border-red-400 bg-red-50" : "border-gray-300"
+                }`}
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-3 top-3.5 text-gray-500 hover:text-gray-700 text-sm"
+              >
+                {showPassword ? "Hide" : "Show"}
+              </button>
+            </div>
+            {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password}</p>}
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Re-enter your password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className={`w-full px-4 py-3 border rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm transition ${
+                errors.confirmPassword ? "border-red-400 bg-red-50" : "border-gray-300"
+              }`}
+            />
+            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+          </div>
+
+          {/* Submit Button */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="w-full py-3 rounded-lg text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed mt-6"
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                Creating account...
+              </span>
+            ) : (
+              "Create Account"
+            )}
+          </button>
+        </form>
+
+        {/* Login Link */}
+        <p className="text-center text-sm text-gray-600 mt-5">
+          Already have an account?{" "}
+          <Link to="/login" className="text-green-600 font-semibold hover:text-green-700 transition">
+            Login here
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default Register;
+
+Register
+
+import { useState } from "react";
+import { Link, useNavigate, useSearchParams } from "react-router-dom";
+import { apiFetch } from "../utils/api";
+import AuthLayout from "../components/AuthLayout";
+
+function ResetPassword() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get("token");
+
+  const [formData, setFormData] = useState({ newPassword: "", confirmPassword: "" });
+  const [errors, setErrors] = useState({});
+  const [success, setSuccess] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  const handleChange = (e) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const validate = () => {
+    const errs = {};
+    if (!formData.newPassword) errs.newPassword = "New password is required";
+    else if (formData.newPassword.length < 8) errs.newPassword = "At least 8 characters";
+    else if (!/[A-Za-z]/.test(formData.newPassword)) errs.newPassword = "Must include a letter";
+    else if (!/\d/.test(formData.newPassword)) errs.newPassword = "Must include a number";
+    else if (!/[@$!%*#?&]/.test(formData.newPassword)) errs.newPassword = "Must include a special character";
+    if (!formData.confirmPassword) errs.confirmPassword = "Confirm your new password";
+    else if (formData.confirmPassword !== formData.newPassword) errs.confirmPassword = "Passwords do not match";
+    return errs;
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSuccess("");
+    if (!token) {
+      setErrors({ api: "Invalid or missing reset token." });
+      return;
+    }
+    const validationErrors = validate();
+    setErrors(validationErrors);
+    if (Object.keys(validationErrors).length > 0) return;
+
+    setLoading(true);
+    try {
+      const data = await apiFetch("/api/auth/reset-password", {
+        method: "POST",
+        body: JSON.stringify({ token, newPassword: formData.newPassword }),
+      });
+      setSuccess(data.message || "Password reset successfully!");
+      setFormData({ newPassword: "", confirmPassword: "" });
+      setTimeout(() => navigate("/login"), 3000);
+    } catch (err) {
+      setErrors({ api: err.message || "Failed to reset password." });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  if (!token) {
+    return (
+      <AuthLayout>
+        <div className="bg-white/95 backdrop-blur-sm rounded-3xl shadow-2xl p-10 max-w-md w-full text-center">
+          <h1 className="text-3xl font-bold text-green-800 mb-4">Invalid Link</h1>
+          <p className="text-red-500 mb-4">The reset link is invalid or missing a token.</p>
+          <p className="text-gray-500 text-sm mb-4">Please use the link sent to your email, or request a new one.</p>
+          <Link to="/forgot-password" className="text-green-600 font-semibold hover:underline">
+            Request New Reset Link
+          </Link>
+        </div>
+      </AuthLayout>
+    );
+  }
+
+  return (
+    <AuthLayout>
+      <div className="bg-white/95 backdrop-blur-sm rounded-2xl shadow-2xl overflow-hidden max-w-md w-full px-8 py-8">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:text-green-900 font-medium mb-4 transition">
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7"/></svg>
+          Home
+        </Link>
+        <div className="text-center mb-6">
+          <Link to="/" className="inline-flex items-center gap-2 mb-4">
+            <span className="text-2xl font-bold text-green-900">CarbonCalc</span>
+            <span className="text-xl">🌱</span>
+          </Link>
+          <h1 className="text-2xl font-bold text-green-800 mb-1">Reset Password</h1>
+          <p className="text-gray-500 text-sm">Enter your new password below.</p>
+        </div>
+
+        {errors.api && (
+          <p className="text-red-500 text-sm mb-4 bg-red-50 p-3 rounded-lg">{errors.api}</p>
+        )}
+        {success && (
+          <p className="text-green-600 text-sm mb-4 bg-green-50 p-3 rounded-lg">{success}</p>
+        )}
+
+        <form onSubmit={handleSubmit} className="space-y-4">
+          {/* New Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">New Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="newPassword"
+              placeholder="Enter new password"
+              value={formData.newPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            />
+            {errors.newPassword && <p className="text-red-500 text-xs mt-1">{errors.newPassword}</p>}
+          </div>
+
+          {/* Confirm Password */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
+            <input
+              type={showPassword ? "text" : "password"}
+              name="confirmPassword"
+              placeholder="Confirm new password"
+              value={formData.confirmPassword}
+              onChange={handleChange}
+              className="w-full px-4 py-3 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
+            />
+            {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword}</p>}
+          </div>
+
+          {/* Show password checkbox */}
+          <label className="flex items-center gap-2 text-sm text-gray-600 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={showPassword}
+              onChange={() => { setShowPassword(!showPassword); setShowConfirmPassword(!showConfirmPassword); }}
+              className="w-4 h-4 text-green-600 border-gray-300 rounded focus:ring-green-500"
+            />
+            Show password
+          </label>
+
+          <button
+            type="submit"
+            className="w-full py-3 rounded-xl text-white font-semibold bg-green-800 hover:bg-green-900 transition shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+            disabled={loading}
+          >
+            {loading ? "Resetting..." : "Reset Password"}
+          </button>
+        </form>
+
+        <p className="text-center text-sm mt-5 text-gray-500">
+          Remember your password?{" "}
+          <Link to="/login" className="text-green-600 font-semibold hover:underline">
+            Back to Login
+          </Link>
+        </p>
+      </div>
+    </AuthLayout>
+  );
+}
+
+export default ResetPassword;
+
+ResetPassword
+
+import React, { useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { calculateCarbon } from "../services/carbonService";
+
+function Survey() {
+  const navigate = useNavigate();
+
+  const [form, setForm] = useState({
+    distance: "",
+    meals: "",
+    electricity: "",
+  });
+
+  const handleChange = (e) => {
+    setForm({ ...form, [e.target.name]: e.target.value });
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+
+    const result = calculateCarbon(form);
+
+    const existingLogs =
+      JSON.parse(localStorage.getItem("carbonLogs")) || [];
+
+    localStorage.setItem(
+      "carbonLogs",
+      JSON.stringify([...existingLogs, result])
+    );
+
+    alert("Carbon Calculated Successfully 🌱");
+    navigate("/dashboard");
+  };
+
+  return (
+    <div className="container">
+      <h2>Lifestyle Survey</h2>
+
+      <form onSubmit={handleSubmit} className="card">
+        <h3>Transport</h3>
+        <input
+          type="number"
+          name="distance"
+          placeholder="Distance per day (km)"
+          required
+          onChange={handleChange}
+        />
+
+        <h3>Food</h3>
+        <input
+          type="number"
+          name="meals"
+          placeholder="Meals per day"
+          required
+          onChange={handleChange}
+        />
+
+        <h3>Energy</h3>
+        <input
+          type="number"
+          name="electricity"
+          placeholder="Electricity usage (kWh)"
+          required
+          onChange={handleChange}
+        />
+
+        <button type="submit">Submit Survey</button>
+      </form>
+    </div>
+  );
+}
+
+export default Survey;
+
+Survey

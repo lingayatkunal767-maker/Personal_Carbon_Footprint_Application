@@ -1,0 +1,7 @@
+# Backend
+backend/carbon/src/main/resources/application.properties
+target/
+
+# Frontend
+node_modules/
+.env
