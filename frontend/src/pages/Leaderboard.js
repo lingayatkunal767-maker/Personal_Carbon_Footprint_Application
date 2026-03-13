@@ -10,16 +10,16 @@ const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
 // Fallback demo data so UI always looks great
 const DEMO_DATA = [
-  { id: 1,  username: "EcoHero",    teamName: "Green Squad",   score: 980 },
-  { id: 2,  username: "SolarMike",  teamName: "Solar Savers",  score: 875 },
-  { id: 3,  username: "LeafLisa",   teamName: "Green Squad",   score: 843 },
-  { id: 4,  username: "GreenGuru",  teamName: "Earth First",   score: 812 },
-  { id: 5,  username: "CleanCarla", teamName: "Solar Savers",  score: 799 },
-  { id: 6,  username: "BikeRider",  teamName: "Earth First",   score: 755 },
-  { id: 7,  username: "WindWilla",  teamName: "Wind Warriors", score: 730 },
-  { id: 8,  username: "RainDrop",   teamName: "Wind Warriors", score: 698 },
-  { id: 9,  username: "TideTom",    teamName: "Blue Planet",   score: 670 },
-  { id: 10, username: "NatureNeil", teamName: "Blue Planet",   score: 645 },
+  { id: 1,  username: "EcoHero",    score: 980 },
+  { id: 2,  username: "SolarMike",  score: 875 },
+  { id: 3,  username: "LeafLisa",   score: 843 },
+  { id: 4,  username: "GreenGuru",  score: 812 },
+  { id: 5,  username: "CleanCarla", score: 799 },
+  { id: 6,  username: "BikeRider",  score: 755 },
+  { id: 7,  username: "WindWilla",  score: 730 },
+  { id: 8,  username: "RainDrop",   score: 698 },
+  { id: 9,  username: "TideTom",    score: 670 },
+  { id: 10, username: "NatureNeil", score: 645 },
 ];
 
 function Leaderboard() {
@@ -27,7 +27,7 @@ function Leaderboard() {
   const [entries, setEntries]           = useState([]);
   const [loading, setLoading]           = useState(true);
   const [refreshing, setRefreshing]     = useState(false);
-  const [activeTab, setActiveTab]       = useState("individual");
+
   const [currentUserId, setCurrentUserId] = useState(null);
   const [usingDemo, setUsingDemo]       = useState(false);
   const [search, setSearch]             = useState("");
@@ -58,7 +58,6 @@ function Leaderboard() {
             id:       e.userId   || e.user?.id   || idx,
             // backend sends `userName` (capital N) — support all variants
             username: e.userName || e.username || e.user?.name || e.user?.username || `User ${idx + 1}`,
-            teamName: e.teamName || e.team?.name || "—",
             score:    Number(e.score) || 0,
           }));
           mapped.sort((a, b) => b.score - a.score);
@@ -79,34 +78,18 @@ function Leaderboard() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Derived data ─────────────────────────────────────────
-  const teamEntries = Object.values(
-    entries.reduce((acc, e) => {
-      const key = e.teamName || "—";
-      if (!acc[key]) acc[key] = { teamName: key, totalScore: 0, members: 0 };
-      acc[key].totalScore += e.score;
-      acc[key].members    += 1;
-      return acc;
-    }, {})
-  ).sort((a, b) => b.totalScore - a.totalScore);
-
-  const allDisplayList = activeTab === "individual" ? entries : teamEntries;
-
   const displayList = search.trim()
-    ? allDisplayList.filter((e) =>
-        (activeTab === "individual" ? e.username : e.teamName)
-          .toLowerCase()
-          .includes(search.trim().toLowerCase())
+    ? entries.filter((e) =>
+        e.username.toLowerCase().includes(search.trim().toLowerCase())
       )
-    : allDisplayList;
+    : entries;
 
-  const top3 = allDisplayList.slice(0, 3);  // podium always from full list
+  const top3 = entries.slice(0, 3);  // podium always from full list
 
-  const getName  = (e) => activeTab === "individual" ? e.username : e.teamName;
-  const getScore = (e) => (e.totalScore ?? e.score ?? 0).toLocaleString();
+  const getName  = (e) => e.username;
+  const getScore = (e) => (e.score ?? 0).toLocaleString();
 
-  const myRank = activeTab === "individual"
-    ? allDisplayList.findIndex((e) => e.id === currentUserId) + 1
-    : 0;
+  const myRank = entries.findIndex((e) => e.id === currentUserId) + 1;
 
   // ── Render ───────────────────────────────────────────────
   return (
@@ -118,7 +101,7 @@ function Leaderboard() {
           <div>
             <h1 className="lb-title">🏆 Leaderboard</h1>
             <p className="lb-subtitle">
-              See how you rank against other eco-conscious users and teams.
+              See how you rank against other eco-conscious users.
               {usingDemo && (
                 <span className="lb-demo-badge">DEMO</span>
               )}
@@ -131,23 +114,6 @@ function Leaderboard() {
           </div>
 
           <div style={{ display: "flex", flexDirection: "column", gap: 10, alignItems: "flex-end" }}>
-            {/* Tab switcher */}
-            <div className="lb-tabs">
-              <button
-                type="button"
-                className={`lb-tab-btn ${activeTab === "individual" ? "active" : ""}`}
-                onClick={() => { setActiveTab("individual"); setSearch(""); }}
-              >
-                👤 Individual
-              </button>
-              <button
-                type="button"
-                className={`lb-tab-btn ${activeTab === "team" ? "active" : ""}`}
-                onClick={() => { setActiveTab("team"); setSearch(""); }}
-              >
-                👥 Team
-              </button>
-            </div>
 
             {/* Refresh */}
             <button
@@ -208,13 +174,13 @@ function Leaderboard() {
                   <input
                     type="text"
                     className="lb-search-input"
-                    placeholder={`Search ${activeTab === "individual" ? "user" : "team"}…`}
+                    placeholder="Search user…"
                     value={search}
                     onChange={(e) => setSearch(e.target.value)}
                     aria-label="Search leaderboard"
                   />
                   <span className="lb-total-chip">
-                    {displayList.length} {activeTab === "individual" ? "users" : "teams"}
+                    {displayList.length} users
                   </span>
                 </div>
               </div>
@@ -232,22 +198,18 @@ function Leaderboard() {
                       <thead>
                         <tr>
                           <th>Rank</th>
-                          <th>{activeTab === "individual" ? "User" : "Team"}</th>
-                          {activeTab === "individual" && <th>Team</th>}
-                          {activeTab === "team"       && <th>Members</th>}
+                          <th>User</th>
                           <th style={{ textAlign: "right" }}>Score</th>
                         </tr>
                       </thead>
                       <tbody>
                         {displayList.map((entry, idx) => {
                           // rank in full list (not filtered)
-                          const fullRank = allDisplayList.findIndex((e) =>
-                            activeTab === "individual" ? e.id === entry.id : e.teamName === entry.teamName
-                          );
-                          const isMe = activeTab === "individual" && entry.id === currentUserId;
+                          const fullRank = entries.findIndex((e) => e.id === entry.id);
+                          const isMe = entry.id === currentUserId;
                           return (
                             <tr
-                              key={activeTab === "individual" ? entry.id : entry.teamName}
+                              key={entry.id}
                               className={[
                                 "lb-row",
                                 isMe ? "lb-row-me" : "",
@@ -270,14 +232,7 @@ function Leaderboard() {
                                   </span>
                                 </div>
                               </td>
-                              {activeTab === "individual" && (
-                                <td className="lb-team-cell">
-                                  <span className="lb-team-badge">{entry.teamName || "—"}</span>
-                                </td>
-                              )}
-                              {activeTab === "team" && (
-                                <td className="lb-members-cell">{entry.members}</td>
-                              )}
+
                               <td className="lb-score-cell">
                                 <span className="lb-score-value">{getScore(entry)}</span>
                                 <span className="lb-score-unit"> pts</span>
@@ -292,13 +247,11 @@ function Leaderboard() {
                   {/* ── Mobile card list ── */}
                   <div className="lb-card-list">
                     {displayList.map((entry, idx) => {
-                      const fullRank = allDisplayList.findIndex((e) =>
-                        activeTab === "individual" ? e.id === entry.id : e.teamName === entry.teamName
-                      );
-                      const isMe = activeTab === "individual" && entry.id === currentUserId;
+                      const fullRank = entries.findIndex((e) => e.id === entry.id);
+                      const isMe = entry.id === currentUserId;
                       return (
                         <div
-                          key={activeTab === "individual" ? entry.id : entry.teamName}
+                          key={entry.id}
                           className={[
                             "lb-card-item",
                             isMe ? "lb-row-me" : "",
@@ -315,12 +268,7 @@ function Leaderboard() {
                               {getName(entry)}
                               {isMe && <span className="lb-you-chip">You</span>}
                             </div>
-                            {activeTab === "individual" && (
-                              <div className="lb-card-team">{entry.teamName || "—"}</div>
-                            )}
-                            {activeTab === "team" && (
-                              <div className="lb-card-team">{entry.members} members</div>
-                            )}
+
                           </div>
                           <div className="lb-card-score">
                             <span className="lb-card-score-val">{getScore(entry)}</span>

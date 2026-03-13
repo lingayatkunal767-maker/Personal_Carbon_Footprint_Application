@@ -12,6 +12,8 @@ import ResetPassword from "./pages/ResetPassword";
 import Terms from "./pages/Terms";
 import Privacy from "./pages/Privacy";
 import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
+import Badges from "./pages/Badges";
+import Leaderboard from "./pages/Leaderboard";
 
 function App() {
   return (
@@ -29,6 +31,8 @@ function App() {
         <Route path="/profile" element={<Profile />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/privacy" element={<Privacy />} />
+        <Route path="/badges" element={<Badges />} />
+        <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
       </Routes>
     </Router>
