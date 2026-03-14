@@ -18,7 +18,7 @@ const NotificationsPanel = ({ isOpen, onClose, notifications, onDismiss, onMarkA
           </div>
         )}
         {notifications.map((notif) => (
-          <div key={notif.id} className={`notif-item ${notif.type}`}>
+          <div key={notif.id} className={`notif-item ${notif.type} ${notif.isRead ? 'read' : ''}`}>
             <p>{notif.icon} {notif.text}</p>
             <small>{notif.detail}</small>
             <button className="btn-logout" style={{ marginTop: '.45rem' }} onClick={() => onDismiss(notif.id)}>

@@ -30,7 +30,7 @@ infosys-project/
 ### Setup Database
 Run the PowerShell script:
 ```powershell
-.\setup-database.ps1
+.\scripts\setup-database.ps1
 ```
 
 Or manually:
@@ -64,7 +64,7 @@ mvn spring-boot:run
 
 Or use the batch file:
 ```bash
-.\start-backend.bat
+.\scripts\start-backend.bat
 ```
 
 Backend will run on: http://localhost:8081
@@ -146,7 +146,7 @@ Frontend will run on: http://localhost:5173
 
 ```bash
 # Start everything (from root)
-.\start-backend.bat    # Terminal 1
+.\scripts\start-backend.bat    # Terminal 1
 cd frontend && npm run dev   # Terminal 2
 
 # Reset database

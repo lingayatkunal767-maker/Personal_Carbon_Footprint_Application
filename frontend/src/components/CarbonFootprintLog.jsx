@@ -1,4 +1,5 @@
 import React, { useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Line } from 'react-chartjs-2';
 import {
   Chart as ChartJS,
@@ -14,7 +15,7 @@ ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip,
 
 const CarbonFootprintLog = ({ data, weeklyTotal, trendLabel }) => {
   const [activeTab, setActiveTab] = useState('week');
-  const [showHistory, setShowHistory] = useState(false);
+  const navigate = useNavigate();
   const chartRef = useRef(null);
 
   const chartData = {
@@ -54,8 +55,8 @@ const CarbonFootprintLog = ({ data, weeklyTotal, trendLabel }) => {
     <div className="card">
       <div className="card-title">
         Carbon Footprint Log
-        <button className="card-action" onClick={() => setShowHistory((prev) => !prev)}>
-          {showHistory ? 'Hide History' : 'View Full History →'}
+        <button className="card-action" onClick={() => navigate('/history')}>
+          View Full History →
         </button>
       </div>
       <div className="chart-tabs">
@@ -74,16 +75,6 @@ const CarbonFootprintLog = ({ data, weeklyTotal, trendLabel }) => {
       <div className="chart-wrap">
         <Line ref={chartRef} data={chartData} options={options} />
       </div>
-      {showHistory && (
-        <div style={{ marginTop: '1rem' }}>
-          {data[activeTab].labels.map((label, index) => (
-            <div key={label} className="lb-row" style={{ borderBottom: 'none' }}>
-              <span className="lb-name">{label}</span>
-              <span className="lb-score">{Math.round(data[activeTab].data[index])} kg</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

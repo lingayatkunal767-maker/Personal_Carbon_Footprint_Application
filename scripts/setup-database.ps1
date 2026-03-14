@@ -2,13 +2,15 @@
 # Sustainability Tracker - One-Click Database Setup Script
 # Run this script ONCE to set up the PostgreSQL database
 # Usage: Right-click -> "Run with PowerShell"
-#        or: pwsh -File setup-database.ps1
+#        or: pwsh -File .\scripts\setup-database.ps1
 # ============================================================
 
 $psqlDir    = "C:\Program Files\PostgreSQL\18\bin"
 $mavenDir   = "C:\maven\apache-maven-3.9.6\bin"
-$schemaFile = "$PSScriptRoot\database\schema.sql"
-$seedFile   = "$PSScriptRoot\database\seed-data.sql"
+$schemaFile = Join-Path $PSScriptRoot "..\database\schema.sql"
+$seedFile   = Join-Path $PSScriptRoot "..\database\seed-data.sql"
+$dbName     = "ce"
+$dbUser     = "postgres"
 
 # --- Add tools to PATH for this session ---
 $env:PATH = "$psqlDir;$mavenDir;$env:PATH"
@@ -24,40 +26,35 @@ $pgPlain    = [Runtime.InteropServices.Marshal]::PtrToStringAuto(
 
 $env:PGPASSWORD = $pgPlain
 
-Write-Host "`n[1/4] Creating database 'sustainability_tracker'..." -ForegroundColor Yellow
-psql -U postgres -c "CREATE DATABASE sustainability_tracker;" 2>&1 | Out-Null
+Write-Host "[1/3] Ensuring database '$dbName' exists..." -ForegroundColor Yellow
+$dbExists = psql -U postgres -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$dbName';"
+if (($dbExists | Out-String).Trim() -ne "1") {
+    psql -U postgres -d postgres -c "CREATE DATABASE $dbName;"
+    if ($LASTEXITCODE -ne 0) {
+        Write-Host "ERROR: Could not create database '$dbName'." -ForegroundColor Red
+        exit 1
+    }
+}
 
-Write-Host "[2/4] Creating user 'tracker_user'..." -ForegroundColor Yellow
-psql -U postgres -c "CREATE USER tracker_user WITH PASSWORD 'tracker123';" 2>&1 | Out-Null
-psql -U postgres -c "GRANT ALL PRIVILEGES ON DATABASE sustainability_tracker TO tracker_user;" 2>&1 | Out-Null
-psql -U postgres -d sustainability_tracker -c "GRANT ALL ON SCHEMA public TO tracker_user;" 2>&1 | Out-Null
-
-Write-Host "[3/4] Loading schema..." -ForegroundColor Yellow
-psql -U tracker_user -d sustainability_tracker -f $schemaFile
+Write-Host "[2/3] Loading schema into '$dbName'..." -ForegroundColor Yellow
+psql -U $dbUser -d $dbName -f $schemaFile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Schema load failed!" -ForegroundColor Red; exit 1
 }
 
-Write-Host "[4/4] Loading seed data..." -ForegroundColor Yellow
-psql -U tracker_user -d sustainability_tracker -f $seedFile
+Write-Host "[3/3] Loading seed data into '$dbName'..." -ForegroundColor Yellow
+psql -U $dbUser -d $dbName -f $seedFile
 if ($LASTEXITCODE -ne 0) {
     Write-Host "ERROR: Seed data load failed!" -ForegroundColor Red; exit 1
 }
-
-# --- Update application.properties with the correct password ---
-$propsFile = "$PSScriptRoot\backend\src\main\resources\application.properties"
-(Get-Content $propsFile) -replace 'spring.datasource.password=.*', 'spring.datasource.password=tracker123' |
-    Set-Content $propsFile
-Write-Host "`n[OK] Updated application.properties with database password." -ForegroundColor Green
 
 $env:PGPASSWORD = ""
 
 Write-Host "`n==========================================" -ForegroundColor Green
 Write-Host " Database setup COMPLETE!" -ForegroundColor Green
 Write-Host "==========================================`n" -ForegroundColor Green
-Write-Host " DB:       sustainability_tracker" -ForegroundColor White
-Write-Host " User:     tracker_user" -ForegroundColor White
-Write-Host " Password: tracker123" -ForegroundColor White
+Write-Host " DB:       $dbName" -ForegroundColor White
+Write-Host " User:     $dbUser" -ForegroundColor White
 Write-Host "`n Next steps:" -ForegroundColor Cyan
 Write-Host "  1. cd backend  ->  mvn spring-boot:run" -ForegroundColor White
 Write-Host "  2. cd ..       ->  npm run dev`n" -ForegroundColor White

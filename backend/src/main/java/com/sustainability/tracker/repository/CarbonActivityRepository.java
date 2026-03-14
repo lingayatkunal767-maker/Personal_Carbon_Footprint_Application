@@ -49,16 +49,13 @@ public interface CarbonActivityRepository extends JpaRepository<CarbonActivity, 
     @Query("SELECT COUNT(a) FROM CarbonActivity a WHERE a.user.id = :userId")
     Long countByUserId(@Param("userId") Long userId);
 
-    // Monthly totals — grouped by year/month
-    @Query(value = """
-        SELECT DATE_TRUNC('month', activity_date) AS month,
-               SUM(carbon_amount) AS total
-        FROM carbon_activities
-        WHERE user_id = :userId
-          AND activity_date >= CURRENT_DATE - CAST(:months || ' months' AS INTERVAL)
-        GROUP BY 1 ORDER BY 1
-        """, nativeQuery = true)
-    List<Object[]> monthlyTotals(@Param("userId") Long userId, @Param("months") int months);
+    // Monthly totals — grouped by year/month in a dialect-portable way
+    @Query("SELECT YEAR(a.activityDate), MONTH(a.activityDate), SUM(a.carbonAmount) " +
+           "FROM CarbonActivity a " +
+           "WHERE a.user.id = :userId AND a.activityDate >= :startDate " +
+           "GROUP BY YEAR(a.activityDate), MONTH(a.activityDate) " +
+           "ORDER BY YEAR(a.activityDate), MONTH(a.activityDate)")
+    List<Object[]> monthlyTotals(@Param("userId") Long userId, @Param("startDate") LocalDate startDate);
 
     // Breakdown by activity type
     @Query("SELECT a.activityType, SUM(a.carbonAmount) FROM CarbonActivity a " +

@@ -12,4 +12,6 @@ public interface BadgeRepository extends JpaRepository<Badge, Long> {
     List<Badge> findByUserIdOrderByEarnedDateDesc(Long userId);
 
     long countByUserId(Long userId);
+
+    boolean existsByUserIdAndBadgeName(Long userId, String badgeName);
 }

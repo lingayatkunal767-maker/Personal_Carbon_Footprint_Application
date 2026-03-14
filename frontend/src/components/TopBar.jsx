@@ -1,6 +1,9 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 
 const TopBar = ({ onLogout, onOpenModal, onOpenNotifications, unreadCount }) => {
+  const navigate = useNavigate();
+
   return (
     <div className="topbar">
       <div className="logo">
@@ -12,9 +15,11 @@ const TopBar = ({ onLogout, onOpenModal, onOpenNotifications, unreadCount }) => 
         <span className="logo-text">Carbon<em>Calc</em></span>
       </div>
       <div className="topbar-right">
-        <button className="btn-icon" title="Search">🔍</button>
         <button className="btn-icon" onClick={onOpenNotifications} title="Notifications">
           🔔{unreadCount > 0 && <span className="notif-dot"></span>}
+        </button>
+        <button className="btn-history" onClick={() => navigate('/history')} title="Open Carbon History">
+          📜 Carbon History
         </button>
         <button className="btn-primary" onClick={onOpenModal}>＋ Log Activity</button>
         <button className="btn-logout" onClick={onLogout}>Logout</button>

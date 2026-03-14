@@ -3,6 +3,7 @@ package com.sustainability.tracker.dto;
 import com.sustainability.tracker.entity.LifestyleSurvey.FuelType;
 import com.sustainability.tracker.entity.LifestyleSurvey.TransportMode;
 import com.sustainability.tracker.validation.ValidFuelType;
+import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -46,4 +47,19 @@ public class SurveyRequest {
 
     @DecimalMin(value = "0.0", message = "Cooking gas usage must be non-negative.")
     private BigDecimal cookingGasCylindersPerMonth;
+
+    @DecimalMin(value = "0.0", message = "Renewable usage must be non-negative.")
+    @DecimalMax(value = "100.0", message = "Renewable usage cannot exceed 100%.")
+    private BigDecimal renewableUsagePct;
+
+    @DecimalMin(value = "0.0", message = "Screen time must be non-negative.")
+    @DecimalMax(value = "24.0", message = "Screen time cannot exceed 24 hours.")
+    private BigDecimal screenTimeHours;
+
+    @DecimalMin(value = "0.0", message = "Waste generated must be non-negative.")
+    private BigDecimal wasteGeneratedKg;
+
+    @Min(value = 0, message = "Eco actions must be non-negative.")
+    @Max(value = 10, message = "Eco actions cannot exceed 10.")
+    private Integer ecoActions;
 }

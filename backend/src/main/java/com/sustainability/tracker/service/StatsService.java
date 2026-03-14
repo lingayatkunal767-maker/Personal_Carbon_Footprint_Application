@@ -60,13 +60,16 @@ public class StatsService {
     }
 
     public List<MonthlyStatsDTO> getMonthlyComparison(Long userId, int months) {
-        List<Object[]> rawData = activityRepository.monthlyTotals(userId, months);
+        LocalDate startDate = LocalDate.now().withDayOfMonth(1).minusMonths(Math.max(0, months - 1L));
+        List<Object[]> rawData = activityRepository.monthlyTotals(userId, startDate);
         List<MonthlyStatsDTO> result = new ArrayList<>();
 
         for (Object[] row : rawData) {
-            String month = row[0].toString().substring(0, 7); // "yyyy-MM"
-            BigDecimal total = row[1] != null
-                    ? new BigDecimal(row[1].toString())
+            int year = ((Number) row[0]).intValue();
+            int monthValue = ((Number) row[1]).intValue();
+            String month = String.format("%04d-%02d", year, monthValue);
+            BigDecimal total = row[2] != null
+                    ? new BigDecimal(row[2].toString())
                     : BigDecimal.ZERO;
             result.add(new MonthlyStatsDTO(month, total));
         }

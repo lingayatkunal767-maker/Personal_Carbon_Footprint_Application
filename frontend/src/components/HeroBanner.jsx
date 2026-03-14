@@ -5,7 +5,7 @@ const HeroBanner = ({ userName }) => {
     <div className="hero">
       <div className="hero-deco"></div>
       <h1>Welcome back, {userName}! 👋</h1>
-      <p>Your Carbon Footprint Tracker — keep up the great work!</p>
+      <p>Your Carbon Footprint Tracker — track your impact, earn rewards, and make a difference!</p>
     </div>
   );
 };

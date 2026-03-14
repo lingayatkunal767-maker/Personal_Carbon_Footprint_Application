@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 
-const ProfileCard = ({ profile, onSave }) => {
+const ProfileCard = ({ profile, onSave, className }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [form, setForm] = useState(profile);
   const [userDetails, setUserDetails] = useState(null);
@@ -94,6 +94,9 @@ const ProfileCard = ({ profile, onSave }) => {
     setPreviewImage(null);
   };
 
+  const avatarImage = previewImage || userDetails?.profilePicture || null;
+  const isGoogleAccount = userDetails?.provider === 'google';
+
   const getJoinDate = () => {
     if (userDetails?.createdAt) {
       const date = new Date(userDetails.createdAt);
@@ -103,20 +106,9 @@ const ProfileCard = ({ profile, onSave }) => {
   };
 
   const getProviderBadge = () => {
-    if (userDetails?.provider === 'google') {
+    if (isGoogleAccount) {
       return (
-        <span style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '4px',
-          padding: '4px 10px',
-          background: 'linear-gradient(135deg, #4285f4 0%, #34a853 100%)',
-          color: 'white',
-          borderRadius: '12px',
-          fontSize: '0.7rem',
-          fontWeight: '600',
-          marginTop: '8px'
-        }}>
+        <span className="provider-badge provider-badge-google">
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
             <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#fff"/>
             <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#fff"/>
@@ -128,18 +120,7 @@ const ProfileCard = ({ profile, onSave }) => {
       );
     }
     return (
-      <span style={{
-        display: 'inline-flex',
-        alignItems: 'center',
-        gap: '4px',
-        padding: '4px 10px',
-        background: 'linear-gradient(135deg, #2d7a4f 0%, #5aaa72 100%)',
-        color: 'white',
-        borderRadius: '12px',
-        fontSize: '0.7rem',
-        fontWeight: '600',
-        marginTop: '8px'
-      }}>
+      <span className="provider-badge provider-badge-email">
         <span>📧</span>
         Email Account
       </span>
@@ -147,42 +128,24 @@ const ProfileCard = ({ profile, onSave }) => {
   };
 
   return (
-    <div className="card">
+    <div className={`card${className ? ` ${className}` : ''}`}>
       <div className="card-title">
         My Profile
-        <button className="card-action" onClick={() => setIsEditing((prev) => !prev)}>
+        <button type="button" className="card-action" onClick={() => setIsEditing((prev) => !prev)}>
           {isEditing ? 'Close' : 'Edit ✏️'}
         </button>
       </div>
       <div className="profile">
-        <div className="avatar" style={{
-          background: (previewImage || userDetails?.profilePicture)
-            ? `url(${previewImage || userDetails.profilePicture}) center/cover` 
-            : 'linear-gradient(135deg, #2d7a4f 0%, #5aaa72 100%)',
-          fontSize: (previewImage || userDetails?.profilePicture) ? '0' : '2.5rem',
-          color: 'white',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          overflow: 'hidden',
-          position: 'relative'
-        }}>
-          {!(previewImage || userDetails?.profilePicture) && (profile.name ? profile.name.charAt(0).toUpperCase() : '👤')}
+        <div className={`avatar profile-avatar ${avatarImage ? 'avatar-has-image' : ''}`}>
+          {avatarImage ? (
+            <img className="avatar-image" src={avatarImage} alt="Profile" />
+          ) : (
+            <span className="avatar-fallback">{profile.name ? profile.name.charAt(0).toUpperCase() : '👤'}</span>
+          )}
           {isEditing && (
-            <div style={{
-              position: 'absolute',
-              bottom: '0',
-              left: '0',
-              right: '0',
-              background: 'rgba(0,0,0,0.7)',
-              color: 'white',
-              padding: '8px',
-              fontSize: '0.7rem',
-              textAlign: 'center',
-              cursor: 'pointer'
-            }} onClick={() => fileInputRef.current?.click()}>
+            <button type="button" className="avatar-change-overlay" onClick={() => fileInputRef.current?.click()}>
               📷 Change
-            </div>
+            </button>
           )}
         </div>
         <div className="profile-info">
@@ -193,67 +156,33 @@ const ProfileCard = ({ profile, onSave }) => {
                 type="file"
                 accept="image/*"
                 onChange={handleImageUpload}
-                style={{ display: 'none' }}
+                className="profile-hidden-input"
               />
               
               {/* Image Upload Section */}
-              <div style={{ 
-                marginBottom: '16px',
-                padding: '12px',
-                background: '#f8f9fa',
-                borderRadius: '8px',
-                border: '2px dashed #dee2e6'
-              }}>
-                <div style={{ 
-                  fontSize: '0.85rem',
-                  color: '#495057',
-                  marginBottom: '8px',
-                  fontWeight: '600'
-                }}>
+              <div className="profile-upload-box">
+                <div className="profile-upload-title">
                   Profile Picture
                 </div>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                <div className="profile-upload-actions">
                   <button 
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    style={{
-                      padding: '6px 12px',
-                      background: 'linear-gradient(135deg, #2d7a4f 0%, #5aaa72 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '6px',
-                      cursor: 'pointer',
-                      fontSize: '0.8rem',
-                      fontWeight: '600'
-                    }}
+                    className="profile-upload-btn"
                   >
                     📷 Upload Photo
                   </button>
-                  {(previewImage || userDetails?.profilePicture) && (
+                  {avatarImage && (
                     <button 
                       type="button"
                       onClick={handleRemoveImage}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#dc3545',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: 'pointer',
-                        fontSize: '0.8rem',
-                        fontWeight: '600'
-                      }}
+                      className="profile-upload-btn profile-upload-btn-remove"
                     >
                       🗑️ Remove
                     </button>
                   )}
                 </div>
-                <small style={{ 
-                  display: 'block',
-                  marginTop: '6px',
-                  fontSize: '0.7rem',
-                  color: '#6c757d'
-                }}>
+                <small className="profile-upload-help">
                   Max size: 2MB • Formats: JPG, PNG, GIF
                 </small>
               </div>
@@ -272,14 +201,11 @@ const ProfileCard = ({ profile, onSave }) => {
                   type="email"
                   value={form.email}
                   onChange={(e) => handleChange('email', e.target.value)}
-                  disabled={userDetails?.provider === 'google'}
-                  style={{
-                    opacity: userDetails?.provider === 'google' ? 0.6 : 1,
-                    cursor: userDetails?.provider === 'google' ? 'not-allowed' : 'text'
-                  }}
+                  disabled={isGoogleAccount}
+                  className={isGoogleAccount ? 'profile-input-disabled' : ''}
                 />
-                {userDetails?.provider === 'google' && (
-                  <small style={{ fontSize: '0.7rem', color: '#666', marginTop: '4px', display: 'block' }}>
+                {isGoogleAccount && (
+                  <small className="profile-input-note">
                     Email cannot be changed for Google accounts
                   </small>
                 )}
@@ -292,56 +218,37 @@ const ProfileCard = ({ profile, onSave }) => {
                   onChange={(e) => handleChange('memberSince', e.target.value)}
                 />
               </div>
-              <div className="modal-footer" style={{ marginTop: '.6rem' }}>
-                <button className="btn-cancel" onClick={handleCancel}>Cancel</button>
-                <button className="btn-save" onClick={handleSave}>Save Profile</button>
+              <div className="modal-footer profile-edit-actions">
+                <button type="button" className="btn-cancel" onClick={handleCancel}>Cancel</button>
+                <button type="button" className="btn-save" onClick={handleSave}>Save Profile</button>
               </div>
             </>
           ) : (
             <>
-              <h2 style={{ marginBottom: '4px' }}>{profile.name}</h2>
-              <p style={{ 
-                fontSize: '0.9rem', 
-                color: '#666',
-                marginBottom: '2px',
-                wordBreak: 'break-word'
-              }}>
+              <p className="profile-welcome">👋 Welcome back!</p>
+              <h2 className="profile-name">{profile.name}</h2>
+              <p className="profile-email">
                 {profile.email}
               </p>
               {getProviderBadge()}
-              <p style={{ 
-                marginTop: '12px', 
-                fontSize: '0.8rem', 
-                color: 'var(--muted)',
-                padding: '8px 12px',
-                background: '#f5f5f5',
-                borderRadius: '8px',
-                display: 'inline-block'
-              }}>
-                <strong style={{ color: 'var(--text)' }}>📅 Joined:</strong> {getJoinDate()}
+              <p className="profile-joined">
+                <strong className="profile-joined-label">📅 Joined:</strong> {getJoinDate()}
               </p>
-              <div className="tags" style={{ marginTop: '12px' }}>
+              <div className="tags profile-tags">
                 {profile.tags?.map((tag) => (
                   <span key={tag} className="tag">{tag}</span>
                 ))}
               </div>
               
               {/* Additional Account Info */}
-              <div style={{ 
-                marginTop: '16px', 
-                padding: '12px', 
-                background: 'linear-gradient(135deg, #f0f9f4 0%, #e8f5e9 100%)',
-                borderRadius: '10px',
-                fontSize: '0.75rem',
-                color: '#2d7a4f'
-              }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+              <div className="profile-account-info">
+                <div className="profile-account-row">
                   <span>🌟</span>
                   <strong>Account Status:</strong> Active & Verified
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <div className="profile-account-row">
                   <span>🔐</span>
-                  <strong>Security:</strong> {userDetails?.provider === 'google' ? 'Protected by Google' : 'Password Protected'}
+                  <strong>Security:</strong> {isGoogleAccount ? 'Protected by Google' : 'Password Protected'}
                 </div>
               </div>
             </>

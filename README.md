@@ -9,11 +9,44 @@ A full-stack web application for tracking and reducing personal carbon footprint
 ## ✨ Features
 
 - 🔐 **Google OAuth 2.0** authentication
-- 📊 **Carbon footprint tracking** (transport, diet, energy)
+- 📊 **Lifestyle survey** for carbon footprint assessment
+- 🧮 **Automatic emission calculations** (transport, food, energy)
+- 📈 **Carbon footprint tracking** with daily logs
 - 🎯 **Personal reduction goals** and progress tracking
 - 🏆 **Eco-badges** and leaderboard
-- 📈 **Monthly comparison** and insights
+- 📊 **Dashboard with charts** and emission breakdowns
+- 📅 **Monthly comparison** and trend analysis
 - 🔔 **Personalized notifications** and eco-tips
+- 📜 **Carbon history** with detailed logs
+
+## 🌟 New: Complete Carbon Tracking System
+
+The system now includes **full lifestyle data tracking** and **emission calculations**:
+
+### Lifestyle Survey
+- Input daily transport mode, distance, and fuel type
+- Track vegetarian and non-vegetarian meal consumption
+- Monitor electricity and cooking gas usage
+
+### Emission Calculations
+- **Transport**: Based on vehicle type and distance (kg CO2e/km)
+- **Food**: Based on meal types (kg CO2e/meal)
+- **Energy**: Based on electricity and gas consumption
+
+### Dashboard Analytics
+- Real-time emission totals and trends
+- Category-wise breakdowns with percentages
+- Monthly comparisons (last 6 months)
+- Weekly progress tracking
+- Visual charts and graphs
+
+### Carbon History
+- Complete log of daily emissions
+- Date range filtering
+- Export capabilities
+- Detailed category breakdowns
+
+**📖 See [docs/CARBON_TRACKING.md](docs/CARBON_TRACKING.md) for complete documentation**
 
 ## 🏗️ Tech Stack
 
@@ -40,8 +73,8 @@ A full-stack web application for tracking and reducing personal carbon footprint
 - Maven
 
 ### Setup
-1. **Database**: Run `.\setup-database.ps1` or see [SETUP.md](SETUP.md)
-2. **Backend**: Run `.\start-backend.bat` or `cd backend && mvn spring-boot:run`
+1. **Database**: Run `\.\scripts\setup-database.ps1` or see [SETUP.md](SETUP.md)
+2. **Backend**: Run `\.\scripts\start-backend.bat` or `cd backend && mvn spring-boot:run`
 3. **Frontend**: Run `cd frontend && npm install && npm run dev`
 4. **Configure Google OAuth**: See [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md)
 
@@ -68,6 +101,10 @@ infosys-project/
 ├── database/              # SQL scripts
 │   ├── schema.sql        # Database schema
 │   └── seed-data.sql     # Sample data
+├── scripts/               # Setup and test scripts
+│   ├── setup-database.ps1
+│   ├── start-backend.bat
+│   └── test-*.ps1
 └── docs/                  # Documentation
 ```
 
@@ -91,7 +128,60 @@ server.port=8081
 
 - [Complete Setup Guide](SETUP.md)
 - [Google OAuth Setup](docs/GOOGLE_AUTH.md)
+- [Carbon Tracking Features](docs/CARBON_TRACKING.md)
+- [Testing Guide](docs/TESTING_GUIDE.md)
 - [Backend API Documentation](backend/README.md)
+
+## 🚀 Quick Start Example
+
+### 1. Submit a Lifestyle Survey
+```javascript
+import { surveyAPI } from './services/api';
+
+const result = await surveyAPI.submitSurvey({
+  userId: 1,
+  transportMode: 'CAR',
+  distanceKmPerDay: 20,
+  fuelType: 'PETROL',
+  mealsNonVegPerWeek: 7,
+  mealsVegPerWeek: 14,
+  electricityKwhPerMonth: 300,
+  cookingGasCylindersPerMonth: 1.5
+});
+
+console.log('Total emissions:', result.totalEmission, 'kg CO2e');
+```
+
+### 2. Get Dashboard Data
+```javascript
+import { dashboardAPI } from './services/api';
+
+const dashboard = await dashboardAPI.getDashboard(userId);
+// Access: dashboard.stats, dashboard.recentLogs, dashboard.emissionsBreakdown
+```
+
+### 3. View Carbon History
+```javascript
+import { carbonLogAPI } from './services/api';
+
+const logs = await carbonLogAPI.getCarbonLogs(userId, '2024-02-01', '2024-03-11');
+```
+
+## 🧪 Testing
+
+Load test data and verify the system:
+```bash
+# Load 30 days of sample data
+psql -U tracker_user -d sustainability_tracker -f database/test-data-carbon-tracking.sql
+
+# Test survey submission
+curl -X POST http://localhost:8081/api/survey -H "Content-Type: application/json" -d @sample-survey.json
+
+# View dashboard
+curl http://localhost:8081/api/dashboard/user/1
+```
+
+**📖 See [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for complete testing instructions**
 
 ## 🎨 Design System
 

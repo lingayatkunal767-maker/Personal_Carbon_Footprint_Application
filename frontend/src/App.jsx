@@ -3,7 +3,9 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import LoginPage from './pages/LoginPage';
 import SignUpPage from './pages/SignUpPage';
 import HomePage from './pages/HomePage';
+import SurveyPage from './pages/SurveyPage';
 import AuthCallback from './pages/AuthCallback';
+import CarbonHistoryPage from './pages/CarbonHistoryPage';
 
 function App() {
   return (
@@ -20,6 +22,12 @@ function App() {
         
         {/* Dashboard/Home page (after login) */}
         <Route path="/home" element={<HomePage />} />
+
+        {/* Carbon History page */}
+        <Route path="/history" element={<CarbonHistoryPage />} />
+        
+        {/* Lifestyle Survey page */}
+        <Route path="/survey" element={<SurveyPage />} />
         
         {/* OAuth callback handler */}
         <Route path="/auth/callback" element={<AuthCallback />} />

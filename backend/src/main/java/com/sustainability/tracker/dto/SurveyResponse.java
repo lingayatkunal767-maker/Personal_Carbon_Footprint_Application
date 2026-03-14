@@ -17,4 +17,24 @@ public class SurveyResponse {
     private BigDecimal foodEmission;
     private BigDecimal energyEmission;
     private BigDecimal totalEmission;
+    private BigDecimal customizedTotalEmission;
+    private BigDecimal datasetPredictedFootprint;
+    private String carbonImpactLevel;
+    private Integer matchedDatasetRecords;
+    private Boolean datasetConnected;
+
+    public SurveyResponse(Long surveyId,
+                          LocalDate logDate,
+                          BigDecimal transportEmission,
+                          BigDecimal foodEmission,
+                          BigDecimal energyEmission,
+                          BigDecimal totalEmission) {
+        this.surveyId = surveyId;
+        this.logDate = logDate;
+        this.transportEmission = transportEmission;
+        this.foodEmission = foodEmission;
+        this.energyEmission = energyEmission;
+        this.totalEmission = totalEmission;
+        this.customizedTotalEmission = totalEmission;
+    }
 }

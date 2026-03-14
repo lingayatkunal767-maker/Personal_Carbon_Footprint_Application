@@ -159,6 +159,78 @@ export const statsAPI = {
   },
 };
 
+// Survey APIs
+export const surveyAPI = {
+  // Submit lifestyle survey
+  submitSurvey: async (surveyData) => {
+    return fetchAPI('/survey', {
+      method: 'POST',
+      body: JSON.stringify(surveyData),
+    });
+  },
+};
+
+// Carbon Log APIs
+export const carbonLogAPI = {
+  // Get carbon logs for a user
+  getCarbonLogs: async (userId, from = null, to = null) => {
+    let url = `/carbon/logs?userId=${userId}`;
+    if (from) url += `&from=${from}`;
+    if (to) url += `&to=${to}`;
+    return fetchAPI(url);
+  },
+
+  // Update carbon log by date
+  updateCarbonLogByDate: async (userId, logDate, logData) => {
+    return fetchAPI(`/carbon/logs/${logDate}?userId=${userId}`, {
+      method: 'PUT',
+      body: JSON.stringify(logData),
+    });
+  },
+
+  // Delete carbon log by date
+  deleteCarbonLogByDate: async (userId, logDate) => {
+    return fetchAPI(`/carbon/logs/${logDate}?userId=${userId}`, {
+      method: 'DELETE',
+    });
+  },
+};
+
+// Dashboard APIs
+export const dashboardAPI = {
+  // Get complete dashboard data
+  getDashboard: async (userId) => {
+    return fetchAPI(`/dashboard/user/${userId}`);
+  },
+};
+
+// Authentication APIs
+export const authAPI = {
+  // Google OAuth login
+  googleAuth: async (googleData) => {
+    return fetchAPI('/auth/google', {
+      method: 'POST',
+      body: JSON.stringify(googleData),
+    });
+  },
+
+  // Email/Password login
+  login: async (credentials) => {
+    return fetchAPI('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  // Register new user
+  register: async (userData) => {
+    return fetchAPI('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify(userData),
+    });
+  },
+};
+
 // Export all as a single object (alternative usage)
 export const api = {
   user: userAPI,
@@ -167,6 +239,10 @@ export const api = {
   badge: badgeAPI,
   leaderboard: leaderboardAPI,
   stats: statsAPI,
+  survey: surveyAPI,
+  carbonLog: carbonLogAPI,
+  dashboard: dashboardAPI,
+  auth: authAPI,
 };
 
 // Default export

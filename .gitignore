@@ -33,6 +33,13 @@ target/
 *.local
 
 # ========================================
+# Local runtime database artifacts
+# ========================================
+backend/data/*.mv.db
+backend/data/*.trace.db
+backend/data/*.lock.db
+
+# ========================================
 # Environment variables
 # ========================================
 .env

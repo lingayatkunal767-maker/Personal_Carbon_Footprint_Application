@@ -27,7 +27,7 @@ public class Goal {
     // ✅ ADD: deadline + status (GoalService expects these)
     private LocalDate deadline;
 
-    private String status; // ex: "Active", "Completed"
+    private String status; // active, completed, failed
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id")
@@ -39,6 +39,6 @@ public class Goal {
     public void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (currentValue == null) currentValue = BigDecimal.ZERO;
-        if (status == null) status = "Active";
+        if (status == null) status = "active";
     }
 }
