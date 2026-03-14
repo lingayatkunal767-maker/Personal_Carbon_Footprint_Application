@@ -120,7 +120,7 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
         return "Protected API working!";
     }
 
-    @GetMapping("/me")
+@GetMapping("/me")
 public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authHeader) {
 
     String token = authHeader.replace("Bearer ", "");
@@ -132,11 +132,13 @@ public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authH
         return ResponseEntity.status(404).body("User not found");
     }
 
-    var user = userOpt.get();
+    com.carbon.carbontracker.model.User user =
+            (com.carbon.carbontracker.model.User) userOpt.get();
 
     return ResponseEntity.ok(Map.of(
-            "name", ((com.carbon.carbontracker.model.User) user).getName(),
-            "email", ((com.carbon.carbontracker.model.User) user).getEmail()
+            "name", user.getName(),
+            "email", user.getEmail(),
+            "role", user.getRole()
     ));
 }
 

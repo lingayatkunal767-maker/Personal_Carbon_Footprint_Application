@@ -21,6 +21,11 @@ public class GoalResponse {
     private String goalTitle;
     private BigDecimal targetEmission;
     private BigDecimal currentEmission;
+    private Double progressPercentage;
     private GoalStatus status;
     private LocalDateTime createdAt;
+    private String category;
+private Integer reductionTarget;
+private String timeframe;
+private String description;
 }

@@ -54,27 +54,46 @@ function AppLayout({ children }) {
           <span className="app-sidebar-logo-text">CarbonCalc</span>
         </div>
         <nav className="app-sidebar-nav">
-          <NavLink to="/dashboard" className="app-nav-item" end>
-            <span className="app-nav-icon">◉</span>
-            <span>Dashboard</span>
-          </NavLink>
-          <NavLink to="/survey" className="app-nav-item">
-            <span className="app-nav-icon">📋</span>
-            <span>Lifestyle Survey</span>
-          </NavLink>
-          <NavLink to="/carbon-history" className="app-nav-item">
-            <span className="app-nav-icon">🕐</span>
-            <span>Carbon History</span>
-          </NavLink>
-          <NavLink to="/badges" className="app-nav-item">
-            <span className="app-nav-icon">🏅</span>
-            <span>Badges</span>
-          </NavLink>
-          <NavLink to="/leaderboard" className="app-nav-item">
-            <span className="app-nav-icon">🏆</span>
-            <span>Leaderboard</span>
-          </NavLink>
-        </nav>
+  <NavLink to="/dashboard" className="app-nav-item" end>
+    <span className="app-nav-icon">◉</span>
+    <span>Dashboard</span>
+  </NavLink>
+
+  {/* USER FEATURES */}
+  {user.role === "USER" && (
+    <>
+      <NavLink to="/survey" className="app-nav-item">
+        <span className="app-nav-icon">📋</span>
+        <span>Lifestyle Survey</span>
+      </NavLink>
+
+      <NavLink to="/carbon-history" className="app-nav-item">
+        <span className="app-nav-icon">🕐</span>
+        <span>Carbon History</span>
+      </NavLink>
+
+      <NavLink to="/goals" className="app-nav-item">
+        <span className="app-nav-icon">🎯</span>
+        <span>Goals</span>
+      </NavLink>
+    </>
+  )}
+
+  {/* ADMIN FEATURES */}
+  {user.role === "ADMIN" && (
+    <>
+      <NavLink to="/badges" className="app-nav-item">
+        <span className="app-nav-icon">🏅</span>
+        <span>Badges</span>
+      </NavLink>
+
+      <NavLink to="/leaderboard" className="app-nav-item">
+        <span className="app-nav-icon">🏆</span>
+        <span>Leaderboard</span>
+      </NavLink>
+    </>
+  )}
+</nav>
         <div className="app-sidebar-footer">
           {/* <a href="#settings" className="app-nav-item app-nav-item-util">
             <span className="app-nav-icon">⚙</span>

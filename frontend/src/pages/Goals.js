@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useState } from "react";
+import axios from "axios";
 import AppLayout from "../components/AppLayout";
 import "./Goals.css";
 
-const GOAL_STORAGE_KEY = "carboncalc_goals";
-
+//const GOAL_STORAGE_KEY = "carboncalc_goals";
+const API_URL = "http://localhost:8080/api/goals";
 const CATEGORIES = [
   { id: "transport", label: "Transport" },
   { id: "food", label: "Food" },
@@ -22,48 +23,48 @@ const RECURRENCE = [
   { id: "monthly", label: "Monthly" },
 ];
 
-const DEMO_GOALS = [
-  {
-    id: "g1",
-    title: "Bike to work 3 times a week",
-    category: "transport",
-    reductionTarget: 20,
-    timeframe: "8_days",
-    recurrence: "weekly",
-    description: "Replace car commutes with cycling or public transport.",
-    createdAt: new Date().toISOString(),
-    status: "active",
-    progress: 25,
-  },
-  {
-    id: "g2",
-    title: "Keep monthly emissions under 300 kg CO₂",
-    category: "energy",
-    reductionTarget: 30,
-    timeframe: "30_days",
-    recurrence: "monthly",
-    description: "Turn off unused lights, optimize AC usage.",
-    createdAt: new Date().toISOString(),
-    status: "active",
-    progress: 40,
-  },
-];
+// const DEMO_GOALS = [
+//   {
+//     id: "g1",
+//     title: "Bike to work 3 times a week",
+//     category: "transport",
+//     reductionTarget: 20,
+//     timeframe: "8_days",
+//     recurrence: "weekly",
+//     description: "Replace car commutes with cycling or public transport.",
+//     createdAt: new Date().toISOString(),
+//     status: "active",
+//     progress: 25,
+//   },
+//   {
+//     id: "g2",
+//     title: "Keep monthly emissions under 300 kg CO₂",
+//     category: "energy",
+//     reductionTarget: 30,
+//     timeframe: "30_days",
+//     recurrence: "monthly",
+//     description: "Turn off unused lights, optimize AC usage.",
+//     createdAt: new Date().toISOString(),
+//     status: "active",
+//     progress: 40,
+//   },
+// ];
 
-function loadGoals() {
-  try {
-    const raw = localStorage.getItem(GOAL_STORAGE_KEY);
-    if (!raw) return DEMO_GOALS;
-    const parsed = JSON.parse(raw);
-    if (!Array.isArray(parsed) || parsed.length === 0) return DEMO_GOALS;
-    return parsed;
-  } catch {
-    return DEMO_GOALS;
-  }
-}
+// function loadGoals() {
+//   try {
+//     const raw = localStorage.getItem(GOAL_STORAGE_KEY);
+//     if (!raw) return DEMO_GOALS;
+//     const parsed = JSON.parse(raw);
+//     if (!Array.isArray(parsed) || parsed.length === 0) return DEMO_GOALS;
+//     return parsed;
+//   } catch {
+//     return DEMO_GOALS;
+//   }
+// }
 
-function saveGoals(goals) {
-  localStorage.setItem(GOAL_STORAGE_KEY, JSON.stringify(goals));
-}
+// function saveGoals(goals) {
+//   localStorage.setItem(GOAL_STORAGE_KEY, JSON.stringify(goals));
+// }
 
 function Goals() {
   const [goals, setGoals] = useState([]);
@@ -75,64 +76,70 @@ function Goals() {
   const [description, setDescription] = useState("");
   const [editingId, setEditingId] = useState(null);
 
-  useEffect(() => {
-    setGoals(loadGoals());
-  }, []);
+  // useEffect(() => {
+  //   setGoals(loadGoals());
+  // }, []);
+
+  // useEffect(() => {
+  //   saveGoals(goals);
+  // }, [goals]);
 
   useEffect(() => {
-    saveGoals(goals);
-  }, [goals]);
+  fetchGoals();
+}, []);
+
+const fetchGoals = async () => {
+  try {
+    const res = await axios.get(API_URL, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    setGoals(res.data);
+  } catch (error) {
+    console.error("Error fetching goals", error);
+  }
+};
 
   const activeGoals = useMemo(
-    () => goals.filter((g) => g.status === "active"),
+    () => goals.filter((g) => g.status === "ACTIVE"),
     [goals]
   );
 
   const completedGoals = useMemo(
-    () => goals.filter((g) => g.status === "completed"),
+    () => goals.filter((g) => g.status === "COMPLETED"),
     [goals]
   );
 
-  const handleCreateOrUpdateGoal = (e) => {
-    e.preventDefault();
-    if (!title.trim()) {
-      return;
-    }
+  const handleCreateOrUpdateGoal = async (e) => {
+  e.preventDefault();
 
-    const now = new Date();
+  const goalData = {
+    goalTitle: title.trim(),
+    category,
+    reductionTarget: Number(reductionTarget),
+    timeframe,
+    recurrence,
+    description: description.trim(),
+  };
 
+  try {
     if (editingId) {
-      setGoals((prev) =>
-        prev.map((g) =>
-          g.id === editingId
-            ? {
-                ...g,
-                title: title.trim(),
-                category,
-                reductionTarget: Number(reductionTarget),
-                timeframe,
-                recurrence,
-                description: description.trim(),
-              }
-            : g
-        )
-      );
-      setEditingId(null);
+      await axios.put(`${API_URL}/${editingId}`, goalData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     } else {
-      const newGoal = {
-        id: `${now.getTime()}`,
-        title: title.trim(),
-        category,
-        reductionTarget: Number(reductionTarget),
-        timeframe,
-        recurrence,
-        description: description.trim(),
-        createdAt: now.toISOString(),
-        status: "active",
-        progress: 0,
-      };
-      setGoals((prev) => [newGoal, ...prev]);
+      await axios.post(API_URL, goalData, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      });
     }
+
+    fetchGoals();
+    setEditingId(null);
 
     setTitle("");
     setCategory("transport");
@@ -140,11 +147,14 @@ function Goals() {
     setTimeframe("8_days");
     setRecurrence("weekly");
     setDescription("");
-  };
+  } catch (error) {
+    console.error("Error saving goal", error);
+  }
+};
 
   const handleEditGoal = (goal) => {
     setEditingId(goal.id);
-    setTitle(goal.title);
+    setTitle(goal.goalTitle);
     setCategory(goal.category || "transport");
     setReductionTarget(goal.reductionTarget ?? 15);
     setTimeframe(goal.timeframe || "8_days");
@@ -152,27 +162,51 @@ function Goals() {
     setDescription(goal.description || "");
   };
 
-  const handleDeleteGoal = (id) => {
-    setGoals((prev) => prev.filter((g) => g.id !== id));
-  };
-
-  const handleProgressChange = (id, value) => {
-    setGoals((prev) =>
-      prev.map((g) =>
-        g.id === id
-          ? { ...g, progress: Math.min(100, Math.max(0, Number(value))) }
-          : g
-      )
+  const handleDeleteGoal = async (id) => {
+  try {
+    await axios.delete(`${API_URL}/${id}`, {
+      headers: {
+        Authorization: `Bearer ${localStorage.getItem("token")}`,
+      },
+    });
+    fetchGoals();
+  } catch (error) {
+    console.error("Error deleting goal", error);
+  }
+};
+  const handleProgressChange = async (id, value) => {
+  try {
+    await axios.put(
+      `${API_URL}/${id}`,
+      { progressPercentage: Number(value) },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
     );
-  };
+    fetchGoals();
+  } catch (error) {
+    console.error("Error updating progress", error);
+  }
+};
 
-  const handleMarkCompleted = (id) => {
-    setGoals((prev) =>
-      prev.map((g) =>
-        g.id === id ? { ...g, status: "completed", progress: 100 } : g
-      )
+  const handleMarkCompleted = async (id) => {
+  try {
+    await axios.put(
+      `${API_URL}/${id}`,
+      { status: "COMPLETED", progress: 100 },
+      {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      }
     );
-  };
+    fetchGoals();
+  } catch (error) {
+    console.error("Error completing goal", error);
+  }
+};
 
   const formatTimeframeLabel = (id) => {
     const option = TIMEFRAMES.find((t) => t.id === id);
@@ -317,9 +351,9 @@ function Goals() {
                 <button type="submit" className="btn btn-primary">
                   {editingId ? "Update goal" : "Save goal"}
                 </button>
-                <span className="goals-footer-hint">
+                {/* <span className="goals-footer-hint">
                   You can edit, complete, or delete goals in the list on the right.
-                </span>
+                </span> */}
               </div>
             </form>
           </section>
@@ -368,18 +402,18 @@ function Goals() {
                       }`}
                     >
                       <header className="goals-list-item-header">
-                        <h3 className="goals-list-title">{goal.title}</h3>
+                        <h3 className="goals-list-title">{goal.goalTitle}</h3>
                         <div className="goals-list-actions">
                           <span className="goals-list-status">
                             {goal.status === "completed" ? "Completed" : "Active"}
                           </span>
-                          <button
+                          {/* <button
                             type="button"
                             className="goals-list-btn goals-list-btn-edit"
                             onClick={() => handleEditGoal(goal)}
                           >
                             Edit
-                          </button>
+                          </button> */}
                           <button
                             type="button"
                             className="goals-list-btn goals-list-btn-delete"
@@ -402,12 +436,12 @@ function Goals() {
                       <div className="goals-progress-wrap">
                         <div className="goals-progress-label-row">
                           <span>Progress</span>
-                          <span>{Math.round(goal.progress ?? 0)}%</span>
+                          <span>{Math.round(goal.progressPercentage ?? 0)}%</span>
                         </div>
                         <div className="goals-progress-bar">
                           <div
                             className="goals-progress-bar-fill"
-                            style={{ width: `${goal.progress ?? 0}%` }}
+                            style={{ width: `${goal.progressPercentage ?? 0}%` }}
                           />
                         </div>
                         {goal.status === "active" && (
@@ -417,7 +451,7 @@ function Goals() {
                               min="0"
                               max="100"
                               step="5"
-                              value={goal.progress}
+                              value={goal.progressPercentage}
                               onChange={(e) =>
                                 handleProgressChange(goal.id, e.target.value)
                               }

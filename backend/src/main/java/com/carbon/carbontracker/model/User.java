@@ -31,6 +31,8 @@ public class User {
     private String resetToken;
     private LocalDateTime resetTokenExpiry;
 
+    private String role;
+
     // One user → many carbon logs
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
     private List<CarbonLog> carbonLogs;
