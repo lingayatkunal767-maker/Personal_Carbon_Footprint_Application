@@ -1,31 +1,31 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // CONFIGURATION
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com";
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
-console.log('🔐 Google Auth Configuration:');
+console.log('≡ƒöÉ Google Auth Configuration:');
 console.log('   Client ID:', GOOGLE_CLIENT_ID ? GOOGLE_CLIENT_ID.substring(0, 30) + '...' : 'NOT SET');
 console.log('   API URL:', API_BASE_URL);
 
 const FACTS = [
-  "Global ocean temperatures have risen by 0.13°F per decade since 1901.",
+  "Global ocean temperatures have risen by 0.13┬░F per decade since 1901.",
   "Home energy efficiency improvements can cut emissions by 25-30%.",
-  "A single roundtrip transatlantic flight emits ~1.6 tons of CO₂ per passenger.",
+  "A single roundtrip transatlantic flight emits ~1.6 tons of COΓéé per passenger.",
   "Producing 1kg of beef generates 60kg of greenhouse gases (21x more than beans).",
   "Fashion industry accounts for 10% of global carbon emissions annually.",
-  "One mature tree absorbs ~48 pounds of CO₂ per year.",
+  "One mature tree absorbs ~48 pounds of COΓéé per year.",
   "Recycling aluminum saves 95% of the energy needed to make new aluminum.",
-  "Biking instead of driving for short trips can save 0.9kg CO₂ per mile."
+  "Biking instead of driving for short trips can save 0.9kg COΓéé per mile."
 ];
 
 const STATS = [
-  { value: "4.7T", label: "Average CO₂ tons per person per year" },
+  { value: "4.7T", label: "Average COΓéé tons per person per year" },
   { value: "28%", label: "Of global emissions from transport" },
-  { value: "1.5T", label: "CO₂ saved annually by going plant-based" },
+  { value: "1.5T", label: "COΓéé saved annually by going plant-based" },
   { value: "45%", label: "Emissions reduction needed by 2030" }
 ];
 
@@ -44,9 +44,9 @@ const LEAVES = [
   { size: 26, left: '45%', top: '35%', delay: 12 }
 ];
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // GOOGLE ICON COMPONENT
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 const GoogleIcon = () => (
   <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
     <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
@@ -56,9 +56,9 @@ const GoogleIcon = () => (
   </svg>
 );
 
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 // MAIN LOGIN PAGE COMPONENT
-// ═══════════════════════════════════════════════════════════════════
+// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 export default function LoginPage() {
   const navigate = useNavigate();
   const [factIndex, setFactIndex] = useState(0);
@@ -91,7 +91,7 @@ export default function LoginPage() {
 
   // Load Google Identity Services script
   useEffect(() => {
-    console.log('📦 Loading Google Identity Services...');
+    console.log('≡ƒôª Loading Google Identity Services...');
     
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
@@ -99,12 +99,12 @@ export default function LoginPage() {
     script.defer = true;
     
     script.onload = () => {
-      console.log('✅ Google Identity Services loaded');
+      console.log('Γ£à Google Identity Services loaded');
       
       if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-        console.error('❌ Google Client ID not configured!');
+        console.error('Γ¥î Google Client ID not configured!');
         console.error('   Please add VITE_GOOGLE_CLIENT_ID to your .env file');
-        showToast('⚠️ Google Sign-In not configured. Please check setup.');
+        showToast('ΓÜá∩╕Å Google Sign-In not configured. Please check setup.');
         return;
       }
       
@@ -116,19 +116,19 @@ export default function LoginPage() {
             auto_select: false,
             cancel_on_tap_outside: true
           });
-          console.log('✅ Google One Tap initialized');
+          console.log('Γ£à Google One Tap initialized');
         } catch (error) {
-          console.error('❌ Failed to initialize Google One Tap:', error);
-          showToast('⚠️ Google authentication setup error');
+          console.error('Γ¥î Failed to initialize Google One Tap:', error);
+          showToast('ΓÜá∩╕Å Google authentication setup error');
         }
       } else {
-        console.error('❌ Google Identity Services API not available');
+        console.error('Γ¥î Google Identity Services API not available');
       }
     };
     
     script.onerror = () => {
-      console.error('❌ Failed to load Google Identity Services script');
-      showToast('⚠️ Failed to load Google Sign-In. Check your internet connection.');
+      console.error('Γ¥î Failed to load Google Identity Services script');
+      showToast('ΓÜá∩╕Å Failed to load Google Sign-In. Check your internet connection.');
     };
     
     document.body.appendChild(script);
@@ -163,18 +163,18 @@ export default function LoginPage() {
   }, []);
 
   const handleCredentialResponse = async (response) => {
-    console.log('📥 Received Google credential response');
+    console.log('≡ƒôÑ Received Google credential response');
     
     if (!response.credential) {
-      console.error('❌ No credential in response');
-      showToast('⚠️ Authentication failed: No credential received');
+      console.error('Γ¥î No credential in response');
+      showToast('ΓÜá∩╕Å Authentication failed: No credential received');
       return;
     }
     
     try {
       // Decode JWT to get user info
       const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      console.log('✅ Decoded JWT payload:', {
+      console.log('Γ£à Decoded JWT payload:', {
         email: payload.email,
         name: payload.name,
         sub: payload.sub
@@ -185,9 +185,9 @@ export default function LoginPage() {
       const fullName = payload.name || firstName;
       const profilePicture = payload.picture || null;
 
-      console.log('📡 Sending to backend:', `${API_BASE_URL}/auth/google`);
+      console.log('≡ƒôí Sending to backend:', `${API_BASE_URL}/auth/google`);
       
-      // Call backend — upserts user (creates if new, logs in if existing)
+      // Call backend ΓÇö upserts user (creates if new, logs in if existing)
       const res = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -204,10 +204,10 @@ export default function LoginPage() {
       }
       
       const data = await res.json();
-      console.log('✅ Backend response:', { success: data.success, message: data.message });
+      console.log('Γ£à Backend response:', { success: data.success, message: data.message });
 
       if (!data.success) {
-        showToast(`⚠️ ${data.message}`);
+        showToast(`ΓÜá∩╕Å ${data.message}`);
         return;
       }
 
@@ -224,17 +224,17 @@ export default function LoginPage() {
       localStorage.setItem('current_user', JSON.stringify(userData));
       localStorage.setItem('auth_token', 'authenticated');
       
-      console.log('✅ User session created:', userData);
+      console.log('Γ£à User session created:', userData);
 
-      showToast(`Welcome back, ${firstName}! 🌿`);
+      showToast(`Welcome back, ${firstName}! ≡ƒî┐`);
       setTimeout(() => {
         const target = (userData.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
-        console.log(`➡️ Redirecting to ${target}`);
+        console.log(`Γ₧í∩╕Å Redirecting to ${target}`);
         navigate(target, { replace: true });
       }, 1200);
     } catch (error) {
-      console.error('❌ Authentication error:', error);
-      showToast(`⚠️ Authentication failed: ${error.message}`);
+      console.error('Γ¥î Authentication error:', error);
+      showToast(`ΓÜá∩╕Å Authentication failed: ${error.message}`);
     }
   };
 
@@ -256,17 +256,17 @@ export default function LoginPage() {
     
     // Validation
     if (!normalizedEmail || !password) {
-      showToast('⚠️ Please enter both email and password');
+      showToast('ΓÜá∩╕Å Please enter both email and password');
       return;
     }
     
     if (!emailPattern.test(normalizedEmail)) {
-      showToast('⚠️ Please enter a valid email address');
+      showToast('ΓÜá∩╕Å Please enter a valid email address');
       return;
     }
     
     if (password.length < 6) {
-      showToast('⚠️ Password must be at least 6 characters');
+      showToast('ΓÜá∩╕Å Password must be at least 6 characters');
       return;
     }
     
@@ -296,17 +296,17 @@ export default function LoginPage() {
         }));
         localStorage.setItem('auth_token', 'authenticated');
         setEmailLoading(false);
-        showToast(`${data.message} 🌿`);
+        showToast(`${data.message} ≡ƒî┐`);
         setTimeout(() => { navigate(target, { replace: true }); }, 1200);
       } else {
         setEmailLoading(false);
-        showToast(`⚠️ ${data.message}`);
+        showToast(`ΓÜá∩╕Å ${data.message}`);
       }
     } catch (err) {
       setEmailLoading(false);
       const msg = err instanceof TypeError
-        ? '⚠️ Cannot reach backend (port 8081). Is Spring Boot running?'
-        : `⚠️ Login error: ${err.message}`;
+        ? 'ΓÜá∩╕Å Cannot reach backend (port 8081). Is Spring Boot running?'
+        : `ΓÜá∩╕Å Login error: ${err.message}`;
       showToast(msg);
       console.error('Login error:', err);
     }
@@ -314,23 +314,23 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-      showToast('⚠️ Google OAuth not configured. Check GOOGLE_AUTH_SETUP.md');
+      showToast('ΓÜá∩╕Å Google OAuth not configured. Check GOOGLE_AUTH_SETUP.md');
       console.error('Missing VITE_GOOGLE_CLIENT_ID in .env file');
       return;
     }
 
     if (!window.google) {
-      console.error('❌ Google Identity Services library not loaded');
-      showToast('⚠️ Google Sign-In loading failed. Please refresh the page.');
+      console.error('Γ¥î Google Identity Services library not loaded');
+      showToast('ΓÜá∩╕Å Google Sign-In loading failed. Please refresh the page.');
       return;
     }
 
     setLoading(true);
-    setBtnLabel('Opening Google Sign-In…');
+    setBtnLabel('Opening Google Sign-InΓÇª');
 
     try {
       const redirectUri = `${window.location.origin}/auth/callback`;
-      console.log('🔍 Google OAuth Configuration:');
+      console.log('≡ƒöì Google OAuth Configuration:');
       console.log('   Redirect URI:', redirectUri);
       console.log('   Client ID:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
       console.log('   Origin:', window.location.origin);
@@ -350,7 +350,7 @@ export default function LoginPage() {
               `scope=openid%20email%20profile&` +
               `prompt=select_account`;
             
-            console.log('🔗 Redirecting to:', authUrl);
+            console.log('≡ƒöù Redirecting to:', authUrl);
             window.location.href = authUrl;
           } else {
             // One Tap displayed successfully
@@ -371,24 +371,24 @@ export default function LoginPage() {
         throw new Error('Google Identity Services not initialized');
       }
     } catch (error) {
-      console.error('❌ Login error:', error);
+      console.error('Γ¥î Login error:', error);
       setLoading(false);
       setBtnLabel('Continue with Google');
-      showToast('❌ Login failed. Please try again.');
+      showToast('Γ¥î Login failed. Please try again.');
     }
   };
 
   return (
     <>
       <style>{`
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* GOOGLE FONTS IMPORT */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500&display=swap');
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* CSS VARIABLES */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         :root {
           --forest: #1a3d2b;
           --moss: #2e5e42;
@@ -402,9 +402,9 @@ export default function LoginPage() {
           --text-lt: #7a8a74;
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* GLOBAL RESET */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         * {
           margin: 0;
           padding: 0;
@@ -431,9 +431,9 @@ export default function LoginPage() {
           background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* KEYFRAME ANIMATIONS */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         @keyframes meshShift {
           0%, 100% { transform: translate(0%, 0%) scale(1); }
           50% { transform: translate(3%, 4%) scale(1.05); }
@@ -463,9 +463,9 @@ export default function LoginPage() {
           100% { opacity: 1; transform: translate(-50%, 0); }
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* LAYOUT CONTAINER */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         .login-container {
           display: flex;
           min-height: 100svh;
@@ -473,16 +473,16 @@ export default function LoginPage() {
           align-items: stretch;
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* LEFT PANEL - HIDDEN */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         .left-panel {
           display: none;
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* RIGHT PANEL - FULL WIDTH */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         .right-panel {
           background: var(--warm-off);
           padding: clamp(0.7rem, 1.2vw, 1.1rem) clamp(0.8rem, 1.2vw, 1rem) clamp(0.7rem, 1.2vw, 1rem);
@@ -920,9 +920,9 @@ export default function LoginPage() {
           }
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* TOAST NOTIFICATION */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         .toast {
           position: fixed;
           top: 2rem;
@@ -945,9 +945,9 @@ export default function LoginPage() {
           display: none;
         }
 
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         /* RESPONSIVE DESIGN */
-        /* ═══════════════════════════════════════════════════════════════ */
+        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         @media (max-height: 760px) {
           .right-panel {
             justify-content: flex-start;
@@ -1039,12 +1039,12 @@ export default function LoginPage() {
       `}</style>
 
       <div className="login-container">
-        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
         {/* RIGHT PANEL */}
-        {/* ═══════════════════════════════════════════════════════════════ */}
+        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
         <div className="right-panel">
           <a href="#learn" className="top-link">
-            New to sustainability? Learn more →
+            New to sustainability? Learn more ΓåÆ
           </a>
 
           <div className="dark-green-card">
@@ -1076,7 +1076,7 @@ export default function LoginPage() {
                 fontSize: '18px',
                 boxShadow: '0 2px 8px rgba(200, 222, 206, 0.2)'
               }}>
-                🌿
+                ≡ƒî┐
               </div>
               <div style={{ textAlign: 'center' }}>
                 <h1 style={{ 
@@ -1097,7 +1097,7 @@ export default function LoginPage() {
                   marginTop: '2px',
                   fontWeight: '500'
                 }}>
-                  Track · Reduce · Sustain
+                  Track ┬╖ Reduce ┬╖ Sustain
                 </div>
               </div>
             </div>
@@ -1151,7 +1151,7 @@ export default function LoginPage() {
                     disabled={emailLoading}
                     aria-label="Toggle password visibility"
                   >
-                    {showPassword ? '👁️' : '👁️‍🗨️'}
+                    {showPassword ? '≡ƒæü∩╕Å' : '≡ƒæü∩╕ÅΓÇì≡ƒù¿∩╕Å'}
                   </button>
                 </div>
               </div>
@@ -1164,7 +1164,7 @@ export default function LoginPage() {
               >
                 <div className="spinner"></div>
                 <div className="btn-content">
-                  <span>{emailLoading ? 'Logging in…' : 'Login'}</span>
+                  <span>{emailLoading ? 'Logging inΓÇª' : 'Login'}</span>
                 </div>
               </button>
             </form>
@@ -1204,7 +1204,7 @@ export default function LoginPage() {
           {/* Trust badges */}
           <div className="trust-badges">
             <div className="badge">
-              <span className="badge-icon">🌱</span>
+              <span className="badge-icon">≡ƒî▒</span>
               <span>Carbon-neutral hosting</span>
             </div>
           </div>
@@ -1220,7 +1220,7 @@ export default function LoginPage() {
               <a href="#faq">FAQ</a>
             </div>
             <div className="copyright">
-              © 2025 Personal Carbon Footprint. Made with ♥ for the planet.
+              ┬⌐ 2025 Personal Carbon Footprint. Made with ΓÖÑ for the planet.
             </div>
           </div>
         </div>
