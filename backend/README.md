@@ -52,6 +52,12 @@ You can still override with standard Spring variables if needed:
 
 ## Run Backend
 From repository root:
+- scripts\start-backend.bat
+
+To stop backend:
+- powershell -NoProfile -ExecutionPolicy Bypass -File scripts\stop-backend.ps1
+
+Alternative manual command:
 - cd backend
 - mvn spring-boot:run
 
@@ -92,4 +98,5 @@ Main endpoint groups:
 3. Relation does not exist:
    - Re-run database/schema.sql on database ce.
 4. Port already in use:
-   - Change server.port in application.properties or free port 8081.
+   - Use scripts\start-backend.bat from repository root. It automatically stops stale process on 8081 and starts backend.
+   - If running manually with mvn spring-boot:run, stop existing process on 8081 first.

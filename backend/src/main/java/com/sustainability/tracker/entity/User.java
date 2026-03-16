@@ -41,6 +41,12 @@ public class User {
     @Column(name = "profile_picture", columnDefinition = "TEXT")
     private String profilePicture;
 
+    @Column(name = "role", length = 20, nullable = false)
+    private String role = "USER";
+
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
     @Column(name = "member_since", updatable = false)
     private LocalDateTime memberSince = LocalDateTime.now();
 

@@ -57,14 +57,28 @@ export default function AuthCallback() {
                 .then(data => {
                   // Use backend-assigned id (or fall back to Google info)
                   const session = data.success
-                    ? { id: data.userId, name: data.name, email: data.email, profilePicture: data.profilePicture }
-                    : { name: userInfo.name || 'User', email: userInfo.email, profilePicture: userInfo.picture || null };
+                    ? {
+                        id: data.userId,
+                        name: data.name,
+                        email: data.email,
+                        profilePicture: data.profilePicture,
+                        role: data.role || 'USER',
+                        active: data.active !== false,
+                      }
+                    : {
+                        name: userInfo.name || 'User',
+                        email: userInfo.email,
+                        profilePicture: userInfo.picture || null,
+                        role: 'USER',
+                        active: true,
+                      };
 
                   localStorage.setItem('current_user', JSON.stringify(session));
                   localStorage.setItem('auth_token', 'authenticated');
 
-                  console.log('✅ Authentication successful, redirecting to home...');
-                  navigate('/home');
+                  const target = (session.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+                  console.log('✅ Authentication successful, redirecting to dashboard...');
+                  navigate(target);
                 });
             })
             .catch(error => {

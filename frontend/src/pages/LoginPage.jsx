@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 
 // ═══════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -59,6 +60,7 @@ const GoogleIcon = () => (
 // MAIN LOGIN PAGE COMPONENT
 // ═══════════════════════════════════════════════════════════════════
 export default function LoginPage() {
+  const navigate = useNavigate();
   const [factIndex, setFactIndex] = useState(0);
   const [factVisible, setFactVisible] = useState(true);
   const [loading, setLoading] = useState(false);
@@ -71,6 +73,21 @@ export default function LoginPage() {
   const [password, setPassword] = useState('');
   const [emailLoading, setEmailLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const raw = localStorage.getItem('current_user');
+    if (!token || !raw) return;
+
+    try {
+      const session = JSON.parse(raw);
+      if (!session || session.active === false) return;
+      const target = (session.role || 'USER').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+      navigate(target, { replace: true });
+    } catch {
+      // Ignore bad session payload and stay on login page.
+    }
+  }, [navigate]);
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -200,6 +217,8 @@ export default function LoginPage() {
         name: data.name,
         email: data.email,
         profilePicture: data.profilePicture,
+        role: data.role || 'USER',
+        active: data.active !== false,
       };
       
       localStorage.setItem('current_user', JSON.stringify(userData));
@@ -209,8 +228,9 @@ export default function LoginPage() {
 
       showToast(`Welcome back, ${firstName}! 🌿`);
       setTimeout(() => {
-        console.log('➡️ Redirecting to /home');
-        window.location.href = '/home';
+        const target = (userData.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+        console.log(`➡️ Redirecting to ${target}`);
+        navigate(target, { replace: true });
       }, 1200);
     } catch (error) {
       console.error('❌ Authentication error:', error);
@@ -230,14 +250,17 @@ export default function LoginPage() {
 
   const handleEmailLogin = async (e) => {
     e.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     // Validation
-    if (!email || !password) {
+    if (!normalizedEmail || !password) {
       showToast('⚠️ Please enter both email and password');
       return;
     }
     
-    if (!email.includes('@')) {
+    if (!emailPattern.test(normalizedEmail)) {
       showToast('⚠️ Please enter a valid email address');
       return;
     }
@@ -253,23 +276,28 @@ export default function LoginPage() {
       const response = await fetch(`${API_BASE_URL}/auth/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: email.toLowerCase(), password }),
+        body: JSON.stringify({ email: normalizedEmail, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        const role = data.role || 'USER';
+        const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+
         // Save session info
         localStorage.setItem('current_user', JSON.stringify({
           id: data.userId,
           name: data.name,
           email: data.email,
-          profilePicture: data.profilePicture
+          profilePicture: data.profilePicture,
+          role,
+          active: data.active !== false,
         }));
         localStorage.setItem('auth_token', 'authenticated');
         setEmailLoading(false);
         showToast(`${data.message} 🌿`);
-        setTimeout(() => { window.location.href = '/home'; }, 1200);
+        setTimeout(() => { navigate(target, { replace: true }); }, 1200);
       } else {
         setEmailLoading(false);
         showToast(`⚠️ ${data.message}`);
@@ -1163,7 +1191,11 @@ export default function LoginPage() {
 
             {/* Sign up link */}
             <div className="signup-link">
-              Don't have an account? <a href="/signup">Sign up</a>
+              Don't have an account? <Link to="/signup">Sign up</Link>
+            </div>
+
+            <div className="signup-link" style={{ marginTop: '0.4rem', paddingTop: '0.4rem' }}>
+              Admin access? <Link to="/admin/login">Go to admin login</Link>
             </div>
           </div>
           {/* End dark-green-card */}

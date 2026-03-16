@@ -4,6 +4,7 @@ import com.sustainability.tracker.dto.AuthRequest;
 import com.sustainability.tracker.dto.AuthResponse;
 import com.sustainability.tracker.dto.GoogleAuthRequest;
 import com.sustainability.tracker.service.AuthService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -15,13 +16,23 @@ public class AuthController {
     private final AuthService authService; // ✅ injected properly
 
     @PostMapping("/register")
-    public AuthResponse register(@RequestBody AuthRequest request) {
+    public AuthResponse register(@Valid @RequestBody AuthRequest request) {
         return authService.register(request);
     }
 
+    @PostMapping("/admin/register")
+    public AuthResponse registerAdmin(@Valid @RequestBody AuthRequest request) {
+        return authService.registerAdmin(request);
+    }
+
     @PostMapping("/login")
-    public AuthResponse login(@RequestBody AuthRequest request) {
+    public AuthResponse login(@Valid @RequestBody AuthRequest request) {
         return authService.login(request);
+    }
+
+    @PostMapping("/admin/login")
+    public AuthResponse loginAdmin(@Valid @RequestBody AuthRequest request) {
+        return authService.loginAdmin(request);
     }
 
     // ✅ FIX: this compiles now because AuthService has googleLogin()

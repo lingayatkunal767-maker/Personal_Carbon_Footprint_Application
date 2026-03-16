@@ -3,7 +3,9 @@ package com.sustainability.tracker.service;
 import com.sustainability.tracker.dto.EmissionsBreakdownDTO;
 import com.sustainability.tracker.dto.MonthlyStatsDTO;
 import com.sustainability.tracker.dto.StatsDTO;
+import com.sustainability.tracker.entity.CarbonLog;
 import com.sustainability.tracker.repository.BadgeRepository;
+import com.sustainability.tracker.repository.CarbonLogRepository;
 import com.sustainability.tracker.repository.CarbonActivityRepository;
 import com.sustainability.tracker.repository.GoalRepository;
 import com.sustainability.tracker.entity.CarbonActivity; // Import CarbonActivity
@@ -24,6 +26,7 @@ import java.util.Optional;
 public class StatsService {
 
     private final CarbonActivityRepository activityRepository;
+    private final CarbonLogRepository carbonLogRepository;
     private final GoalRepository goalRepository;
     private final BadgeRepository badgeRepository;
 
@@ -77,7 +80,50 @@ public class StatsService {
     }
 
     public List<EmissionsBreakdownDTO> getEmissionsBreakdown(Long userId) {
+        LocalDate today = LocalDate.now();
+        LocalDate sevenDaysAgo = today.minusDays(6);
+        List<CarbonLog> recentCarbonLogs = carbonLogRepository
+                .findByUserIdAndLogDateBetweenOrderByLogDate(userId, sevenDaysAgo, today);
+
+        if (!recentCarbonLogs.isEmpty()) {
+            return buildBreakdownFromCarbonLogs(recentCarbonLogs);
+        }
+
         List<Object[]> rawData = activityRepository.breakdownByType(userId);
+        return buildBreakdownFromActivities(rawData);
+    }
+
+    private List<EmissionsBreakdownDTO> buildBreakdownFromCarbonLogs(List<CarbonLog> logs) {
+        BigDecimal transportTotal = logs.stream()
+                .map(log -> log.getTransportEmission() != null ? log.getTransportEmission() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal foodTotal = logs.stream()
+                .map(log -> log.getFoodEmission() != null ? log.getFoodEmission() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal energyTotal = logs.stream()
+                .map(log -> log.getEnergyEmission() != null ? log.getEnergyEmission() : BigDecimal.ZERO)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+
+        BigDecimal grandTotal = transportTotal.add(foodTotal).add(energyTotal);
+
+        List<EmissionsBreakdownDTO> result = new ArrayList<>();
+
+        if (transportTotal.compareTo(BigDecimal.ZERO) > 0) {
+            result.add(new EmissionsBreakdownDTO("transport", transportTotal, percentage(transportTotal, grandTotal)));
+        }
+        if (foodTotal.compareTo(BigDecimal.ZERO) > 0) {
+            result.add(new EmissionsBreakdownDTO("food", foodTotal, percentage(foodTotal, grandTotal)));
+        }
+        if (energyTotal.compareTo(BigDecimal.ZERO) > 0) {
+            result.add(new EmissionsBreakdownDTO("energy", energyTotal, percentage(energyTotal, grandTotal)));
+        }
+
+        return result;
+    }
+
+    private List<EmissionsBreakdownDTO> buildBreakdownFromActivities(List<Object[]> rawData) {
         List<EmissionsBreakdownDTO> result = new ArrayList<>();
 
         BigDecimal grandTotal = rawData.stream()
@@ -91,14 +137,19 @@ public class StatsService {
                     ? new BigDecimal(row[1].toString())
                     : BigDecimal.ZERO;
             if (total.compareTo(BigDecimal.ZERO) <= 0) continue; // skip offsets/negatives
-            double pct = grandTotal.compareTo(BigDecimal.ZERO) == 0 ? 0
-                    : total.divide(grandTotal, 4, RoundingMode.HALF_UP)
-                           .multiply(BigDecimal.valueOf(100))
-                           .doubleValue();
+                double pct = percentage(total, grandTotal);
             result.add(new EmissionsBreakdownDTO(type, total, pct));
         }
         return result;
     }
+
+            private double percentage(BigDecimal total, BigDecimal grandTotal) {
+            return grandTotal.compareTo(BigDecimal.ZERO) == 0
+                ? 0
+                : total.divide(grandTotal, 4, RoundingMode.HALF_UP)
+                    .multiply(BigDecimal.valueOf(100))
+                    .doubleValue();
+            }
 
     public List<CarbonActivity> getCarbonLogs(Long userId, LocalDate from, LocalDate to) {
         LocalDate startDate = Optional.ofNullable(from).orElse(LocalDate.MIN);

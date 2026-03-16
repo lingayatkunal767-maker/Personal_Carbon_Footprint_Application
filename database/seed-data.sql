@@ -2,11 +2,37 @@
 -- Sample data for testing
 
 -- Insert sample users
-INSERT INTO users (name, email, oauth_provider, oauth_id, profile_picture, member_since) VALUES
-('John Doe', 'john.doe@example.com', 'google', 'google-123456', 'https://i.pravatar.cc/150?img=1', '2024-01-15 10:00:00'),
-('Jane Smith', 'jane.smith@example.com', 'google', 'google-789012', 'https://i.pravatar.cc/150?img=5', '2024-02-01 14:30:00'),
-('Mike Johnson', 'mike.j@example.com', 'google', 'google-345678', 'https://i.pravatar.cc/150?img=3', '2024-01-20 09:15:00'),
-('Sarah Williams', 'sarah.w@example.com', 'google', 'google-901234', 'https://i.pravatar.cc/150?img=9', '2024-02-10 16:45:00');
+INSERT INTO users (name, email, oauth_provider, oauth_id, profile_picture, role, is_active, member_since) VALUES
+('John Doe', 'john.doe@example.com', 'google', 'google-123456', 'https://i.pravatar.cc/150?img=1', 'USER', true, '2024-01-15 10:00:00'),
+('Jane Smith', 'jane.smith@example.com', 'google', 'google-789012', 'https://i.pravatar.cc/150?img=5', 'USER', true, '2024-02-01 14:30:00'),
+('Mike Johnson', 'mike.j@example.com', 'google', 'google-345678', 'https://i.pravatar.cc/150?img=3', 'USER', true, '2024-01-20 09:15:00'),
+('Sarah Williams', 'sarah.w@example.com', 'google', 'google-901234', 'https://i.pravatar.cc/150?img=9', 'USER', true, '2024-02-10 16:45:00');
+
+-- Backfill admin profiles for any seeded or pre-existing admin users
+INSERT INTO admin_profiles (user_id, access_level, department)
+SELECT id, 'ADMIN', 'Platform Operations'
+FROM users
+WHERE role = 'ADMIN'
+ON CONFLICT (user_id) DO NOTHING;
+
+-- Default emission factors (admin can update these in panel)
+INSERT INTO emission_factors (category, factor_key, factor_value, unit, description) VALUES
+('transport', 'car', 0.192, 'kg CO2e/km', 'Petrol/diesel car average factor'),
+('transport', 'bus', 0.105, 'kg CO2e/km', 'Public bus average factor'),
+('transport', 'train', 0.041, 'kg CO2e/km', 'Train/metro average factor'),
+('transport', 'auto', 0.120, 'kg CO2e/km', 'Auto-rickshaw average factor'),
+('transport', 'ev_car', 0.060, 'kg CO2e/km', 'Electric car average factor'),
+('food', 'non_veg', 2.500, 'kg CO2e/meal', 'Non-vegetarian meal factor'),
+('food', 'veg', 1.200, 'kg CO2e/meal', 'Vegetarian meal factor'),
+('energy', 'electricity', 0.820, 'kg CO2e/kWh', 'Grid electricity emission factor'),
+('energy', 'lpg_cylinder', 42.600, 'kg CO2e/cylinder', 'LPG cylinder emission factor');
+
+-- Badge definitions (admin-managed templates)
+INSERT INTO badge_definitions (badge_name, badge_type, description, threshold_percent, is_active) VALUES
+('Eco Starter', 'MILESTONE', 'Awarded for beginning carbon reduction journey', 5.00, true),
+('Green Momentum', 'ACHIEVEMENT', 'Awarded for consistent reduction in emissions', 10.00, true),
+('Carbon Champion', 'ACHIEVEMENT', 'Awarded for high carbon reduction performance', 20.00, true),
+('Net Zero Hero', 'SPECIAL', 'Awarded for exceptional sustainability impact', 30.00, true);
 
 -- Insert sample carbon activities
 INSERT INTO carbon_activities (user_id, activity_type, activity_name, carbon_amount, activity_date, description) VALUES
@@ -46,6 +72,10 @@ INSERT INTO badges (user_id, badge_name, badge_type, description) VALUES
 (3, 'Community Hero', 'social', 'Inspired 5 others to join'),
 (3, 'First Steps', 'beginner', 'Logged first activity'),
 (4, 'First Steps', 'beginner', 'Logged first activity');
+
+-- Initial badge assignments to align with existing user badges
+INSERT INTO user_badge_assignments (user_id, badge_definition_id, assigned_reason)
+SELECT 1, id, 'Seed assignment for starter badge' FROM badge_definitions WHERE badge_name = 'Eco Starter';
 
 -- Refresh the leaderboard view
 REFRESH MATERIALIZED VIEW leaderboard;

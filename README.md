@@ -74,7 +74,7 @@ The system now includes **full lifestyle data tracking** and **emission calculat
 
 ### Setup
 1. **Database**: Run `\.\scripts\setup-database.ps1` or see [SETUP.md](SETUP.md)
-2. **Backend**: Run `\.\scripts\start-backend.bat` or `cd backend && mvn spring-boot:run`
+2. **Backend**: Run `\.\scripts\start-backend.bat` (recommended) or `cd backend && mvn spring-boot:run`
 3. **Frontend**: Run `cd frontend && npm install && npm run dev`
 4. **Configure Google OAuth**: See [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md)
 
@@ -227,6 +227,9 @@ Redirect to /home (1.2s delay)
 ## 🛠️ Available Scripts
 
 \`\`\`bash
+npm run backend:start   # Start backend safely (handles stale port 8081)
+npm run backend:restart # Restart backend
+npm run backend:stop    # Stop backend listener on 8081
 npm run dev      # Start development server (port 5173)
 npm run build    # Build for production
 npm run preview  # Preview production build

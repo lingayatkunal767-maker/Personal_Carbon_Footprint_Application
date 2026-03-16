@@ -8,6 +8,10 @@ DROP TABLE IF EXISTS products CASCADE;
 DROP TABLE IF EXISTS notifications CASCADE;
 DROP TABLE IF EXISTS carbon_logs CASCADE;
 DROP TABLE IF EXISTS lifestyle_surveys CASCADE;
+DROP TABLE IF EXISTS admin_profiles CASCADE;
+DROP TABLE IF EXISTS user_badge_assignments CASCADE;
+DROP TABLE IF EXISTS badge_definitions CASCADE;
+DROP TABLE IF EXISTS emission_factors CASCADE;
 DROP TABLE IF EXISTS badges CASCADE;
 DROP TABLE IF EXISTS goals CASCADE;
 DROP TABLE IF EXISTS carbon_activities CASCADE;
@@ -23,7 +27,45 @@ CREATE TABLE users (
     oauth_provider VARCHAR(50),
     oauth_id VARCHAR(255),
     profile_picture TEXT,
+    role VARCHAR(20) NOT NULL DEFAULT 'USER',
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     member_since TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Admin Profiles Table
+CREATE TABLE admin_profiles (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    access_level VARCHAR(50) NOT NULL DEFAULT 'ADMIN',
+    department VARCHAR(100) DEFAULT 'Platform Operations',
+    last_login_at TIMESTAMP,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- Emission Factors (admin managed)
+CREATE TABLE emission_factors (
+    id BIGSERIAL PRIMARY KEY,
+    category VARCHAR(50) NOT NULL,
+    factor_key VARCHAR(100) NOT NULL,
+    factor_value DECIMAL(12, 6) NOT NULL,
+    unit VARCHAR(50),
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_emission_factor UNIQUE (category, factor_key)
+);
+
+-- Badge Definitions (admin managed templates)
+CREATE TABLE badge_definitions (
+    id BIGSERIAL PRIMARY KEY,
+    badge_name VARCHAR(120) NOT NULL UNIQUE,
+    badge_type VARCHAR(50) NOT NULL,
+    description TEXT,
+    threshold_percent DECIMAL(5, 2),
+    is_active BOOLEAN NOT NULL DEFAULT TRUE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -63,14 +105,29 @@ CREATE TABLE badges (
     description TEXT
 );
 
+-- User badge assignments from admin definitions
+CREATE TABLE user_badge_assignments (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT REFERENCES users(id) ON DELETE CASCADE,
+    badge_definition_id BIGINT REFERENCES badge_definitions(id) ON DELETE CASCADE,
+    assigned_reason TEXT,
+    assigned_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uq_user_badge_assignment UNIQUE (user_id, badge_definition_id)
+);
+
 -- Indexes for performance
 CREATE INDEX idx_activities_user_date ON carbon_activities(user_id, activity_date);
 CREATE INDEX idx_activities_type ON carbon_activities(activity_type);
 CREATE INDEX idx_goals_user ON goals(user_id);
 CREATE INDEX idx_goals_status ON goals(status);
 CREATE INDEX idx_badges_user ON badges(user_id);
+CREATE INDEX idx_badge_definitions_active ON badge_definitions(is_active);
+CREATE INDEX idx_user_badge_assignments_user ON user_badge_assignments(user_id);
+CREATE INDEX idx_emission_factors_category_key ON emission_factors(category, factor_key);
 CREATE INDEX idx_users_email ON users(email);
 CREATE INDEX idx_users_oauth ON users(oauth_id);
+CREATE INDEX idx_users_role_active ON users(role, is_active);
+CREATE INDEX idx_admin_profiles_user ON admin_profiles(user_id);
 
 -- Leaderboard Materialized View (for performance)
 CREATE MATERIALIZED VIEW leaderboard AS
@@ -99,6 +156,10 @@ $$ LANGUAGE plpgsql;
 
 -- Comments for documentation
 COMMENT ON TABLE users IS 'User accounts with OAuth support';
+COMMENT ON TABLE admin_profiles IS 'Admin-only profile records linked to ADMIN users';
+COMMENT ON TABLE emission_factors IS 'Admin-managed emission factors used in carbon calculations';
+COMMENT ON TABLE badge_definitions IS 'Admin-managed reusable badge templates and thresholds';
+COMMENT ON TABLE user_badge_assignments IS 'Badge definition assignments to users by admins or automation';
 COMMENT ON TABLE carbon_activities IS 'Logged carbon emission activities';
 COMMENT ON TABLE goals IS 'User carbon reduction goals';
 COMMENT ON TABLE badges IS 'Achievement badges earned by users';

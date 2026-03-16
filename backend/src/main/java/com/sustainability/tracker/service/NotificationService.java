@@ -102,6 +102,38 @@ public class NotificationService {
     }
 
     /**
+     * Create notification when admin assigns a badge.
+     */
+    public void notifyBadgeAssignedByAdmin(Long userId,
+                                           String badgeName,
+                                           String description,
+                                           String reason,
+                                           Long assignmentId) {
+        StringBuilder messageBuilder = new StringBuilder()
+                .append("Great progress! Admin assigned you the '")
+                .append(badgeName)
+                .append("' badge.");
+
+        if (description != null && !description.isBlank()) {
+            messageBuilder.append(' ').append(description.trim());
+        }
+
+        if (reason != null && !reason.isBlank()) {
+            messageBuilder.append(" Reason: ").append(reason.trim());
+        }
+
+        createNotification(
+                userId,
+                "BADGE_EARNED",
+                "🏅 New Badge Assigned",
+                messageBuilder.toString(),
+                "HIGH",
+                "BadgeAssignment",
+                assignmentId
+        );
+    }
+
+    /**
      * Create goal progress notification
      */
     public void notifyGoalProgress(Long userId, String goalType, int progressPercentage, Long goalId) {

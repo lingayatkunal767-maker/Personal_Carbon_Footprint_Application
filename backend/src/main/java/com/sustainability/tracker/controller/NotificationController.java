@@ -1,5 +1,6 @@
 package com.sustainability.tracker.controller;
 
+import com.sustainability.tracker.dto.NotificationResponseDTO;
 import com.sustainability.tracker.entity.Notification;
 import com.sustainability.tracker.service.NotificationService;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Notification Controller
@@ -27,9 +29,9 @@ public class NotificationController {
      * GET /api/notifications/user/{userId}
      */
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<Notification>> getUserNotifications(@PathVariable Long userId) {
+    public ResponseEntity<List<NotificationResponseDTO>> getUserNotifications(@PathVariable Long userId) {
         List<Notification> notifications = notificationService.getUserNotifications(userId);
-        return ResponseEntity.ok(notifications);
+        return ResponseEntity.ok(notifications.stream().map(NotificationResponseDTO::from).collect(Collectors.toList()));
     }
 
     /**
@@ -37,9 +39,9 @@ public class NotificationController {
      * GET /api/notifications/user/{userId}/unread
      */
     @GetMapping("/user/{userId}/unread")
-    public ResponseEntity<List<Notification>> getUnreadNotifications(@PathVariable Long userId) {
+    public ResponseEntity<List<NotificationResponseDTO>> getUnreadNotifications(@PathVariable Long userId) {
         List<Notification> notifications = notificationService.getUnreadNotifications(userId);
-        return ResponseEntity.ok(notifications);
+        return ResponseEntity.ok(notifications.stream().map(NotificationResponseDTO::from).collect(Collectors.toList()));
     }
 
     /**

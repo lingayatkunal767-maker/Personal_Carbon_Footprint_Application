@@ -42,6 +42,15 @@ const CATEGORY_ICONS = {
   other:     '📋',
 };
 
+const NOTIFICATION_ICONS = {
+  BADGE_EARNED: '🏅',
+  GOAL_PROGRESS: '🎯',
+  GOAL_COMPLETED: '🎉',
+  HIGH_EMISSIONS: '⚠️',
+  REMINDER: '💡',
+  MARKETPLACE: '📦',
+};
+
 const GOAL_COLORS = [
   'linear-gradient(90deg,var(--g-mid),var(--g-light))',
   'linear-gradient(90deg,#4a90d9,#81c784)',
@@ -182,14 +191,44 @@ function buildBreakdownFromAPI(breakdown) {
   if (!breakdown || breakdown.length === 0) return [];
   return breakdown.map(b => {
     const type = (b.activityType || b.type || 'other').toLowerCase();
+    const value = Number(b.totalCarbon || b.total || 0);
     return {
       key: type,
       icon: CATEGORY_ICONS[type] || '📋',
       label: type.charAt(0).toUpperCase() + type.slice(1),
-      value: Math.round(Number(b.totalCarbon || b.total || 0)),
+      value: Number.isFinite(value) ? Number(value.toFixed(2)) : 0,
       color: CATEGORY_COLORS[type] || '#9e9e9e',
     };
   });
+}
+
+function notificationClass(notificationType, priority) {
+  const normalizedPriority = (priority || '').toUpperCase();
+  const normalizedType = (notificationType || '').toUpperCase();
+
+  if (normalizedPriority === 'HIGH' || normalizedPriority === 'URGENT' || normalizedType === 'HIGH_EMISSIONS') {
+    return 'alert';
+  }
+
+  if (normalizedType === 'REMINDER' || normalizedType === 'GOAL_PROGRESS') {
+    return 'warn';
+  }
+
+  return '';
+}
+
+function mapNotificationToUI(notification) {
+  const type = (notification.notificationType || '').toUpperCase();
+  return {
+    id: `api-${notification.id}`,
+    serverId: notification.id,
+    icon: NOTIFICATION_ICONS[type] || '🔔',
+    text: notification.title || 'Notification',
+    detail: notification.message || '',
+    type: notificationClass(type, notification.priority),
+    isRead: !!notification.isRead,
+    localOnly: false,
+  };
 }
 function buildBreakdownFromActivities(rawActivities) {
   const totals = {};
@@ -261,6 +300,26 @@ export default function HomePage() {
   const [co2Saved, setCo2Saved] = useState(0);
   const [ecoPoints, setEcoPoints] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
+
+  const refreshNotifications = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const response = await fetch(`${API_BASE}/notifications/user/${userId}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (!Array.isArray(data)) return;
+
+      const mapped = data.map(mapNotificationToUI);
+      setNotifications((prev) => {
+        const localOnly = prev.filter((item) => item.localOnly);
+        return [...mapped, ...localOnly];
+      });
+    } catch (err) {
+      console.error('Failed to load notifications:', err);
+    }
+  }, [userId]);
 
   // ── Auth guard + initial data load ────────────────────────────────────────
   useEffect(() => {
@@ -338,11 +397,11 @@ export default function HomePage() {
         }
 
         // Breakdown
-        if (activitiesRes.status === 'fulfilled' && Array.isArray(activitiesRes.value)) {
-          // Primary: compute from activities for guaranteed accuracy
-          setBreakdown(buildBreakdownFromActivities(activitiesRes.value));
-        } else if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value) && breakdownRes.value.length > 0) {
+        if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value) && breakdownRes.value.length > 0) {
           setBreakdown(buildBreakdownFromAPI(breakdownRes.value));
+        } else if (activitiesRes.status === 'fulfilled' && Array.isArray(activitiesRes.value)) {
+          // Fallback when breakdown API has no historical survey data.
+          setBreakdown(buildBreakdownFromActivities(activitiesRes.value));
         }
 
         // Monthly
@@ -388,6 +447,8 @@ export default function HomePage() {
         if (leaderboardRes.status === 'fulfilled' && Array.isArray(leaderboardRes.value)) {
           setLeaderboardEntries(leaderboardRes.value.map(mapLeaderboardToUI));
         }
+
+        await refreshNotifications();
       } catch (err) {
         console.error('Error loading dashboard data:', err);
       } finally {
@@ -396,7 +457,7 @@ export default function HomePage() {
     };
 
     loadAll();
-  }, [userId]);
+  }, [userId, refreshNotifications]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleLogout = () => {
@@ -408,7 +469,14 @@ export default function HomePage() {
   const handleProfileSave = async (updatedProfile) => {
     setProfile(updatedProfile);
     const stored = JSON.parse(localStorage.getItem('current_user') || '{}');
-    const merged = { ...stored, name: updatedProfile.name, email: updatedProfile.email, profilePicture: updatedProfile.profilePicture };
+    const merged = {
+      ...stored,
+      name: updatedProfile.name,
+      email: updatedProfile.email,
+      profilePicture: updatedProfile.profilePicture,
+      role: stored.role || 'USER',
+      active: stored.active !== false,
+    };
     localStorage.setItem('current_user', JSON.stringify(merged));
 
     if (userId) {
@@ -577,15 +645,45 @@ export default function HomePage() {
   const addNotification = (type, icon, text, detail) => {
     setNotifications(prev => [{
       id: `notif-${Date.now()}`,
-      type, icon, text, detail, isRead: false,
+      type, icon, text, detail, isRead: false, localOnly: true,
     }, ...prev]);
   };
 
   const handleRefreshTips = () => setTips(prev => [...prev].sort(() => Math.random() - 0.5));
-  const handleToggleNotifications = () => setNotificationsOpen(n => !n);
+  const handleToggleNotifications = async () => {
+    const next = !notificationsOpen;
+    setNotificationsOpen(next);
+    if (next) {
+      await refreshNotifications();
+    }
+  };
   const handleCloseNotifications  = () => setNotificationsOpen(false);
-  const handleDismissNotification  = (id) => setNotifications(prev => prev.filter(n => n.id !== id));
-  const handleMarkAllRead          = () => setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  const handleDismissNotification  = async (id) => {
+    const target = notifications.find((n) => n.id === id);
+    if (!target) return;
+
+    if (!target.localOnly && target.serverId && userId) {
+      try {
+        await fetch(`${API_BASE}/notifications/${target.serverId}/read`, { method: 'PUT' });
+      } catch (err) {
+        console.error('Failed to mark notification as read:', err);
+      }
+    }
+
+    setNotifications(prev => prev.filter(n => n.id !== id));
+  };
+
+  const handleMarkAllRead = async () => {
+    if (userId) {
+      try {
+        await fetch(`${API_BASE}/notifications/user/${userId}/read-all`, { method: 'PUT' });
+      } catch (err) {
+        console.error('Failed to mark all notifications as read:', err);
+      }
+    }
+
+    setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+  };
   const handleOpenModal  = () => setModalOpen(true);
   const handleCloseModal = () => setModalOpen(false);
 

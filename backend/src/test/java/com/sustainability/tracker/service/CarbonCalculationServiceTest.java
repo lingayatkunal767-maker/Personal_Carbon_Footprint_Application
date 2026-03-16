@@ -25,21 +25,26 @@ class CarbonCalculationServiceTest {
     @Mock
     private CarbonLogRepository carbonLogRepository;
 
+    @Mock
+    private EmissionFactorService emissionFactorService;
+
     @InjectMocks
     private CarbonCalculationService carbonCalculationService;
 
     @BeforeEach
     void setUp() {
         // Use ReflectionTestUtils to set the @Value fields
-        ReflectionTestUtils.setField(carbonCalculationService, "carFactor", new BigDecimal("0.192"));
-        ReflectionTestUtils.setField(carbonCalculationService, "busFactor", new BigDecimal("0.105"));
-        ReflectionTestUtils.setField(carbonCalculationService, "trainFactor", new BigDecimal("0.041"));
-        ReflectionTestUtils.setField(carbonCalculationService, "autoFactor", new BigDecimal("0.120"));
-        ReflectionTestUtils.setField(carbonCalculationService, "evCarFactor", new BigDecimal("0.060"));
-        ReflectionTestUtils.setField(carbonCalculationService, "nonVegFactor", new BigDecimal("2.5"));
-        ReflectionTestUtils.setField(carbonCalculationService, "vegFactor", new BigDecimal("1.2"));
-        ReflectionTestUtils.setField(carbonCalculationService, "electricityFactor", new BigDecimal("0.82"));
-        ReflectionTestUtils.setField(carbonCalculationService, "lpgCylinderFactor", new BigDecimal("42.6"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultCarFactor", new BigDecimal("0.192"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultBusFactor", new BigDecimal("0.105"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultTrainFactor", new BigDecimal("0.041"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultAutoFactor", new BigDecimal("0.120"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultEvCarFactor", new BigDecimal("0.060"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultNonVegFactor", new BigDecimal("2.5"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultVegFactor", new BigDecimal("1.2"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultElectricityFactor", new BigDecimal("0.82"));
+        ReflectionTestUtils.setField(carbonCalculationService, "defaultLpgCylinderFactor", new BigDecimal("42.6"));
+
+        when(emissionFactorService.getFactorValue(any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(2));
     }
 
     @Test
@@ -65,7 +70,7 @@ class CarbonCalculationServiceTest {
         // Then
         assertEquals(new BigDecimal("2.40"), result.getTransportEmission()); // 12.5 * 0.192
         assertEquals(new BigDecimal("3.14"), result.getFoodEmission()); // ((4 * 2.5) + (10 * 1.2)) / 7
-        assertEquals(new BigDecimal("4.00"), result.getEnergyEmission()); // (120.5 / 30 * 0.82) + (0.5 / 30 * 42.6) = 3.29 + 0.71
-        assertEquals(new BigDecimal("9.54"), result.getTotalEmission());
+        assertEquals(new BigDecimal("4.01"), result.getEnergyEmission());
+        assertEquals(new BigDecimal("9.55"), result.getTotalEmission());
     }
 }

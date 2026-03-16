@@ -21,18 +21,40 @@ public class UserService {
     }
 
     public User getUserById(Long id) {
-        return userRepository.findById(id)
+        User user = userRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("USER");
+        }
+        if (user.getIsActive() == null) {
+            user.setIsActive(true);
+        }
+        return user;
     }
 
     public User getUserByEmail(String email) {
-        return userRepository.findByEmail(email)
+        User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
+
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("USER");
+        }
+        if (user.getIsActive() == null) {
+            user.setIsActive(true);
+        }
+        return user;
     }
 
     public User createUser(User user) {
         if (userRepository.existsByEmail(user.getEmail())) {
             throw new RuntimeException("User already exists with email: " + user.getEmail());
+        }
+        if (user.getRole() == null || user.getRole().isBlank()) {
+            user.setRole("USER");
+        }
+        if (user.getIsActive() == null) {
+            user.setIsActive(true);
         }
         return userRepository.save(user);
     }

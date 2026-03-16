@@ -2,6 +2,9 @@
   "name": "infosys-project",
   "private": true,
   "scripts": {
+    "backend:start": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-backend.ps1",
+    "backend:restart": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\start-backend.ps1 -Restart",
+    "backend:stop": "powershell -NoProfile -ExecutionPolicy Bypass -File .\\scripts\\stop-backend.ps1",
     "dev": "npm --prefix frontend run dev",
     "build": "npm --prefix frontend run build",
     "preview": "npm --prefix frontend run preview",

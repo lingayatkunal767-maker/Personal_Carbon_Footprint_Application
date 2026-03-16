@@ -16,4 +16,8 @@ public interface CarbonLogRepository extends JpaRepository<CarbonLog, Long> {
     List<CarbonLog> findByUserIdAndLogDateBetweenOrderByLogDate(Long userId, LocalDate from, LocalDate to);
 
     List<CarbonLog> findByUserIdOrderByLogDate(Long userId);
+
+    List<CarbonLog> findAllByOrderByLogDateDesc();
+
+    List<CarbonLog> findByLogDateBetweenOrderByLogDateDesc(LocalDate from, LocalDate to);
 }

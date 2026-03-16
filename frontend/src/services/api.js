@@ -229,6 +229,52 @@ export const authAPI = {
       body: JSON.stringify(userData),
     });
   },
+
+  // Admin login
+  adminLogin: async (credentials) => {
+    return fetchAPI('/auth/admin/login', {
+      method: 'POST',
+      body: JSON.stringify(credentials),
+    });
+  },
+
+  // Admin register
+  adminRegister: async (adminData) => {
+    return fetchAPI('/auth/admin/register', {
+      method: 'POST',
+      body: JSON.stringify(adminData),
+    });
+  },
+};
+
+// Admin APIs
+export const adminAPI = {
+  getUsers: async () => fetchAPI('/admin/users'),
+  updateUserStatus: async (userId, active) => fetchAPI(`/admin/users/${userId}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify({ active }),
+  }),
+  getSurveyMonitoring: async () => fetchAPI('/admin/surveys/monitor'),
+  getCarbonLogs: async () => fetchAPI('/admin/carbon-logs'),
+  deleteCarbonLog: async (logId) => fetchAPI(`/admin/carbon-logs/${logId}`, { method: 'DELETE' }),
+  getEmissionFactors: async () => fetchAPI('/admin/emission-factors'),
+  upsertEmissionFactor: async (payload) => fetchAPI('/admin/emission-factors', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  getAnalytics: async (months = 6) => fetchAPI(`/admin/analytics?months=${months}`),
+  getBadgeDefinitions: async () => fetchAPI('/admin/badges/definitions'),
+  upsertBadgeDefinition: async (payload) => fetchAPI('/admin/badges/definitions', {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
+  assignBadge: async (payload) => fetchAPI('/admin/badges/assign', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  }),
+  assignByPerformance: async (minReductionPercent = 10) => fetchAPI(`/admin/badges/assign-by-performance?minReductionPercent=${minReductionPercent}`, {
+    method: 'POST',
+  }),
 };
 
 // Export all as a single object (alternative usage)
@@ -243,6 +289,7 @@ export const api = {
   carbonLog: carbonLogAPI,
   dashboard: dashboardAPI,
   auth: authAPI,
+  admin: adminAPI,
 };
 
 // Default export

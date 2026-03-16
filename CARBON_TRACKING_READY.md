@@ -48,10 +48,16 @@ Your Sustainability Tracker now has a **complete carbon tracking system** with a
 
 ### **Start Backend**
 ```powershell
-cd backend
-mvn spring-boot:run
+.\scripts\start-backend.bat
 ```
 ✅ Runs on: http://localhost:8081
+✅ Auto-resolves stale port 8081 backend process before startup
+
+### **Stop Backend**
+```powershell
+.\scripts\stop-backend.ps1
+```
+✅ Safely frees port 8081 for next start
 
 ### **Start Frontend**
 ```powershell
@@ -128,41 +134,12 @@ curl "http://localhost:8081/api/carbon/logs?userId=1&from=2024-02-01&to=2024-03-
 
 ---
 
-## 🧮 How Emissions Are Calculated
 
-### Transport Emissions
-```
-Daily Transport = Distance (km/day) × Emission Factor (kg CO2e/km)
-```
+## 🧮 How Analytics Dashboard Works
 
-| Transport Mode | Emission Factor |
-|---------------|-----------------|
-| Car (Petrol/Diesel) | 0.192 kg CO2e/km |
-| Bus | 0.105 kg CO2e/km |
-| Train/Metro | 0.041 kg CO2e/km |
-| Auto-rickshaw | 0.120 kg CO2e/km |
-| Electric Car | 0.060 kg CO2e/km |
-| Bike/Walk | 0.0 kg CO2e/km |
+The Analytics Dashboard now uses only real, user-generated data for all charts and statistics. All emission calculations, breakdowns, and trends are based on actual survey submissions and carbon logs from users—no static emission factors or formulas are shown to users.
 
-### Food Emissions
-```
-Daily Food = (Non-Veg Meals/Week × 2.5 + Veg Meals/Week × 1.2) ÷ 7
-```
-
-| Meal Type | Emission Factor |
-|-----------|-----------------|
-| Non-Vegetarian | 2.5 kg CO2e/meal |
-| Vegetarian | 1.2 kg CO2e/meal |
-
-### Energy Emissions
-```
-Daily Energy = (Electricity kWh/month ÷ 30 × 0.82) + (LPG Cylinders/month ÷ 30 × 42.6)
-```
-
-| Energy Source | Emission Factor |
-|---------------|-----------------|
-| Electricity | 0.82 kg CO2e/kWh |
-| LPG Cylinder | 42.6 kg CO2e/cylinder |
+All visualizations reflect real activity and progress, making the dashboard authentic and trustworthy.
 
 ---
 

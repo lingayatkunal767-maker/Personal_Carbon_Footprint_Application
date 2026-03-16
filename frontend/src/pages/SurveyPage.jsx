@@ -214,6 +214,7 @@ const SurveyPage = () => {
   const mapTransportMode = (mode) => {
     const mapping = {
       'Car': 'CAR',
+      'Bike': 'BIKE',
       'Bicycle': 'BIKE',
       'Bus': 'BUS',
       'Train': 'TRAIN',
@@ -404,7 +405,7 @@ const SurveyPage = () => {
                   >
                     <option value="">-- Select Transport Mode --</option>
                     <option value="Car">🚗 Car</option>
-                    <option value="Bicycle">🚴 Bicycle</option>
+                    <option value="Bike">🚴 Bike</option>
                     <option value="Bus">🚌 Bus</option>
                     <option value="Train">🚂 Train</option>
                     <option value="Metro">🚇 Metro</option>

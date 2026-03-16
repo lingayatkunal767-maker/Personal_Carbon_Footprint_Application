@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 
 // ═══════════════════════════════════════════════════════════════════
 // CONFIGURATION
@@ -58,6 +58,21 @@ export default function SignUpPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem('auth_token');
+    const raw = localStorage.getItem('current_user');
+    if (!token || !raw) return;
+
+    try {
+      const session = JSON.parse(raw);
+      if (!session || session.active === false) return;
+      const target = (session.role || 'USER').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+      navigate(target, { replace: true });
+    } catch {
+      // Ignore malformed session and keep signup screen.
+    }
+  }, [navigate]);
 
   // Load Google Identity Services script
   useEffect(() => {
@@ -133,17 +148,22 @@ export default function SignUpPage() {
       }
 
       // Set current user session
+      const role = data.role || 'USER';
+      const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+
       localStorage.setItem('current_user', JSON.stringify({
         id: data.userId,
         name: data.name,
         email: data.email,
         profilePicture: data.profilePicture,
+        role,
+        active: data.active !== false,
       }));
       localStorage.setItem('auth_token', 'authenticated');
 
       showToast(`✅ Welcome, ${firstName}! Your account has been created successfully.`);
       setTimeout(() => {
-        navigate('/home');
+        navigate(target);
       }, 1200);
     } catch (error) {
       console.error('Authentication error:', error);
@@ -163,14 +183,23 @@ export default function SignUpPage() {
 
   const handleEmailSignUp = async (e) => {
     e.preventDefault();
+
+    const normalizedName = name.trim().replace(/\s+/g, ' ');
+    const normalizedEmail = email.trim().toLowerCase();
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     
     // Validation
-    if (!name || !email || !password || !confirmPassword) {
+    if (!normalizedName || !normalizedEmail || !password || !confirmPassword) {
       showToast('⚠️ Please fill in all required fields.');
       return;
     }
+
+    if (normalizedName.length < 2) {
+      showToast('⚠️ Name must be at least 2 characters long.');
+      return;
+    }
     
-    if (!email.includes('@')) {
+    if (!emailPattern.test(normalizedEmail)) {
       showToast('⚠️ Please enter a valid email address.');
       return;
     }
@@ -191,23 +220,28 @@ export default function SignUpPage() {
       const response = await fetch(`${API_BASE_URL}/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, email: email.toLowerCase(), password }),
+        body: JSON.stringify({ name: normalizedName, email: normalizedEmail, password }),
       });
 
       const data = await response.json();
 
       if (data.success) {
+        const role = data.role || 'USER';
+        const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+
         // Save session info
         localStorage.setItem('current_user', JSON.stringify({
           id: data.userId,
           name: data.name,
           email: data.email,
-          profilePicture: data.profilePicture
+          profilePicture: data.profilePicture,
+          role,
+          active: data.active !== false,
         }));
         localStorage.setItem('auth_token', 'authenticated');
         setEmailLoading(false);
         showToast(`✅ ${data.message}`);
-        setTimeout(() => navigate('/home'), 1200);
+        setTimeout(() => navigate(target), 1200);
       } else {
         setEmailLoading(false);
         showToast(`⚠️ ${data.message}`);
@@ -1228,7 +1262,11 @@ export default function SignUpPage() {
 
               {/* Login link */}
               <div className="login-link">
-                Already have an account? <a href="/login">Login</a>
+                Already have an account? <Link to="/login">Login</Link>
+              </div>
+
+              <div className="login-link" style={{ marginTop: '0.4rem', paddingTop: '0.4rem' }}>
+                Need admin account? <Link to="/admin/signup">Create admin access</Link>
               </div>
             </div>
           </div>
