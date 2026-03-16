@@ -54,14 +54,16 @@ function AppLayout({ children }) {
           <span className="app-sidebar-logo-text">CarbonCalc</span>
         </div>
         <nav className="app-sidebar-nav">
-  <NavLink to="/dashboard" className="app-nav-item" end>
-    <span className="app-nav-icon">◉</span>
-    <span>Dashboard</span>
-  </NavLink>
+  
 
   {/* USER FEATURES */}
   {user.role === "USER" && (
     <>
+      <NavLink to="/dashboard" className="app-nav-item" end>
+    <span className="app-nav-icon">◉</span>
+    <span>Dashboard</span>
+  </NavLink>
+  
       <NavLink to="/survey" className="app-nav-item">
         <span className="app-nav-icon">📋</span>
         <span>Lifestyle Survey</span>
@@ -82,6 +84,11 @@ function AppLayout({ children }) {
   {/* ADMIN FEATURES */}
   {user.role === "ADMIN" && (
     <>
+      <NavLink to="/admindashboard" className="app-nav-item">
+        <span className="app-nav-icon">🛡️</span>
+        <span>Dashboard</span>
+      </NavLink>
+
       <NavLink to="/badges" className="app-nav-item">
         <span className="app-nav-icon">🏅</span>
         <span>Badges</span>

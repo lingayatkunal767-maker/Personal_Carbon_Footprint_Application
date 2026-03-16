@@ -66,7 +66,19 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
 
     String token = jwtUtil.generateToken(request.getEmail());
 
-    return ResponseEntity.ok(token);
+    Optional<?> userOpt = userService.getUserByEmail(request.getEmail());
+
+    if (userOpt.isEmpty()) {
+        return ResponseEntity.badRequest().body("User not found");
+    }
+
+    com.carbon.carbontracker.model.User user =
+            (com.carbon.carbontracker.model.User) userOpt.get();
+
+    return ResponseEntity.ok(Map.of(
+            "token", token,
+            "role", user.getRole()
+    ));
 }
 
     @PostMapping("/forgot-password")

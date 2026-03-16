@@ -15,7 +15,7 @@ import OAuth2RedirectHandler from "./pages/OAuth2RedirectHandler";
 import Badges from "./pages/Badges";
 import Leaderboard from "./pages/Leaderboard";
 import Goals from "./pages/Goals";
-
+import AdminDashboard from "./pages/AdminDashboard";
 function App() {
   return (
     <Router>
@@ -36,6 +36,7 @@ function App() {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/Goals" element={<Goals />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard/>}/>
       </Routes>
     </Router>
   );
