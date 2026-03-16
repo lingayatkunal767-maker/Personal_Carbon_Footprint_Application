@@ -21,6 +21,23 @@ function Get-ProcessInfo {
     return Get-CimInstance Win32_Process -Filter "ProcessId = $OwnerId" -ErrorAction SilentlyContinue
 }
 
+function Wait-ForPortFree {
+    param(
+        [int]$TargetPort,
+        [int]$TimeoutSeconds = 30
+    )
+
+    $deadline = (Get-Date).AddSeconds($TimeoutSeconds)
+    while ((Get-Date) -lt $deadline) {
+        if (-not (Get-Listener -TargetPort $TargetPort)) {
+            return $true
+        }
+        Start-Sleep -Milliseconds 500
+    }
+
+    return -not (Get-Listener -TargetPort $TargetPort)
+}
+
 function Test-TrackerProcess {
     param($ProcessInfo)
 
@@ -65,13 +82,29 @@ if ($listener) {
         Write-Host "[INFO] Restart requested. Stopping existing backend PID $listenerOwnerId..."
         Stop-Process -Id $listenerOwnerId -Force -ErrorAction Stop
 
-        for ($i = 0; $i -lt 10; $i++) {
-            Start-Sleep -Seconds 1
-            if (-not (Get-Listener -TargetPort $Port)) { break }
+        if (-not (Wait-ForPortFree -TargetPort $Port -TimeoutSeconds 15)) {
+            $remainingListener = Get-Listener -TargetPort $Port
+            if ($remainingListener) {
+                $remainingPid = [int]$remainingListener.OwningProcess
+                $remainingProc = Get-ProcessInfo -OwnerId $remainingPid
+
+                if (Test-TrackerProcess -ProcessInfo $remainingProc) {
+                    Write-Host "[WARN] Port $Port is still owned by tracker PID $remainingPid. Retrying force stop..."
+                    Stop-Process -Id $remainingPid -Force -ErrorAction SilentlyContinue
+                    [void](Wait-ForPortFree -TargetPort $Port -TimeoutSeconds 15)
+                }
+            }
         }
 
-        if (Get-Listener -TargetPort $Port) {
+        $listenerAfterStop = Get-Listener -TargetPort $Port
+        if ($listenerAfterStop) {
+            $blockingPid = [int]$listenerAfterStop.OwningProcess
+            $blockingProc = Get-ProcessInfo -OwnerId $blockingPid
             Write-Error "[ERROR] Port $Port is still in use after stop attempt."
+            if ($blockingProc) {
+                Write-Host "[INFO] Blocking process: $($blockingProc.Name) (PID $blockingPid)"
+                Write-Host "[INFO] Command line: $($blockingProc.CommandLine)"
+            }
             exit 1
         }
     } else {

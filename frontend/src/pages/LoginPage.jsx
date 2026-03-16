@@ -1,78 +1,51 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// CONFIGURATION
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com";
+const GOOGLE_CLIENT_ID =
+  import.meta.env.VITE_GOOGLE_CLIENT_ID ||
+  '245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com';
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
-console.log('≡ƒöÉ Google Auth Configuration:');
-console.log('   Client ID:', GOOGLE_CLIENT_ID ? GOOGLE_CLIENT_ID.substring(0, 30) + '...' : 'NOT SET');
-console.log('   API URL:', API_BASE_URL);
-
 const FACTS = [
-  "Global ocean temperatures have risen by 0.13┬░F per decade since 1901.",
-  "Home energy efficiency improvements can cut emissions by 25-30%.",
-  "A single roundtrip transatlantic flight emits ~1.6 tons of COΓéé per passenger.",
-  "Producing 1kg of beef generates 60kg of greenhouse gases (21x more than beans).",
-  "Fashion industry accounts for 10% of global carbon emissions annually.",
-  "One mature tree absorbs ~48 pounds of COΓéé per year.",
-  "Recycling aluminum saves 95% of the energy needed to make new aluminum.",
-  "Biking instead of driving for short trips can save 0.9kg COΓéé per mile."
+  'Global ocean temperatures have risen by about 0.13 F per decade since 1901.',
+  'Home efficiency improvements can reduce household emissions by 25 to 30 percent.',
+  'A single roundtrip transatlantic flight can emit about 1.6 tons of CO2 per passenger.',
+  'Producing 1 kg of beef can create about 60 kg of greenhouse gas emissions.',
+  'The fashion industry contributes close to 10 percent of global emissions.',
+  'One mature tree can absorb about 48 pounds of CO2 per year.',
+  'Recycling aluminum saves up to 95 percent of the energy used to produce new aluminum.',
+  'Biking instead of driving short trips can save about 0.9 kg CO2 per mile.'
 ];
 
 const STATS = [
-  { value: "4.7T", label: "Average COΓéé tons per person per year" },
-  { value: "28%", label: "Of global emissions from transport" },
-  { value: "1.5T", label: "COΓéé saved annually by going plant-based" },
-  { value: "45%", label: "Emissions reduction needed by 2030" }
+  { value: '4.7T', label: 'Average yearly CO2 footprint per person' },
+  { value: '28%', label: 'Of global emissions from transport' },
+  { value: '45%', label: 'Reduction needed by 2030' }
 ];
 
-const FEATURES = [
-  "Daily carbon footprint tracker",
-  "Personalized reduction tips & goals",
-  "Transport, diet & energy breakdowns",
-  "Monthly progress reports & insights"
-];
+function GoogleIcon() {
+  return (
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4" />
+      <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853" />
+      <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49L4.405 11.9z" fill="#FBBC05" />
+      <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.192 5.737 7.396 3.977 10 3.977z" fill="#EA4335" />
+    </svg>
+  );
+}
 
-const LEAVES = [
-  { size: 24, left: '12%', top: '15%', delay: 0 },
-  { size: 32, left: '78%', top: '25%', delay: 3 },
-  { size: 20, left: '25%', top: '65%', delay: 6 },
-  { size: 28, left: '85%', top: '70%', delay: 9 },
-  { size: 26, left: '45%', top: '35%', delay: 12 }
-];
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// GOOGLE ICON COMPONENT
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-const GoogleIcon = () => (
-  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
-    <path d="M19.6 10.227c0-.709-.064-1.39-.182-2.045H10v3.868h5.382a4.6 4.6 0 01-1.996 3.018v2.51h3.232c1.891-1.742 2.982-4.305 2.982-7.35z" fill="#4285F4"/>
-    <path d="M10 20c2.7 0 4.964-.895 6.618-2.423l-3.232-2.509c-.895.6-2.04.955-3.386.955-2.605 0-4.81-1.76-5.595-4.123H1.064v2.59A9.996 9.996 0 0010 20z" fill="#34A853"/>
-    <path d="M4.405 11.9c-.2-.6-.314-1.24-.314-1.9 0-.66.114-1.3.314-1.9V5.51H1.064A9.996 9.996 0 000 10c0 1.614.386 3.14 1.064 4.49L4.405 11.9z" fill="#FBBC05"/>
-    <path d="M10 3.977c1.468 0 2.786.505 3.823 1.496l2.868-2.868C14.959.99 12.695 0 10 0 6.09 0 2.71 2.24 1.064 5.51l3.34 2.59C5.192 5.737 7.396 3.977 10 3.977z" fill="#EA4335"/>
-  </svg>
-);
-
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
-// MAIN LOGIN PAGE COMPONENT
-// ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ
 export default function LoginPage() {
   const navigate = useNavigate();
-  const [factIndex, setFactIndex] = useState(0);
-  const [factVisible, setFactVisible] = useState(true);
-  const [loading, setLoading] = useState(false);
-  const [btnLabel, setBtnLabel] = useState('Continue with Google');
-  const [toast, setToast] = useState({ msg: '', show: false });
-  const toastTimerRef = useRef(null);
-  
-  // Email/Password login state
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [emailLoading, setEmailLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
+  const [emailLoading, setEmailLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
+  const [factIndex, setFactIndex] = useState(0);
+  const [toast, setToast] = useState({ text: '', visible: false });
+
+  const toastTimerRef = useRef(null);
 
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -85,1153 +58,553 @@ export default function LoginPage() {
       const target = (session.role || 'USER').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
       navigate(target, { replace: true });
     } catch {
-      // Ignore bad session payload and stay on login page.
+      // Keep user on login page if session payload is malformed.
     }
   }, [navigate]);
 
-  // Load Google Identity Services script
   useEffect(() => {
-    console.log('≡ƒôª Loading Google Identity Services...');
-    
+    const interval = setInterval(() => {
+      setFactIndex((prev) => (prev + 1) % FACTS.length);
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
     const script = document.createElement('script');
     script.src = 'https://accounts.google.com/gsi/client';
     script.async = true;
     script.defer = true;
-    
+
     script.onload = () => {
-      console.log('Γ£à Google Identity Services loaded');
-      
-      if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-        console.error('Γ¥î Google Client ID not configured!');
-        console.error('   Please add VITE_GOOGLE_CLIENT_ID to your .env file');
-        showToast('ΓÜá∩╕Å Google Sign-In not configured. Please check setup.');
+      if (!window.google?.accounts?.id) {
+        showToast('Google Sign-In is unavailable right now.');
         return;
       }
-      
-      if (window.google?.accounts?.id) {
-        try {
-          window.google.accounts.id.initialize({
-            client_id: GOOGLE_CLIENT_ID,
-            callback: handleCredentialResponse,
-            auto_select: false,
-            cancel_on_tap_outside: true
-          });
-          console.log('Γ£à Google One Tap initialized');
-        } catch (error) {
-          console.error('Γ¥î Failed to initialize Google One Tap:', error);
-          showToast('ΓÜá∩╕Å Google authentication setup error');
-        }
-      } else {
-        console.error('Γ¥î Google Identity Services API not available');
+
+      if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+        showToast('Google OAuth is not configured.');
+        return;
       }
+
+      window.google.accounts.id.initialize({
+        client_id: GOOGLE_CLIENT_ID,
+        callback: handleCredentialResponse,
+        auto_select: false,
+        cancel_on_tap_outside: true
+      });
     };
-    
+
     script.onerror = () => {
-      console.error('Γ¥î Failed to load Google Identity Services script');
-      showToast('ΓÜá∩╕Å Failed to load Google Sign-In. Check your internet connection.');
+      showToast('Failed to load Google Sign-In. Check internet connection.');
     };
-    
+
     document.body.appendChild(script);
 
     return () => {
       if (document.body.contains(script)) {
         document.body.removeChild(script);
       }
-    };
-  }, []);
 
-  // Rotating facts ticker
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setFactVisible(false);
-      setTimeout(() => {
-        setFactIndex((prev) => (prev + 1) % FACTS.length);
-        setFactVisible(true);
-      }, 400);
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, []);
-
-  // Cleanup toast timer
-  useEffect(() => {
-    return () => {
       if (toastTimerRef.current) {
         clearTimeout(toastTimerRef.current);
       }
     };
   }, []);
 
-  const handleCredentialResponse = async (response) => {
-    console.log('≡ƒôÑ Received Google credential response');
-    
-    if (!response.credential) {
-      console.error('Γ¥î No credential in response');
-      showToast('ΓÜá∩╕Å Authentication failed: No credential received');
-      return;
-    }
-    
-    try {
-      // Decode JWT to get user info
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      console.log('Γ£à Decoded JWT payload:', {
-        email: payload.email,
-        name: payload.name,
-        sub: payload.sub
-      });
-      
-      const firstName = payload.given_name || 'there';
-      const userEmail = payload.email;
-      const fullName = payload.name || firstName;
-      const profilePicture = payload.picture || null;
-
-      console.log('≡ƒôí Sending to backend:', `${API_BASE_URL}/auth/google`);
-      
-      // Call backend ΓÇö upserts user (creates if new, logs in if existing)
-      const res = await fetch(`${API_BASE_URL}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: fullName,
-          email: userEmail,
-          googleId: payload.sub,
-          profilePicture,
-        }),
-      });
-      
-      if (!res.ok) {
-        throw new Error(`Backend returned ${res.status}: ${res.statusText}`);
-      }
-      
-      const data = await res.json();
-      console.log('Γ£à Backend response:', { success: data.success, message: data.message });
-
-      if (!data.success) {
-        showToast(`ΓÜá∩╕Å ${data.message}`);
-        return;
-      }
-
-      // Set current user session
-      const userData = {
-        id: data.userId,
-        name: data.name,
-        email: data.email,
-        profilePicture: data.profilePicture,
-        role: data.role || 'USER',
-        active: data.active !== false,
-      };
-      
-      localStorage.setItem('current_user', JSON.stringify(userData));
-      localStorage.setItem('auth_token', 'authenticated');
-      
-      console.log('Γ£à User session created:', userData);
-
-      showToast(`Welcome back, ${firstName}! ≡ƒî┐`);
-      setTimeout(() => {
-        const target = (userData.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
-        console.log(`Γ₧í∩╕Å Redirecting to ${target}`);
-        navigate(target, { replace: true });
-      }, 1200);
-    } catch (error) {
-      console.error('Γ¥î Authentication error:', error);
-      showToast(`ΓÜá∩╕Å Authentication failed: ${error.message}`);
-    }
-  };
-
-  const showToast = (msg) => {
+  const showToast = (text) => {
     if (toastTimerRef.current) {
       clearTimeout(toastTimerRef.current);
     }
-    setToast({ msg, show: true });
+
+    setToast({ text, visible: true });
     toastTimerRef.current = setTimeout(() => {
-      setToast({ msg: '', show: false });
+      setToast({ text: '', visible: false });
     }, 3000);
   };
 
-  const handleEmailLogin = async (e) => {
-    e.preventDefault();
+  const setSessionAndNavigate = (data) => {
+    const session = {
+      id: data.userId,
+      name: data.name,
+      email: data.email,
+      profilePicture: data.profilePicture,
+      role: data.role || 'USER',
+      active: data.active !== false
+    };
 
-    const normalizedEmail = email.trim().toLowerCase();
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    
-    // Validation
-    if (!normalizedEmail || !password) {
-      showToast('ΓÜá∩╕Å Please enter both email and password');
+    localStorage.setItem('current_user', JSON.stringify(session));
+    localStorage.setItem('auth_token', 'authenticated');
+
+    const target = (session.role || 'USER').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+    navigate(target, { replace: true });
+  };
+
+  const handleCredentialResponse = async (response) => {
+    if (!response?.credential) {
+      showToast('Authentication failed. No Google credential received.');
       return;
     }
-    
-    if (!emailPattern.test(normalizedEmail)) {
-      showToast('ΓÜá∩╕Å Please enter a valid email address');
-      return;
-    }
-    
-    if (password.length < 6) {
-      showToast('ΓÜá∩╕Å Password must be at least 6 characters');
-      return;
-    }
-    
-    setEmailLoading(true);
+
+    setGoogleLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      const payload = JSON.parse(atob(response.credential.split('.')[1]));
+      const result = await fetch(`${API_BASE_URL}/auth/google`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
+        body: JSON.stringify({
+          name: payload.name || payload.given_name || 'Google User',
+          email: payload.email,
+          googleId: payload.sub,
+          profilePicture: payload.picture || null
+        })
       });
 
-      const data = await response.json();
-
-      if (data.success) {
-        const role = data.role || 'USER';
-        const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
-
-        // Save session info
-        localStorage.setItem('current_user', JSON.stringify({
-          id: data.userId,
-          name: data.name,
-          email: data.email,
-          profilePicture: data.profilePicture,
-          role,
-          active: data.active !== false,
-        }));
-        localStorage.setItem('auth_token', 'authenticated');
-        setEmailLoading(false);
-        showToast(`${data.message} ≡ƒî┐`);
-        setTimeout(() => { navigate(target, { replace: true }); }, 1200);
-      } else {
-        setEmailLoading(false);
-        showToast(`ΓÜá∩╕Å ${data.message}`);
+      const data = await result.json();
+      if (!result.ok || !data.success) {
+        throw new Error(data.message || 'Google login failed');
       }
-    } catch (err) {
-      setEmailLoading(false);
-      const msg = err instanceof TypeError
-        ? 'ΓÜá∩╕Å Cannot reach backend (port 8081). Is Spring Boot running?'
-        : `ΓÜá∩╕Å Login error: ${err.message}`;
-      showToast(msg);
-      console.error('Login error:', err);
+
+      showToast(`Welcome, ${data.name || 'user'}.`);
+      setTimeout(() => setSessionAndNavigate(data), 500);
+    } catch (error) {
+      showToast(`Google login failed: ${error.message}`);
+    } finally {
+      setGoogleLoading(false);
     }
   };
 
   const handleGoogleLogin = () => {
-    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === "YOUR_GOOGLE_CLIENT_ID_HERE") {
-      showToast('ΓÜá∩╕Å Google OAuth not configured. Check GOOGLE_AUTH_SETUP.md');
-      console.error('Missing VITE_GOOGLE_CLIENT_ID in .env file');
+    if (!window.google?.accounts?.id) {
+      showToast('Google Sign-In is still loading. Try again in a moment.');
       return;
     }
 
-    if (!window.google) {
-      console.error('Γ¥î Google Identity Services library not loaded');
-      showToast('ΓÜá∩╕Å Google Sign-In loading failed. Please refresh the page.');
+    if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
+      showToast('Google OAuth is not configured.');
       return;
     }
 
-    setLoading(true);
-    setBtnLabel('Opening Google Sign-InΓÇª');
+    setGoogleLoading(true);
+    window.google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        setGoogleLoading(false);
+        showToast('Google One Tap was not shown. Please use email login.');
+      } else {
+        setGoogleLoading(false);
+      }
+    });
+  };
+
+  const handleEmailLogin = async (event) => {
+    event.preventDefault();
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!normalizedEmail || !password) {
+      showToast('Please enter both email and password.');
+      return;
+    }
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailPattern.test(normalizedEmail)) {
+      showToast('Please enter a valid email address.');
+      return;
+    }
+
+    setEmailLoading(true);
 
     try {
-      const redirectUri = `${window.location.origin}/auth/callback`;
-      console.log('≡ƒöì Google OAuth Configuration:');
-      console.log('   Redirect URI:', redirectUri);
-      console.log('   Client ID:', GOOGLE_CLIENT_ID.substring(0, 20) + '...');
-      console.log('   Origin:', window.location.origin);
-      
-      if (window.google.accounts && window.google.accounts.id) {
-        // Try Google One Tap first
-        window.google.accounts.id.prompt((notification) => {
-          console.log('One Tap Notification:', notification);
-          
-          if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-            console.log('One Tap skipped, redirecting to OAuth flow...');
-            // Fallback to OAuth redirect flow
-            const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
-              `client_id=${GOOGLE_CLIENT_ID}&` +
-              `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-              `response_type=token&` +
-              `scope=openid%20email%20profile&` +
-              `prompt=select_account`;
-            
-            console.log('≡ƒöù Redirecting to:', authUrl);
-            window.location.href = authUrl;
-          } else {
-            // One Tap displayed successfully
-            setLoading(false);
-            setBtnLabel('Continue with Google');
-          }
-        });
-        
-        // Set timeout in case prompt doesn't respond
-        setTimeout(() => {
-          if (loading) {
-            setLoading(false);
-            setBtnLabel('Continue with Google');
-          }
-        }, 3000);
-      } else {
-        console.error('Google accounts.id not available');
-        throw new Error('Google Identity Services not initialized');
+      const result = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: normalizedEmail,
+          password
+        })
+      });
+
+      const data = await result.json();
+      if (!result.ok || !data.success) {
+        throw new Error(data.message || 'Login failed');
       }
+
+      showToast(data.message || 'Login successful.');
+      setTimeout(() => setSessionAndNavigate(data), 500);
     } catch (error) {
-      console.error('Γ¥î Login error:', error);
-      setLoading(false);
-      setBtnLabel('Continue with Google');
-      showToast('Γ¥î Login failed. Please try again.');
+      showToast(error.message || 'Cannot reach backend server.');
+    } finally {
+      setEmailLoading(false);
     }
   };
 
   return (
     <>
       <style>{`
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* GOOGLE FONTS IMPORT */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,500;0,700;1,500&family=DM+Sans:wght@300;400;500&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap');
 
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* CSS VARIABLES */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         :root {
           --forest: #1a3d2b;
           --moss: #2e5e42;
           --sage: #5a8a6a;
-          --fern: #89bb97;
+          --mint: #89bb97;
           --mist: #c8dece;
           --cream: #f6f1e9;
-          --warm-off: #faf7f2;
-          --charcoal: #1c1e1a;
-          --text-med: #4a5244;
-          --text-lt: #7a8a74;
+          --paper: #faf7f2;
+          --ink: #1c1e1a;
+          --ink-soft: #4a5244;
         }
 
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* GLOBAL RESET */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         * {
-          margin: 0;
-          padding: 0;
           box-sizing: border-box;
         }
 
         body {
+          margin: 0;
           font-family: 'DM Sans', sans-serif;
-          overflow-x: hidden;
-          position: relative;
+          color: var(--ink);
+          background:
+            radial-gradient(circle at 8% 10%, rgba(137, 187, 151, 0.22), transparent 40%),
+            radial-gradient(circle at 92% 85%, rgba(200, 222, 206, 0.28), transparent 45%),
+            linear-gradient(135deg, #f9f5ed 0%, #f3efe6 100%);
         }
 
-        /* Grain texture overlay */
-        body::before {
-          content: '';
-          position: fixed;
-          top: 0;
-          left: 0;
-          width: 100%;
-          height: 100%;
-          opacity: 0.03;
-          pointer-events: none;
-          z-index: 9999;
-          background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        .login-shell {
+          min-height: 100vh;
+          display: grid;
+          grid-template-columns: 1.1fr 1fr;
         }
 
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* KEYFRAME ANIMATIONS */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        @keyframes meshShift {
-          0%, 100% { transform: translate(0%, 0%) scale(1); }
-          50% { transform: translate(3%, 4%) scale(1.05); }
-        }
-
-        @keyframes floatLeaf {
-          0%, 100% { transform: translateY(0px) rotate(0deg); }
-          50% { transform: translateY(-20px) rotate(5deg); }
-        }
-
-        @keyframes cardEntrance {
-          0% { opacity: 0; transform: translateY(30px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes factFade {
-          0% { opacity: 0; transform: translateY(10px); }
-          100% { opacity: 1; transform: translateY(0); }
-        }
-
-        @keyframes spin {
-          to { transform: rotate(360deg); }
-        }
-
-        @keyframes toastSlide {
-          0% { opacity: 0; transform: translate(-50%, -20px); }
-          100% { opacity: 1; transform: translate(-50%, 0); }
-        }
-
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* LAYOUT CONTAINER */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        .login-container {
-          display: flex;
-          min-height: 100svh;
-          width: 100%;
-          align-items: stretch;
-        }
-
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* LEFT PANEL - HIDDEN */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        .left-panel {
-          display: none;
-        }
-
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* RIGHT PANEL - FULL WIDTH */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        .right-panel {
-          background: var(--warm-off);
-          padding: clamp(0.7rem, 1.2vw, 1.1rem) clamp(0.8rem, 1.2vw, 1rem) clamp(0.7rem, 1.2vw, 1rem);
+        .hero {
+          padding: clamp(24px, 4vw, 48px);
           display: flex;
           flex-direction: column;
-          align-items: center;
           justify-content: center;
-          position: relative;
-          flex: 1;
-          width: 100%;
-          min-height: 100%;
-          box-sizing: border-box;
-          gap: 0.55rem;
-        }
-
-        .top-link {
-          position: absolute;
-          top: 0.75rem;
-          right: 1rem;
-          font-size: 0.76rem;
-          color: var(--text-med);
-          text-decoration: none;
-          transition: color 0.3s ease;
-          font-weight: 400;
-        }
-
-        .top-link:hover {
-          color: var(--sage);
-        }
-
-        /* Dark green card container */
-        .dark-green-card {
-          background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
-          border-radius: 16px;
-          padding: clamp(0.85rem, 1.1vw, 1.05rem) clamp(0.8rem, 1vw, 0.95rem);
-          box-shadow: 0 20px 60px rgba(26, 61, 43, 0.3);
-          max-width: 390px;
-          width: 100%;
-          animation: cardEntrance 0.7s cubic-bezier(0.22, 1, 0.36, 1) forwards;
-          position: relative;
-          overflow: hidden;
-        }
-
-        .card-background-image {
-          position: absolute;
-          top: 0;
-          right: 0;
-          width: 280px;
-          height: 280px;
-          opacity: 0.12;
-          mix-blend-mode: overlay;
-          pointer-events: none;
-          transform: translate(25%, -25%) rotate(15deg);
-          filter: blur(1px) brightness(1.2);
-          animation: floatImage 20s ease-in-out infinite;
-        }
-
-        @keyframes floatImage {
-          0%, 100% {
-            transform: translate(25%, -25%) rotate(15deg) scale(1);
-          }
-          50% {
-            transform: translate(30%, -20%) rotate(18deg) scale(1.05);
-          }
-        }
-
-        /* Login card */
-        .login-card {
-          width: 100%;
-          text-align: left;
-        }
-
-        .card-label {
-          font-size: 0.62rem;
-          text-transform: uppercase;
-          letter-spacing: 1.6px;
-          color: var(--mist);
-          font-weight: 500;
-          margin-bottom: 0.45rem;
-          text-align: left;
-        }
-
-        .card-title {
-          font-family: 'Playfair Display', serif;
-          font-size: 1.58rem;
-          line-height: 1.15;
+          background: linear-gradient(145deg, rgba(26, 61, 43, 0.95), rgba(46, 94, 66, 0.9));
           color: var(--cream);
-          font-weight: 700;
-          margin-bottom: 0.55rem;
-          text-align: left;
         }
 
-        .card-subtitle {
-          font-size: 0.78rem;
-          color: var(--mist);
-          font-weight: 300;
-          line-height: 1.33;
-          margin-bottom: 0.95rem;
-          text-align: left;
+        .hero h1 {
+          margin: 0;
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(2rem, 4vw, 3rem);
+          line-height: 1.15;
         }
 
-        /* Form inputs */
-        .login-form {
-          margin-bottom: 0.7rem;
-        }
-
-        .input-group {
-          margin-bottom: 0.58rem;
-        }
-
-        .input-label {
-          display: block;
-          font-size: 0.74rem;
-          font-weight: 500;
-          color: var(--mist);
-          margin-bottom: 0.25rem;
-          text-align: left;
-        }
-
-        .input-wrapper {
-          position: relative;
-        }
-
-        .input-field {
-          width: 100%;
-          padding: 0.58rem 0.72rem;
-          border: 1.5px solid rgba(200, 222, 206, 0.3);
-          border-radius: 8px;
-          font-size: 0.82rem;
-          font-family: 'DM Sans', sans-serif;
-          color: var(--charcoal);
-          background: rgba(255, 255, 255, 0.95);
-          transition: all 0.3s ease;
-        }
-
-        .input-field:focus {
-          outline: none;
-          border-color: var(--fern);
-          box-shadow: 0 0 0 3px rgba(137, 187, 151, 0.2);
-          background: white;
-        }
-
-        .input-field::placeholder {
-          color: var(--text-lt);
-        }
-
-        .password-toggle {
-          position: absolute;
-          right: 0.7rem;
-          top: 50%;
-          transform: translateY(-50%);
-          background: none;
-          border: none;
-          cursor: pointer;
+        .hero p {
+          margin-top: 14px;
           font-size: 1rem;
-          opacity: 0.6;
-          transition: opacity 0.3s ease;
-          padding: 0.15rem;
+          color: var(--mist);
+          max-width: 540px;
         }
 
-        .password-toggle:hover {
-          opacity: 1;
+        .stat-grid {
+          margin-top: 22px;
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          gap: 10px;
         }
 
-        /* Email login button */
-        .email-btn {
+        .stat-card {
+          border: 1px solid rgba(200, 222, 206, 0.25);
+          border-radius: 12px;
+          padding: 12px;
+          background: rgba(255, 255, 255, 0.07);
+        }
+
+        .stat-value {
+          font-weight: 700;
+          font-size: 1.1rem;
+          color: #e7f5ea;
+        }
+
+        .stat-label {
+          margin-top: 4px;
+          font-size: 0.8rem;
+          color: #c9dfcf;
+        }
+
+        .fact-strip {
+          margin-top: 18px;
+          border-left: 4px solid var(--mint);
+          background: rgba(255, 255, 255, 0.08);
+          border-radius: 8px;
+          padding: 12px;
+          min-height: 64px;
+          display: grid;
+          align-content: center;
+        }
+
+        .fact-strip p {
+          margin: 0;
+          color: #e1f0e5;
+          font-size: 0.9rem;
+          line-height: 1.4;
+        }
+
+        .auth-panel {
+          display: grid;
+          place-items: center;
+          padding: clamp(20px, 4vw, 48px);
+        }
+
+        .auth-card {
           width: 100%;
-          background: var(--forest);
+          max-width: 430px;
+          background: rgba(255, 255, 255, 0.9);
+          border-radius: 16px;
+          border: 1px solid rgba(90, 138, 106, 0.2);
+          box-shadow: 0 22px 55px rgba(26, 61, 43, 0.18);
+          padding: 24px;
+        }
+
+        .auth-card h2 {
+          margin: 0;
+          font-family: 'Playfair Display', serif;
+          font-size: 1.9rem;
+          color: var(--forest);
+        }
+
+        .auth-card p {
+          margin-top: 8px;
+          color: var(--ink-soft);
+          font-size: 0.92rem;
+        }
+
+        .auth-form {
+          margin-top: 18px;
+          display: grid;
+          gap: 12px;
+        }
+
+        .label {
+          font-size: 0.82rem;
+          color: #51604f;
+          margin-bottom: 4px;
+          display: block;
+        }
+
+        .input {
+          width: 100%;
+          border: 1px solid rgba(90, 138, 106, 0.35);
+          border-radius: 10px;
+          padding: 11px 12px;
+          font-size: 0.93rem;
+          background: #fff;
+          color: var(--ink);
+        }
+
+        .input:focus {
+          outline: none;
+          border-color: var(--sage);
+          box-shadow: 0 0 0 3px rgba(137, 187, 151, 0.25);
+        }
+
+        .password-row {
+          display: flex;
+          gap: 8px;
+        }
+
+        .toggle-btn {
           border: none;
           border-radius: 10px;
-          padding: 0.6rem 0.75rem;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          gap: 0.6rem;
-          font-size: 0.83rem;
-          font-weight: 500;
-          color: white;
+          padding: 0 12px;
+          background: #eef6ef;
+          color: #2e5e42;
+          font-weight: 600;
           cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          position: relative;
-          overflow: hidden;
         }
 
-        .email-btn:hover:not(:disabled) {
-          background: var(--moss);
-          transform: translateY(-1px);
-          box-shadow: 0 8px 20px rgba(26, 61, 43, 0.25);
-        }
-
-        .email-btn:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
-        .email-btn:disabled {
-          cursor: not-allowed;
-          opacity: 0.7;
+        .primary-btn,
+        .google-btn {
+          width: 100%;
+          border: none;
+          border-radius: 10px;
+          height: 44px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: transform 0.15s ease, box-shadow 0.15s ease;
         }
 
         .email-btn.loading .btn-content {
           opacity: 0.5;
         }
 
-        .email-btn .spinner {
-          border-color: white;
-          border-top-color: transparent;
-        }
-
-        /* Google button */
         .google-btn {
-          width: 100%;
-          background: rgba(255, 255, 255, 0.95);
-          border: 1.5px solid rgba(200, 222, 206, 0.3);
-          border-radius: 10px;
-          padding: 0.6rem 0.75rem;
+          margin-top: 6px;
+          border: 1px solid rgba(90, 138, 106, 0.35);
+          background: #fff;
+          color: #254a33;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.6rem;
-          font-size: 0.83rem;
-          font-weight: 500;
-          color: var(--charcoal);
-          cursor: pointer;
-          transition: all 0.3s cubic-bezier(0.22, 1, 0.36, 1);
-          position: relative;
-          overflow: hidden;
+          gap: 8px;
         }
 
-        .google-btn:hover:not(:disabled) {
-          border-color: var(--fern);
-          background: white;
+        .primary-btn:hover,
+        .google-btn:hover {
           transform: translateY(-1px);
-          box-shadow: 0 8px 20px rgba(137, 187, 151, 0.3);
+          box-shadow: 0 6px 16px rgba(26, 61, 43, 0.16);
         }
 
-        .google-btn:active:not(:disabled) {
-          transform: translateY(0);
-        }
-
+        .primary-btn:disabled,
         .google-btn:disabled {
-          cursor: not-allowed;
           opacity: 0.7;
+          cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
         }
 
-        .btn-content {
+        .auth-links {
+          margin-top: 14px;
           display: flex;
-          align-items: center;
-          gap: 0.75rem;
-          transition: opacity 0.3s ease;
+          justify-content: space-between;
+          font-size: 0.82rem;
         }
 
-        .google-btn.loading .btn-content {
-          opacity: 0.5;
-        }
-
-        .spinner {
-          width: 15px;
-          height: 15px;
-          border: 2px solid var(--sage);
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: spin 0.7s linear infinite;
-          position: absolute;
-          left: 0.85rem;
-          opacity: 0;
-          transition: opacity 0.3s ease;
-        }
-
-        .google-btn.loading .spinner {
-          opacity: 1;
-        }
-
-        /* Divider */
-        .divider {
-          display: flex;
-          align-items: center;
-          gap: 0.65rem;
-          margin: 0.75rem 0;
-          font-size: 0.72rem;
-          color: var(--mist);
-          font-weight: 500;
-        }
-
-        .divider-line {
-          flex: 1;
-          height: 1px;
-          background: rgba(200, 222, 206, 0.3);
-        }
-
-        /* Sign up link */
-        .signup-link {
-          text-align: center;
-          margin-top: 0.75rem;
-          padding-top: 0.75rem;
-          border-top: 1px solid rgba(200, 222, 206, 0.3);
-          font-size: 0.8rem;
-          color: white;
-        }
-
-        .signup-link a {
-          color: white;
+        .auth-links a {
+          color: #2e5e42;
           text-decoration: none;
           font-weight: 600;
-          transition: color 0.2s ease;
         }
 
-        .signup-link a:hover {
-          color: var(--mist);
+        .auth-links a:hover {
           text-decoration: underline;
         }
 
-        /* Trust badges */
-        .trust-badges {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.9rem;
-          justify-content: center;
-          margin: 0;
-          padding: 0;
-          position: absolute;
-          bottom: 3.1rem;
-          left: 0;
-          right: 0;
-        }
-
-        .badge {
-          display: flex;
-          align-items: center;
-          gap: 0.3rem;
-          font-size: 0.72rem;
-          color: var(--sage);
-        }
-
-        .badge-icon {
-          font-size: 0.85rem;
-        }
-
-        /* Features preview */
-        .features-box {
-          background: linear-gradient(135deg, rgba(200, 222, 206, 0.2) 0%, rgba(137, 187, 151, 0.15) 100%);
-          border: 1px solid rgba(90, 138, 106, 0.2);
-          border-radius: 14px;
-          padding: 1.75rem;
-        }
-
-        .features-label {
-          font-size: 0.7rem;
-          text-transform: uppercase;
-          letter-spacing: 1.5px;
-          color: var(--sage);
-          font-weight: 500;
-          margin-bottom: 1rem;
-          text-align: left;
-        }
-
-        .features-list {
-          list-style: none;
-        }
-
-        .features-list li {
-          display: flex;
-          align-items: flex-start;
-          gap: 0.75rem;
-          font-size: 0.95rem;
-          color: var(--text-med);
-          margin-bottom: 0.85rem;
-          line-height: 1.6;
-          text-align: left;
-        }
-
-        .features-list li:last-child {
-          margin-bottom: 0;
-        }
-
-        .feature-dot {
-          width: 6px;
-          height: 6px;
-          background: var(--sage);
-          border-radius: 50%;
-          margin-top: 0.5rem;
-          flex-shrink: 0;
-        }
-
-        /* Footer */
-        .footer {
-          position: absolute;
-          bottom: 0.4rem;
-          left: 0;
-          right: 0;
-          text-align: center;
-          font-size: 0.68rem;
-          color: var(--text-lt);
-          padding: 0 1rem;
-        }
-
-        .footer-links {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 0.6rem;
-          justify-content: center;
-          margin-bottom: 0.3rem;
-        }
-
-        .footer-links a {
-          color: var(--text-lt);
-          text-decoration: none;
-          transition: color 0.3s ease;
-        }
-
-        .footer-links a:hover {
-          color: var(--sage);
-        }
-
-        .copyright {
-          font-size: 0.64rem;
-        }
-
-        @media (max-height: 1000px) and (min-width: 861px) {
-          .right-panel {
-            padding: 0.7rem 0.8rem 0.9rem;
-          }
-
-          .dark-green-card {
-            max-width: 370px;
-            padding: 0.78rem 0.75rem;
-          }
-
-          .card-title {
-            font-size: 1.45rem;
-          }
-
-          .trust-badges,
-          .footer {
-            display: none;
-          }
-        }
-
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* TOAST NOTIFICATION */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
         .toast {
           position: fixed;
-          top: 2rem;
-          left: 50%;
-          transform: translateX(-50%);
-          background: var(--forest);
-          color: var(--cream);
-          padding: 1rem 2rem;
-          border-radius: 12px;
-          box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
-          font-size: 0.95rem;
-          font-weight: 500;
-          z-index: 10000;
-          animation: toastSlide 0.4s cubic-bezier(0.22, 1, 0.36, 1);
-          pointer-events: none;
-          white-space: nowrap;
+          top: 20px;
+          right: 20px;
+          max-width: 360px;
+          border-radius: 10px;
+          padding: 10px 14px;
+          background: #1f4d33;
+          color: #fff;
+          font-size: 0.88rem;
+          z-index: 1000;
+          box-shadow: 0 12px 28px rgba(17, 39, 27, 0.28);
         }
 
-        .toast.hidden {
-          display: none;
-        }
-
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        /* RESPONSIVE DESIGN */
-        /* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */
-        @media (max-height: 760px) {
-          .right-panel {
-            justify-content: flex-start;
+        @media (max-width: 960px) {
+          .login-shell {
+            grid-template-columns: 1fr;
           }
 
-          .trust-badges {
-            margin: 1.25rem 0 1.5rem;
+          .hero {
+            padding: 20px;
           }
 
-          .footer {
-            position: relative;
-            bottom: auto;
-            margin-top: 2rem;
+          .stat-grid {
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+          }
+
+          .auth-panel {
+            padding-top: 6px;
           }
         }
 
-        @media (max-width: 860px) {
-          .right-panel {
-            padding: 3rem 1.5rem 2.5rem;
+        @media (max-width: 640px) {
+          .hero {
+            display: none;
           }
 
-          .top-link {
-            top: 1.25rem;
-            right: 1.5rem;
-            font-size: 0.85rem;
+          .auth-card {
+            padding: 20px;
           }
 
-          .trust-badges {
-            position: relative;
-            bottom: auto;
-            margin: 1rem 0 1.25rem;
-          }
-
-          .top-link {
-            top: 1.25rem;
-            right: 1.5rem;
-            font-size: 0.85rem;
-          }
-
-          .login-card {
-            max-width: 100%;
-          }
-
-          .card-title {
-            font-size: 2rem;
-          }
-
-          .footer {
-            position: relative;
-            bottom: auto;
-            margin-top: 3rem;
-            padding: 0 1.5rem;
-          }
-        }
-
-        @media (max-width: 480px) {
-          .right-panel {
-            padding: 2.5rem 1.25rem 2rem;
-          }
-
-          .login-card {
-            max-width: 100%;
-          }
-
-          .card-title {
-            font-size: 1.75rem;
-          }
-
-          .top-link {
-            position: relative;
-            top: auto;
-            right: auto;
-            text-align: center;
-            margin-bottom: 1.5rem;
-            display: block;
-          }
-
-          .trust-badges {
-            flex-direction: column;
-            align-items: center;
-            gap: 0.75rem;
-          }
-
-          .footer-links {
-            flex-direction: column;
-            gap: 0.5rem;
+          .auth-links {
+            gap: 10px;
+            flex-wrap: wrap;
           }
         }
       `}</style>
 
-      <div className="login-container">
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-        {/* RIGHT PANEL */}
-        {/* ΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉΓòÉ */}
-        <div className="right-panel">
-          <a href="#learn" className="top-link">
-            New to sustainability? Learn more ΓåÆ
-          </a>
+      <div className="login-shell">
+        <section className="hero">
+          <h1>Track your footprint. Build cleaner habits.</h1>
+          <p>
+            Sign in to monitor daily emissions, set measurable goals, and see progress from your transport,
+            food, and home energy choices.
+          </p>
 
-          <div className="dark-green-card">
-            {/* Decorative background image */}
-            <img 
-              src="https://images.unsplash.com/photo-1518531933037-91b2f5f229cc?w=800&q=80" 
-              alt="" 
-              className="card-background-image"
-              loading="lazy"
-            />
-            
-            {/* Logo/Brand at top */}
-            <div style={{ 
-              textAlign: 'center', 
-              marginBottom: '1rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '0.5rem',
-              justifyContent: 'center',
-            }}>
-              <div style={{ 
-                width: '36px', 
-                height: '36px', 
-                background: 'linear-gradient(135deg, #89bb97 0%, #c8dece 100%)',
-                borderRadius: '8px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                boxShadow: '0 2px 8px rgba(200, 222, 206, 0.2)'
-              }}>
-                ≡ƒî┐
+          <div className="stat-grid">
+            {STATS.map((item) => (
+              <div className="stat-card" key={item.label}>
+                <div className="stat-value">{item.value}</div>
+                <div className="stat-label">{item.label}</div>
               </div>
-              <div style={{ textAlign: 'center' }}>
-                <h1 style={{ 
-                  fontFamily: "'Playfair Display', serif",
-                  fontSize: '1.12rem',
-                  fontWeight: '700',
-                  color: 'var(--cream)',
-                  margin: '0',
-                  lineHeight: '1.1'
-                }}>
-                  Personal Carbon Footprint
-                </h1>
-                <div style={{
-                  fontSize: '0.56rem',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1.1px',
-                  color: 'var(--mist)',
-                  marginTop: '2px',
-                  fontWeight: '500'
-                }}>
-                  Track ┬╖ Reduce ┬╖ Sustain
-                </div>
-              </div>
-            </div>
+            ))}
+          </div>
 
-            <div className="login-card">
-            <div className="card-label">WELCOME BACK</div>
-            <h2 className="card-title">
-              Login to your
-              <br />
-              footprint dashboard
-            </h2>
-            <p className="card-subtitle">
-              Access your personalized carbon tracking dashboard and continue your journey toward a sustainable lifestyle.
-            </p>
+          <div className="fact-strip">
+            <p>{FACTS[factIndex]}</p>
+          </div>
+        </section>
 
-            {/* Email/Password login form */}
-            <form className="login-form" onSubmit={handleEmailLogin}>
-              <div className="input-group">
-                <label className="input-label" htmlFor="email">
-                  Email Address
-                </label>
+        <section className="auth-panel">
+          <div className="auth-card">
+            <h2>Welcome Back</h2>
+            <p>Sign in to continue to your carbon dashboard.</p>
+
+            <form className="auth-form" onSubmit={handleEmailLogin}>
+              <div>
+                <label className="label" htmlFor="login-email">Email</label>
                 <input
-                  id="email"
+                  id="login-email"
+                  className="input"
                   type="email"
-                  className="input-field"
-                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  disabled={emailLoading}
+                  placeholder="name@example.com"
+                  disabled={emailLoading || googleLoading}
+                  autoComplete="email"
                 />
               </div>
 
-              <div className="input-group">
-                <label className="input-label" htmlFor="password">
-                  Password
-                </label>
-                <div className="input-wrapper">
+              <div>
+                <label className="label" htmlFor="login-password">Password</label>
+                <div className="password-row">
                   <input
-                    id="password"
+                    id="login-password"
+                    className="input"
                     type={showPassword ? 'text' : 'password'}
-                    className="input-field"
-                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    disabled={emailLoading}
+                    placeholder="Enter your password"
+                    disabled={emailLoading || googleLoading}
+                    autoComplete="current-password"
                   />
                   <button
                     type="button"
-                    className="password-toggle"
-                    onClick={() => setShowPassword(!showPassword)}
-                    disabled={emailLoading}
-                    aria-label="Toggle password visibility"
+                    className="toggle-btn"
+                    onClick={() => setShowPassword((prev) => !prev)}
+                    disabled={emailLoading || googleLoading}
                   >
-                    {showPassword ? '≡ƒæü∩╕Å' : '≡ƒæü∩╕ÅΓÇì≡ƒù¿∩╕Å'}
+                    {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
               </div>
 
-              {/* Email login button */}
-              <button
-                type="submit"
-                className={`email-btn ${emailLoading ? 'loading' : ''}`}
-                disabled={emailLoading}
-              >
-                <div className="spinner"></div>
-                <div className="btn-content">
-                  <span>{emailLoading ? 'Logging inΓÇª' : 'Login'}</span>
-                </div>
+              <button className="primary-btn" type="submit" disabled={emailLoading || googleLoading}>
+                {emailLoading ? 'Signing In...' : 'Sign In'}
               </button>
             </form>
 
-            {/* Divider */}
-            <div className="divider">
-              <div className="divider-line"></div>
-              <span>OR</span>
-              <div className="divider-line"></div>
-            </div>
-
-            {/* Google button */}
-            <button
-              className={`google-btn ${loading ? 'loading' : ''}`}
-              onClick={handleGoogleLogin}
-              disabled={loading}
-            >
-              <div className="spinner"></div>
-              <div className="btn-content">
-                <GoogleIcon />
-                <span>{btnLabel}</span>
-              </div>
+            <button className="google-btn" type="button" onClick={handleGoogleLogin} disabled={emailLoading || googleLoading}>
+              <GoogleIcon />
+              {googleLoading ? 'Opening Google...' : 'Continue with Google'}
             </button>
 
-            {/* Sign up link */}
-            <div className="signup-link">
-              Don't have an account? <Link to="/signup">Sign up</Link>
-            </div>
-
-            <div className="signup-link" style={{ marginTop: '0.4rem', paddingTop: '0.4rem' }}>
-              Admin access? <Link to="/admin/login">Go to admin login</Link>
+            <div className="auth-links">
+              <Link to="/signup">Create account</Link>
+              <Link to="/admin/login">Admin login</Link>
             </div>
           </div>
-          {/* End dark-green-card */}
-          </div>
-
-          {/* Trust badges */}
-          <div className="trust-badges">
-            <div className="badge">
-              <span className="badge-icon">≡ƒî▒</span>
-              <span>Carbon-neutral hosting</span>
-            </div>
-          </div>
-
-          {/* Footer */}
-          <div className="footer">
-            <div className="footer-links">
-              <a href="#about">About</a>
-              <a href="#privacy">Privacy Policy</a>
-              <a href="#terms">Terms of Service</a>
-              <a href="#contact">Contact</a>
-              <a href="#blog">Sustainability Blog</a>
-              <a href="#faq">FAQ</a>
-            </div>
-            <div className="copyright">
-              ┬⌐ 2025 Personal Carbon Footprint. Made with ΓÖÑ for the planet.
-            </div>
-          </div>
-        </div>
+        </section>
       </div>
 
-      {/* Toast notification */}
-      {toast.show && (
-        <div className="toast">
-          {toast.msg}
-        </div>
-      )}
+      {toast.visible && <div className="toast">{toast.text}</div>}
     </>
   );
 }
