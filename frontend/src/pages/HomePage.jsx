@@ -12,6 +12,7 @@ import RecentActivity from '../components/RecentActivity';
 import EcoTips from '../components/EcoTips';
 import LeaderboardCard from '../components/LeaderboardCard';
 import EcoBadgesCard from '../components/EcoBadgesCard';
+import CarbonCalculatorWidget from '../components/CarbonCalculatorWidget';
 import NotificationsPanel from '../components/NotificationsPanel';
 import LogActivityModal from '../components/LogActivityModal';
 import '../styles/Dashboard.css';
@@ -91,12 +92,16 @@ function mapGoalToUI(g, index) {
     color: GOAL_COLORS[index % GOAL_COLORS.length],
     _dbId: g.id,
     targetValue: target,
+    currentValue: current,
+    deadline: g.deadline || null,
   };
 }
 
 function buildFootprintFromActivities(activities) {
   const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const today = new Date();
+
+  // Last 7 days
   const days = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setDate(today.getDate() - (6 - i));
@@ -109,10 +114,50 @@ function buildFootprintFromActivities(activities) {
       .reduce((sum, a) => sum + Number(a.carbonAmount), 0);
     return Math.round(total * 10) / 10;
   });
+
+  // Last 4 weeks (weekly totals, oldest → newest)
+  const weekData = Array.from({ length: 4 }, (_, i) => {
+    const weekEnd = new Date(today);
+    weekEnd.setDate(today.getDate() - i * 7);
+    const weekStart = new Date(weekEnd);
+    weekStart.setDate(weekEnd.getDate() - 6);
+    const endStr   = weekEnd.toISOString().split('T')[0];
+    const startStr = weekStart.toISOString().split('T')[0];
+    const total = activities
+      .filter(a => a.activityDate >= startStr && a.activityDate <= endStr && Number(a.carbonAmount) > 0)
+      .reduce((sum, a) => sum + Number(a.carbonAmount), 0);
+    return Math.round(total * 10) / 10;
+  }).reverse();
+
+  // Last 12 calendar months
+  const monthLabels = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1);
+    return d.toLocaleString('default', { month: 'short' });
+  });
+  const monthData = Array.from({ length: 12 }, (_, i) => {
+    const d = new Date(today.getFullYear(), today.getMonth() - (11 - i), 1);
+    const prefix = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+    const total = activities
+      .filter(a => a.activityDate && a.activityDate.startsWith(prefix) && Number(a.carbonAmount) > 0)
+      .reduce((sum, a) => sum + Number(a.carbonAmount), 0);
+    return Math.round(total * 10) / 10;
+  });
+
   return {
-    week: { labels: days.map(d => DAY_LABELS[d.getDay()]), data: dayData },
-    month: { labels: ['Wk 1','Wk 2','Wk 3','Wk 4'], data: [0,0,0,0] },
-    year:  { labels: ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'], data: Array(12).fill(0) },
+    week:  { labels: days.map(d => DAY_LABELS[d.getDay()]), data: dayData },
+    month: { labels: ['Wk 1', 'Wk 2', 'Wk 3', 'Wk 4'], data: weekData },
+    year:  { labels: monthLabels, data: monthData },
+  };
+}
+
+function mapLeaderboardToUI(entry) {
+  return {
+    id: entry.id,
+    name: entry.name || 'Unknown',
+    rank: entry.rank || 999,
+    score: Math.round(Number(entry.totalCarbonSaved) || 0),
+    profilePicture: entry.profilePicture || null,
+    badgeCount: entry.badgeCount || 0,
   };
 }
 
@@ -146,6 +191,51 @@ function buildBreakdownFromAPI(breakdown) {
     };
   });
 }
+function buildBreakdownFromActivities(rawActivities) {
+  const totals = {};
+  rawActivities.forEach(a => {
+    if (!a.activityDate || Number(a.carbonAmount) <= 0) return;
+    const type = (a.activityType || 'other').toLowerCase();
+    totals[type] = (totals[type] || 0) + Number(a.carbonAmount);
+  });
+  return Object.entries(totals)
+    .filter(([, v]) => v > 0)
+    .map(([type, value]) => ({
+      key: type,
+      icon: CATEGORY_ICONS[type] || '📋',
+      label: type.charAt(0).toUpperCase() + type.slice(1),
+      value: Math.round(value * 10) / 10,
+      color: CATEGORY_COLORS[type] || '#9e9e9e',
+    }));
+}
+
+function buildMonthlyComparisonFromActivities(rawActivities) {
+  const today = new Date();
+  const currentYear = today.getFullYear();
+  const prevYear = currentYear - 1;
+  const MONTH_LABELS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const curData = Array(12).fill(0);
+  const preData = Array(12).fill(0);
+  rawActivities.forEach(a => {
+    if (!a.activityDate || Number(a.carbonAmount) <= 0) return;
+    const parts = a.activityDate.split('-');
+    if (parts.length < 2) return;
+    const yr = parseInt(parts[0], 10);
+    const mo = parseInt(parts[1], 10) - 1;
+    if (yr === currentYear) curData[mo] += Number(a.carbonAmount);
+    else if (yr === prevYear) preData[mo] += Number(a.carbonAmount);
+  });
+  return {
+    labels: MONTH_LABELS,
+    prevYear,
+    currentYear,
+    datasets: [
+      { label: String(prevYear), data: preData.map(v => Math.round(v * 10) / 10), backgroundColor: '#81c784' },
+      { label: String(currentYear), data: curData.map(v => Math.round(v * 10) / 10), backgroundColor: '#2d7a4f' },
+    ],
+  };
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
@@ -164,6 +254,8 @@ export default function HomePage() {
   const [breakdown, setBreakdown] = useState([]);
   const [monthlyComparison, setMonthlyComparison] = useState({ labels: [], datasets: [] });
   const [badges, setBadges] = useState([]);
+  const [leaderboardEntries, setLeaderboardEntries] = useState([]);
+  const [leaderboardLoading, setLeaderboardLoading] = useState(false);
 
   const [weeklyEmissions, setWeeklyEmissions] = useState(0);
   const [co2Saved, setCo2Saved] = useState(0);
@@ -213,7 +305,7 @@ export default function HomePage() {
     const loadAll = async () => {
       setLoading(true);
       try {
-        const [activitiesRes, goalsRes, statsRes, breakdownRes, monthlyRes, badgesRes] =
+        const [activitiesRes, goalsRes, statsRes, breakdownRes, monthlyRes, badgesRes, leaderboardRes] =
           await Promise.allSettled([
             fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json()),
             fetch(`${API_BASE}/goals/user/${userId}`).then(r => r.json()),
@@ -221,6 +313,7 @@ export default function HomePage() {
             fetch(`${API_BASE}/stats/user/${userId}/breakdown`).then(r => r.json()),
             fetch(`${API_BASE}/stats/user/${userId}/monthly?months=6`).then(r => r.json()),
             fetch(`${API_BASE}/badges/user/${userId}`).then(r => r.json()),
+            fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json()),
           ]);
 
         // Activities
@@ -245,12 +338,18 @@ export default function HomePage() {
         }
 
         // Breakdown
-        if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value)) {
+        if (activitiesRes.status === 'fulfilled' && Array.isArray(activitiesRes.value)) {
+          // Primary: compute from activities for guaranteed accuracy
+          setBreakdown(buildBreakdownFromActivities(activitiesRes.value));
+        } else if (breakdownRes.status === 'fulfilled' && Array.isArray(breakdownRes.value) && breakdownRes.value.length > 0) {
           setBreakdown(buildBreakdownFromAPI(breakdownRes.value));
         }
 
         // Monthly
-        if (monthlyRes.status === 'fulfilled' && Array.isArray(monthlyRes.value)) {
+        if (activitiesRes.status === 'fulfilled' && Array.isArray(activitiesRes.value)) {
+          // Build year-over-year comparison from raw activities
+          setMonthlyComparison(buildMonthlyComparisonFromActivities(activitiesRes.value));
+        } else if (monthlyRes.status === 'fulfilled' && Array.isArray(monthlyRes.value) && monthlyRes.value.length > 0) {
           setMonthlyComparison(buildMonthlyChartData(monthlyRes.value));
         }
 
@@ -283,6 +382,11 @@ export default function HomePage() {
             { id: 'badge-waste',     icon: '🔒', label: 'Zero Waste',    pts: 'Locked',   hexClass: 'bhL', locked: true },
             { id: 'badge-bike',      icon: '🔒', label: 'Bike Legend',   pts: 'Locked',   hexClass: 'bhL', locked: true },
           ]);
+        }
+
+        // Leaderboard
+        if (leaderboardRes.status === 'fulfilled' && Array.isArray(leaderboardRes.value)) {
+          setLeaderboardEntries(leaderboardRes.value.map(mapLeaderboardToUI));
         }
       } catch (err) {
         console.error('Error loading dashboard data:', err);
@@ -359,6 +463,8 @@ export default function HomePage() {
         const freshActivities = await fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json());
         if (Array.isArray(freshActivities)) {
           setFootprintData(buildFootprintFromActivities(freshActivities));
+          setBreakdown(buildBreakdownFromActivities(freshActivities));
+          setMonthlyComparison(buildMonthlyComparisonFromActivities(freshActivities));
         }
       }
     } catch (err) {
@@ -372,6 +478,12 @@ export default function HomePage() {
     if (userId && typeof activityId === 'number') {
       try {
         await fetch(`${API_BASE}/activities/${activityId}`, { method: 'DELETE' });
+        const freshActivities = await fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json());
+        if (Array.isArray(freshActivities)) {
+          setBreakdown(buildBreakdownFromActivities(freshActivities));
+          setMonthlyComparison(buildMonthlyComparisonFromActivities(freshActivities));
+          setFootprintData(buildFootprintFromActivities(freshActivities));
+        }
       } catch (err) {
         console.error('Delete activity error:', err);
       }
@@ -384,8 +496,9 @@ export default function HomePage() {
       const payload = {
         userId,
         goalType: goal.name,
-        targetValue: 100,
-        currentValue: goal.progress || 0,
+        targetValue: goal.targetValue || 100,
+        currentValue: goal.currentValue || 0,
+        deadline: goal.deadline || null,
         status: 'active',
       };
       const res = await fetch(`${API_BASE}/goals`, {
@@ -395,7 +508,7 @@ export default function HomePage() {
       });
       if (res.ok) {
         const saved = await res.json();
-        setGoals(prev => [...prev, mapGoalToUI(saved, prev.length)]);
+        setGoals(prev => [...prev, mapGoalToUI({ ...saved, deadline: goal.deadline }, prev.length)]);
       } else {
         setGoals(prev => [...prev, goal]);
       }
@@ -406,17 +519,25 @@ export default function HomePage() {
   };
 
   const handleUpdateGoal = async (goalId, updates) => {
-    setGoals(prev => prev.map(g => g.id === goalId ? { ...g, ...updates } : g));
+    setGoals(prev => prev.map(g => {
+      if (g.id !== goalId) return g;
+      const merged = { ...g, ...updates };
+      if (updates.currentValue !== undefined && merged.targetValue) {
+        merged.progress = Math.min(100, Math.round((updates.currentValue / merged.targetValue) * 100));
+      }
+      return merged;
+    }));
     if (!userId || typeof goalId !== 'number') return;
     try {
       const goal = goals.find(g => g.id === goalId);
       if (!goal) return;
-      const newProgress = updates.progress !== undefined ? updates.progress : goal.progress;
+      const newCurrentValue = updates.currentValue !== undefined ? updates.currentValue : (goal.currentValue || 0);
+      const newProgress = Math.min(100, Math.round((newCurrentValue / (goal.targetValue || 100)) * 100));
       const payload = {
         userId,
         goalType: goal.name,
         targetValue: goal.targetValue || 100,
-        currentValue: newProgress,
+        currentValue: newCurrentValue,
         status: newProgress >= 100 ? 'completed' : 'active',
       };
       await fetch(`${API_BASE}/goals/${goalId}`, {
@@ -468,6 +589,18 @@ export default function HomePage() {
   const handleOpenModal  = () => setModalOpen(true);
   const handleCloseModal = () => setModalOpen(false);
 
+  const handleRefreshLeaderboard = async () => {
+    setLeaderboardLoading(true);
+    try {
+      const data = await fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json());
+      if (Array.isArray(data)) setLeaderboardEntries(data.map(mapLeaderboardToUI));
+    } catch (err) {
+      console.error('Refresh leaderboard error:', err);
+    } finally {
+      setLeaderboardLoading(false);
+    }
+  };
+
   // ── Derived stats ──────────────────────────────────────────────────────────
   const unreadNotifications = useMemo(
     () => notifications.filter(n => !n.isRead).length,
@@ -495,31 +628,46 @@ export default function HomePage() {
   // ── Render ─────────────────────────────────────────────────────────────────
   if (loading) {
     return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', flexDirection: 'column', gap: '1rem' }}>
-        <div style={{ fontSize: '2.5rem' }}>🌿</div>
-        <p style={{ color: 'var(--g-dark)', fontWeight: 600 }}>Loading your dashboard…</p>
+      <div className="dashboard-loading">
+        <div className="dashboard-loading-icon">🌿</div>
+        <p>Loading your dashboard…</p>
       </div>
     );
   }
 
   return (
-    <div>
+    <div className="dashboard-page">
       <TopBar onLogout={handleLogout} onOpenModal={handleOpenModal} onOpenNotifications={handleToggleNotifications} unreadCount={unreadNotifications} />
       <HeroBanner userName={profile.name} />
       <StatSummaryRow stats={stats} />
 
       <div className="grid">
-        <ProfileCard profile={profile} onSave={handleProfileSave} />
-        <GoalsCard goals={goals} onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal} />
+        {/* Row 1: Profile welcome card – full width */}
+        <ProfileCard profile={profile} onSave={handleProfileSave} className="full" />
+
+        {/* Row 2: Carbon Footprint Log + Goals */}
         <CarbonFootprintLog data={footprintData} weeklyTotal={weeklyEmissions} trendLabel={weeklyTrend} />
+        <GoalsCard goals={goals} onAddGoal={handleAddGoal} onUpdateGoal={handleUpdateGoal} onRemoveGoal={handleRemoveGoal} />
+
+        {/* Row 3: Emissions Breakdown + Recent Activity */}
         <EmissionsBreakdown breakdown={breakdown} />
-        <MonthlyComparison data={monthlyComparison} />
         <RecentActivity activities={activities} onRemove={handleRemoveActivity} />
+
+        {/* Row 4: Monthly Comparison + Eco Tips */}
+        <MonthlyComparison data={monthlyComparison} />
         <EcoTips tips={tips} onRefresh={handleRefreshTips} />
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.2rem' }}>
-          <LeaderboardCard />
+
+        {/* Row 5: Leaderboard+Badges (stacked) + Carbon Calculator */}
+        <div className="dashboard-stack">
+          <LeaderboardCard
+            entries={leaderboardEntries}
+            currentUserId={userId}
+            loading={leaderboardLoading}
+            onRefresh={handleRefreshLeaderboard}
+          />
           <EcoBadgesCard badges={badges} />
         </div>
+        <CarbonCalculatorWidget userId={userId} />
       </div>
 
       <NotificationsPanel isOpen={notificationsOpen} onClose={handleCloseNotifications} notifications={notifications} onDismiss={handleDismissNotification} onMarkAllRead={handleMarkAllRead} />

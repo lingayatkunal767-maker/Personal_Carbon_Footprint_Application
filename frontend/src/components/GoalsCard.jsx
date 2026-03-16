@@ -2,87 +2,236 @@ import React, { useState } from 'react';
 
 const GoalsCard = ({ goals, onAddGoal, onUpdateGoal, onRemoveGoal }) => {
   const [showForm, setShowForm] = useState(false);
-  const [manageMode, setManageMode] = useState(false);
-  const [name, setName] = useState('');
-  const [progress, setProgress] = useState(25);
+  const [formName, setFormName] = useState('');
+  const [formTarget, setFormTarget] = useState('');
+  const [formCurrent, setFormCurrent] = useState('');
+  const [formDeadline, setFormDeadline] = useState('');
+  const [editId, setEditId] = useState(null);
+  const [editVal, setEditVal] = useState('');
+
+  const todayStr = new Date().toISOString().split('T')[0];
+
+  const resetForm = () => {
+    setFormName(''); setFormTarget(''); setFormCurrent(''); setFormDeadline('');
+    setShowForm(false);
+  };
 
   const handleAdd = () => {
-    if (!name.trim()) {
-      return;
-    }
+    if (!formName.trim() || !formTarget || Number(formTarget) < 1) return;
+    const target = Number(formTarget);
+    const current = Math.min(target, Math.max(0, Number(formCurrent) || 0));
+    const progress = Math.round((current / target) * 100);
     onAddGoal({
       id: `goal-${Date.now()}`,
-      name: name.trim(),
-      progress: Math.min(100, Math.max(0, Number(progress) || 0)),
-      color: 'linear-gradient(90deg,var(--g-mid),var(--g-light))'
+      name: formName.trim(),
+      progress,
+      targetValue: target,
+      currentValue: current,
+      deadline: formDeadline || null,
+      color: 'linear-gradient(90deg,var(--g-mid),var(--g-light))',
     });
-    setName('');
-    setProgress(25);
-    setShowForm(false);
+    resetForm();
+  };
+
+  const applyUpdate = (goal) => {
+    const newCurrent = Math.min(goal.targetValue, Math.max(0, Number(editVal) || 0));
+    onUpdateGoal(goal.id, { currentValue: newCurrent });
+    setEditId(null);
+  };
+
+  const formatDeadline = (d) => {
+    if (!d) return null;
+    const date = new Date(d + 'T00:00:00');
+    const now = new Date();
+    const diffDays = Math.ceil((date - now) / 86400000);
+    const label = date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    if (diffDays < 0) return { label, status: 'overdue', badge: '⚠ Overdue' };
+    if (diffDays === 0) return { label, status: 'urgent', badge: '🔥 Today' };
+    if (diffDays <= 7) return { label, status: 'urgent', badge: `⏰ ${diffDays}d left` };
+    return { label, status: 'ok', badge: `📅 ${label}` };
+  };
+
+  const activeGoals = goals.filter(g => (g.progress ?? 0) < 100);
+  const completedGoals = goals.filter(g => (g.progress ?? 0) >= 100);
+
+  const GoalItem = ({ goal }) => {
+    const isEditing = editId === goal.id;
+    const dl = formatDeadline(goal.deadline);
+    const completed = (goal.progress ?? 0) >= 100;
+    const currentKg = goal.currentValue ?? Math.round(((goal.progress ?? 0) / 100) * (goal.targetValue || 100));
+
+    return (
+      <div className={`goal-item${completed ? ' goal-item-completed' : ''}`}>
+        <div className="goal-meta">
+          <div className="goal-header-main">
+            {completed && <span className="goal-complete-icon">✅</span>}
+            <span className={`goal-name${completed ? ' completed' : ''}`}>
+              {goal.name}
+            </span>
+          </div>
+          <div className="goal-header-side">
+            {dl && (
+              <span className={`goal-deadline-badge ${dl.status}`}>
+                {dl.badge}
+              </span>
+            )}
+            <span className={`goal-pct${completed ? ' completed' : ''}`}>
+              {goal.progress ?? 0}%
+            </span>
+          </div>
+        </div>
+
+        <progress className={`goal-progress${completed ? ' completed' : ''}`} value={goal.progress ?? 0} max="100" />
+
+        {(goal.targetValue > 0) && (
+          <div className="goal-target-row">
+            <span className={`goal-saved-value${completed ? ' completed' : ''}`}>
+              {currentKg} kg saved
+            </span>
+            <span>Target: {goal.targetValue} kg CO₂</span>
+          </div>
+        )}
+
+        {isEditing ? (
+          <div className="goal-edit-row">
+            <span className="goal-edit-label">Saved so far (kg):</span>
+            <input
+              type="number"
+              min="0"
+              max={goal.targetValue}
+              value={editVal}
+              onChange={e => setEditVal(e.target.value)}
+              className="goal-edit-input"
+              autoFocus
+            />
+            <button
+              className="btn-save"
+              type="button"
+              onClick={() => applyUpdate(goal)}
+            >
+              ✓ Save
+            </button>
+            <button
+              className="btn-cancel"
+              type="button"
+              onClick={() => setEditId(null)}
+            >
+              ✕
+            </button>
+          </div>
+        ) : (
+          <div className="goal-action-row">
+            {!completed && (
+              <button
+                className="card-action goal-action-btn"
+                type="button"
+                onClick={() => { setEditId(goal.id); setEditVal(String(currentKg)); }}
+              >
+                ✏ Update Progress
+              </button>
+            )}
+            <button
+              className="card-action goal-action-btn goal-remove-btn"
+              type="button"
+              onClick={() => onRemoveGoal(goal.id)}
+            >
+              🗑 Remove
+            </button>
+          </div>
+        )}
+      </div>
+    );
   };
 
   return (
     <div className="card">
       <div className="card-title">
-        Your Goals
-        <button className="card-action" onClick={() => setShowForm((prev) => !prev)}>
-          {showForm ? 'Close' : '+ Add Goal'}
+        🎯 Your Goals
+        <button className="card-action" onClick={() => setShowForm(p => !p)}>
+          {showForm ? '✕ Close' : '+ Add Goal'}
         </button>
       </div>
+
       {showForm && (
-        <div style={{ marginBottom: '1rem' }}>
+        <div className="goal-form-panel">
           <div className="form-group">
-            <label>Goal</label>
+            <label>Goal Name *</label>
             <input
               type="text"
-              placeholder="e.g. Reduce car trips"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              placeholder="e.g. Reduce car trips by 50%"
+              value={formName}
+              onChange={e => setFormName(e.target.value)}
             />
+          </div>
+          <div className="form-row">
+            <div className="form-group">
+              <label>CO₂ Reduction Target (kg) *</label>
+              <input
+                type="number"
+                min="1"
+                placeholder="e.g. 50"
+                value={formTarget}
+                onChange={e => setFormTarget(e.target.value)}
+              />
+            </div>
+            <div className="form-group">
+              <label>Already Saved (kg)</label>
+              <input
+                type="number"
+                min="0"
+                placeholder="0"
+                value={formCurrent}
+                onChange={e => setFormCurrent(e.target.value)}
+              />
+            </div>
           </div>
           <div className="form-group">
-            <label>Target Progress (%)</label>
+            <label>Deadline (optional)</label>
             <input
-              type="number"
-              min="0"
-              max="100"
-              value={progress}
-              onChange={(e) => setProgress(e.target.value)}
+              type="date"
+              value={formDeadline}
+              min={todayStr}
+              onChange={e => setFormDeadline(e.target.value)}
             />
           </div>
-          <div className="modal-footer" style={{ marginTop: '.6rem' }}>
-            <button className="btn-cancel" onClick={() => setShowForm(false)}>Cancel</button>
-            <button className="btn-save" onClick={handleAdd}>Add Goal</button>
+          <div className="modal-footer goal-form-actions">
+            <button type="button" className="btn-cancel" onClick={resetForm}>Cancel</button>
+            <button
+              className="btn-save"
+              type="button"
+              onClick={handleAdd}
+              disabled={!formName.trim() || !formTarget || Number(formTarget) < 1}
+            >
+              Add Goal
+            </button>
           </div>
         </div>
       )}
-      {goals.map((goal) => (
-        <div key={goal.id} className="goal-item">
-          <div className="goal-meta">
-            <span>{goal.name}</span>
-            <span className="goal-pct">{goal.progress}%</span>
-          </div>
-          <div className="progress-bar">
-            <div className="progress-fill" style={{ width: `${goal.progress}%`, background: goal.color }}></div>
-          </div>
-          {manageMode && (
-            <div style={{ display: 'flex', gap: '.6rem', marginTop: '.5rem', alignItems: 'center' }}>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={goal.progress}
-                onChange={(e) => onUpdateGoal(goal.id, { progress: Number(e.target.value) })}
-                style={{ flex: 1 }}
-              />
-              <button className="btn-logout" onClick={() => onRemoveGoal(goal.id)}>Remove</button>
+
+      {goals.length === 0 ? (
+        <div className="card-empty">
+          No goals yet — add your first CO₂ reduction goal to start tracking!
+        </div>
+      ) : (
+        <>
+          {activeGoals.length > 0 && (
+            <div className="goal-section">
+              <div className="goal-section-label">
+                Active ({activeGoals.length})
+              </div>
+              {activeGoals.map(g => <GoalItem key={g.id} goal={g} />)}
             </div>
           )}
-        </div>
-      ))}
-      <button className="btn-goals" onClick={() => setManageMode((prev) => !prev)}>
-        {manageMode ? 'Done' : 'Manage Goals ▾'}
-      </button>
+          {completedGoals.length > 0 && (
+            <div className={`goal-completed-section${activeGoals.length > 0 ? ' has-active' : ''}`}>
+              <div className="goal-section-label completed">
+                ✅ Completed ({completedGoals.length})
+              </div>
+              {completedGoals.map(g => <GoalItem key={g.id} goal={g} />)}
+            </div>
+          )}
+        </>
+      )}
     </div>
   );
 };

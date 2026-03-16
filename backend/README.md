@@ -1,123 +1,95 @@
 <<<<<<< HEAD
+<<<<<<< HEAD
 # 🌱 Sustainability Tracker - Backend (Spring Boot)
+=======
+# Sustainability Tracker Backend
+>>>>>>> f092aa54cae86847b29efb6ddd014aa7928cd220
 
-RESTful API for the Sustainability Tracker application.
+Spring Boot backend for authentication, survey-based carbon calculations, history, goals, badges, leaderboard, notifications, and marketplace.
 
-## 🚀 Quick Start
-
-### Prerequisites
-- Java 17+ ✅ (Already installed)
+## Stack
+- Java 17
+- Spring Boot 3.2.x
+- Spring Data JPA
 - PostgreSQL 15+
-- Maven 3.8+
+- Maven
 
-### Setup Steps
+## Project Scope
+The backend serves these functional areas end-to-end:
+- Auth: register, login, Google login
+- Survey and calculations: lifestyle input to carbon emissions
+- Carbon history and dashboard stats
+- Goals and badge automation
+- Notifications
+- Leaderboard (materialized view)
+- Marketplace products and orders
 
-1. **Install PostgreSQL**
-   - Download: https://www.postgresql.org/download/windows/
-   - Install and remember your password
-   - Default port: 5432
+## Database Configuration
+The application reads database values from backend/.ENV through spring.config.import in application.properties.
 
-2. **Create Database**
-   ```bash
-   # Connect to PostgreSQL
-   psql -U postgres
-   
-   # Create database
-   CREATE DATABASE sustainability_tracker;
-   
-   # Exit
-   \q
-   ```
+Current required keys in backend/.ENV:
+- POSTGRES_HOST
+- POSTGRES_PORT
+- POSTGRES_DB
+- POSTGRES_USER
+- POSTGRES_PASSWORD
 
-3. **Run Database Schema**
-   ```bash
-   cd database
-   psql -U postgres -d sustainability_tracker -f schema.sql
-   psql -U postgres -d sustainability_tracker -f seed-data.sql
-   ```
+Example currently used:
+- POSTGRES_HOST=localhost
+- POSTGRES_PORT=5432
+- POSTGRES_DB=ce
+- POSTGRES_USER=postgres
+- POSTGRES_PASSWORD=your_password
 
-4. **Generate Spring Boot Project**
-   - Go to: https://start.spring.io/
-   - Configuration:
-     - Project: Maven
-     - Language: Java
-     - Spring Boot: 3.2.2
-     - Java: 17
-     - Group: com.sustainability
-     - Artifact: tracker
-   - Dependencies:
-     - Spring Web
-     - Spring Data JPA
-     - PostgreSQL Driver
-     - Lombok
-     - Validation
-   - Generate and extract to this folder
+You can still override with standard Spring variables if needed:
+- SPRING_DATASOURCE_URL
+- SPRING_DATASOURCE_USERNAME
+- SPRING_DATASOURCE_PASSWORD
 
-5. **Configure Application**
-   
-   Edit `src/main/resources/application.properties`:
-   ```properties
-   spring.datasource.url=jdbc:postgresql://localhost:5432/sustainability_tracker
-   spring.datasource.username=postgres
-   spring.datasource.password=YOUR_PASSWORD_HERE
-   
-   spring.jpa.hibernate.ddl-auto=update
-   spring.jpa.show-sql=true
-   
-   server.port=8080
-   ```
+## First-Time DB Setup
+1. Create database ce in PostgreSQL (if not created already).
+2. Run schema:
+   - psql -U postgres -d ce -f database/schema.sql
+3. Optional seed data:
+   - psql -U postgres -d ce -f database/seed-data.sql
+4. Optional marketplace seed:
+   - psql -U postgres -d ce -f database/seed-marketplace.sql
 
-6. **Run Application**
-   ```bash
-   mvn spring-boot:run
-   ```
+## Run Backend
+From repository root:
+- cd backend
+- mvn spring-boot:run
 
-   Or in IDE: Run `SustainabilityTrackerApplication.java`
+Backend starts on:
+- http://localhost:8081
 
-## 📁 Project Structure
+## Build and Test
+- Compile: mvn -DskipTests compile
+- Test: mvn test
+- Package: mvn clean package
 
-```
-backend/
-├── src/
-│   ├── main/
-│   │   ├── java/com/sustainability/tracker/
-│   │   │   ├── SustainabilityTrackerApplication.java  # Main class
-│   │   │   ├── controller/                            # REST endpoints
-│   │   │   │   ├── UserController.java
-│   │   │   │   ├── CarbonActivityController.java
-│   │   │   │   ├── GoalController.java
-│   │   │   │   └── BadgeController.java
-│   │   │   ├── model/                                 # JPA entities
-│   │   │   │   ├── User.java
-│   │   │   │   ├── CarbonActivity.java
-│   │   │   │   ├── Goal.java
-│   │   │   │   └── Badge.java
-│   │   │   ├── repository/                            # Data access
-│   │   │   │   ├── UserRepository.java
-│   │   │   │   ├── CarbonActivityRepository.java
-│   │   │   │   ├── GoalRepository.java
-│   │   │   │   └── BadgeRepository.java
-│   │   │   ├── service/                               # Business logic
-│   │   │   │   ├── UserService.java
-│   │   │   │   ├── ActivityService.java
-│   │   │   │   └── GoalService.java
-│   │   │   └── config/                                # Configuration
-│   │   │       └── CorsConfig.java
-│   │   └── resources/
-│   │       └── application.properties
-│   └── test/
-├── pom.xml
-└── README.md
-```
+## Important Data Notes
+- carbon_logs has a unique key on user_id + log_date.
+- lifestyle_surveys and carbon_logs include created_at and updated_at.
+- Goal status values are lowercase (active, completed, failed) for consistency with service queries.
+- Leaderboard uses a materialized view named leaderboard and supports refresh.
 
-## 🔌 API Endpoints
+## API Base Path
+- /api
 
-### Users
-- `GET /api/users/{id}` - Get user by ID
-- `GET /api/users/email/{email}` - Get user by email
-- `POST /api/users` - Create new user
-- `PUT /api/users/{id}` - Update user
+Main endpoint groups:
+- /api/auth
+- /api/survey
+- /api/carbon
+- /api/stats
+- /api/dashboard
+- /api/goals
+- /api/badges
+- /api/leaderboard
+- /api/notifications
+- /api/marketplace
 
+<<<<<<< HEAD
 ### Carbon Activities
 - `GET /api/activities/user/{userId}` - Get user's activities
 - `POST /api/activities` - Log new activity
@@ -329,3 +301,14 @@ mvn test
 - Configure HTTPS, rate limiting, and logging for production.
 - Connect external API keys via secure vault or env vars.
 >>>>>>> 0c1c7023c8a74ca38276aa35989583d9e420dc25
+=======
+## Troubleshooting
+1. Connection refused to PostgreSQL:
+   - Confirm service is running on POSTGRES_HOST:POSTGRES_PORT.
+2. Authentication failed:
+   - Recheck POSTGRES_USER and POSTGRES_PASSWORD in backend/.ENV.
+3. Relation does not exist:
+   - Re-run database/schema.sql on database ce.
+4. Port already in use:
+   - Change server.port in application.properties or free port 8081.
+>>>>>>> f092aa54cae86847b29efb6ddd014aa7928cd220

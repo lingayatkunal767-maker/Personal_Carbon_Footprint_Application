@@ -1,103 +1,198 @@
-# 🌿 Personal Footprint - Sustainability Tracker
+# 🌿 Sustainability Tracker
 
-A production-grade React application with Google OAuth authentication for tracking and reducing carbon emissions.
+A full-stack web application for tracking and reducing personal carbon footprint with Google OAuth authentication.
 
-![Personal Footprint Login](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat&logo=react)
-![Vite](https://img.shields.io/badge/Vite-5.0-646CFF?style=flat&logo=vite)
-![License](https://img.shields.io/badge/License-MIT-green)
+![Spring Boot](https://img.shields.io/badge/Spring%20Boot-3.2-green?style=flat&logo=springboot)
+![React](https://img.shields.io/badge/React-18.2.0-61DAFB?style=flat&logo=react)
+![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-blue?style=flat&logo=postgresql)
 
 ## ✨ Features
 
-- 🔐 **Google OAuth 2.0** authentication with One Tap login
-- 🎨 **Beautiful split-panel design** with animated gradients
-- 📊 **Carbon footprint statistics** and rotating eco-facts
-- 📱 **Fully responsive** (desktop, tablet, mobile)
-- ⚡ **Fast & modern** (Vite + React 18)
-- 🌍 **Sustainability-focused** UI with earth-tone palette
-- 🎭 **Smooth animations** (CSS keyframes, no libraries)
+- 🔐 **Google OAuth 2.0** authentication
+- 📊 **Lifestyle survey** for carbon footprint assessment
+- 🧮 **Automatic emission calculations** (transport, food, energy)
+- 📈 **Carbon footprint tracking** with daily logs
+- 🎯 **Personal reduction goals** and progress tracking
+- 🏆 **Eco-badges** and leaderboard
+- 📊 **Dashboard with charts** and emission breakdowns
+- 📅 **Monthly comparison** and trend analysis
+- 🔔 **Personalized notifications** and eco-tips
+- 📜 **Carbon history** with detailed logs
+
+## 🌟 New: Complete Carbon Tracking System
+
+The system now includes **full lifestyle data tracking** and **emission calculations**:
+
+### Lifestyle Survey
+- Input daily transport mode, distance, and fuel type
+- Track vegetarian and non-vegetarian meal consumption
+- Monitor electricity and cooking gas usage
+
+### Emission Calculations
+- **Transport**: Based on vehicle type and distance (kg CO2e/km)
+- **Food**: Based on meal types (kg CO2e/meal)
+- **Energy**: Based on electricity and gas consumption
+
+### Dashboard Analytics
+- Real-time emission totals and trends
+- Category-wise breakdowns with percentages
+- Monthly comparisons (last 6 months)
+- Weekly progress tracking
+- Visual charts and graphs
+
+### Carbon History
+- Complete log of daily emissions
+- Date range filtering
+- Export capabilities
+- Detailed category breakdowns
+
+**📖 See [docs/CARBON_TRACKING.md](docs/CARBON_TRACKING.md) for complete documentation**
+
+## 🏗️ Tech Stack
+
+**Frontend**
+- React 18 + Vite
+- Tailwind CSS
+- React Router
+
+**Backend**
+- Spring Boot 3.2
+- Spring Data JPA
+- PostgreSQL
+
+**Authentication**
+- Google OAuth 2.0
+- JWT tokens
 
 ## 🚀 Quick Start
 
 ### Prerequisites
+- Node.js 16+
+- Java 17+
+- PostgreSQL 15+
+- Maven
 
-- Node.js 16+ and npm
-- Google Cloud Console account
-- Basic knowledge of React
+### Setup
+1. **Database**: Run `\.\scripts\setup-database.ps1` or see [SETUP.md](SETUP.md)
+2. **Backend**: Run `\.\scripts\start-backend.bat` or `cd backend && mvn spring-boot:run`
+3. **Frontend**: Run `cd frontend && npm install && npm run dev`
+4. **Configure Google OAuth**: See [docs/GOOGLE_AUTH.md](docs/GOOGLE_AUTH.md)
 
-### 1. Install Dependencies
-
-\`\`\`bash
-npm install
-\`\`\`
-
-### 2. Configure Google OAuth
-
-**IMPORTANT:** The app runs on port **5173** (not 3000).
-
-1. Go to [Google Cloud Console](https://console.cloud.google.com/)
-2. Create a project and enable Google+ API
-3. Create OAuth 2.0 credentials
-4. Add authorized origins: 
-   - `http://localhost:5173`
-   - `http://127.0.0.1:5173`
-5. Add redirect URIs: 
-   - `http://localhost:5173/auth/callback`
-   - `http://127.0.0.1:5173/auth/callback`
-6. Copy your Client ID
-
-**📖 See [GOOGLE_AUTH_SETUP.md](./GOOGLE_AUTH_SETUP.md) for detailed setup instructions**
-
-### 3. Set Up Environment Variables
-
-Your `.env` file is already configured with a Google Client ID. If you need to change it:
-
-\`\`\`bash
-# Edit .env file
-VITE_GOOGLE_CLIENT_ID=your_actual_client_id_here
-\`\`\`
-
-### 4. Start Development Server
-
-\`\`\`bash
-npm run dev
-\`\`\`
-
-Open [http://localhost:5173](http://localhost:5173) to view the app! 🎉
+**📖 Full setup instructions: [SETUP.md](SETUP.md)**
 
 ## 📁 Project Structure
 
-\`\`\`
-personal-footprint-app/
-├── index.html              # HTML entry point
-├── main.jsx                # React entry point
-├── App.jsx                 # Router configuration
-├── LoginPage.jsx           # Login page component ⭐
-├── HomePage.jsx            # Dashboard page
-├── AuthCallback.jsx        # OAuth redirect handler
-├── package.json            # Dependencies
-├── vite.config.js          # Vite configuration
-├── .env.example            # Environment template
-├── .gitignore              # Git ignore rules
-├── SETUP_INSTRUCTIONS.md   # Detailed setup guide
-└── README.md               # This file
-\`\`\`
+```
+infosys-project/
+├── frontend/              # React application
+│   ├── src/
+│   │   ├── components/   # Reusable UI components
+│   │   ├── pages/        # Page components
+│   │   └── services/     # API service layer
+│   └── package.json
+├── backend/               # Spring Boot API
+│   ├── src/main/java/
+│   │   └── com/sustainability/tracker/
+│   │       ├── controller/   # REST endpoints
+│   │       ├── service/      # Business logic
+│   │       ├── entity/       # Database models
+│   │       └── repository/   # Data access
+│   └── pom.xml
+├── database/              # SQL scripts
+│   ├── schema.sql        # Database schema
+│   └── seed-data.sql     # Sample data
+├── scripts/               # Setup and test scripts
+│   ├── setup-database.ps1
+│   ├── start-backend.bat
+│   └── test-*.ps1
+└── docs/                  # Documentation
+```
+
+## 🔧 Configuration
+
+**Frontend** (`frontend/.env`):
+```env
+VITE_GOOGLE_CLIENT_ID=your_client_id_here
+VITE_API_URL=http://localhost:8081/api
+```
+
+**Backend** (`backend/src/main/resources/application.properties`):
+```properties
+spring.datasource.url=jdbc:postgresql://localhost:5432/sustainability_tracker
+spring.datasource.username=tracker_user
+spring.datasource.password=tracker123
+server.port=8081
+```
+
+## 📚 Documentation
+
+- [Complete Setup Guide](SETUP.md)
+- [Google OAuth Setup](docs/GOOGLE_AUTH.md)
+- [Carbon Tracking Features](docs/CARBON_TRACKING.md)
+- [Testing Guide](docs/TESTING_GUIDE.md)
+- [Backend API Documentation](backend/README.md)
+
+## 🚀 Quick Start Example
+
+### 1. Submit a Lifestyle Survey
+```javascript
+import { surveyAPI } from './services/api';
+
+const result = await surveyAPI.submitSurvey({
+  userId: 1,
+  transportMode: 'CAR',
+  distanceKmPerDay: 20,
+  fuelType: 'PETROL',
+  mealsNonVegPerWeek: 7,
+  mealsVegPerWeek: 14,
+  electricityKwhPerMonth: 300,
+  cookingGasCylindersPerMonth: 1.5
+});
+
+console.log('Total emissions:', result.totalEmission, 'kg CO2e');
+```
+
+### 2. Get Dashboard Data
+```javascript
+import { dashboardAPI } from './services/api';
+
+const dashboard = await dashboardAPI.getDashboard(userId);
+// Access: dashboard.stats, dashboard.recentLogs, dashboard.emissionsBreakdown
+```
+
+### 3. View Carbon History
+```javascript
+import { carbonLogAPI } from './services/api';
+
+const logs = await carbonLogAPI.getCarbonLogs(userId, '2024-02-01', '2024-03-11');
+```
+
+## 🧪 Testing
+
+Load test data and verify the system:
+```bash
+# Load 30 days of sample data
+psql -U tracker_user -d sustainability_tracker -f database/test-data-carbon-tracking.sql
+
+# Test survey submission
+curl -X POST http://localhost:8081/api/survey -H "Content-Type: application/json" -d @sample-survey.json
+
+# View dashboard
+curl http://localhost:8081/api/dashboard/user/1
+```
+
+**📖 See [docs/TESTING_GUIDE.md](docs/TESTING_GUIDE.md) for complete testing instructions**
 
 ## 🎨 Design System
 
-### Color Palette
-- **Forest Green** (`#1a3d2b`) - Primary dark
-- **Moss** (`#2e5e42`) - Medium green
-- **Sage** (`#5a8a6a`) - Accent green
-- **Fern** (`#89bb97`) - Light green highlights
-- **Warm Off-White** (`#faf7f2`) - Background
+**Color Palette**
+- Forest Green (`#1a3d2b`) - Primary
+- Sage (`#5a8a6a`) - Accent
+- Warm Off-White (`#faf7f2`) - Background
 
-### Typography
-- **Headlines**: Playfair Display (serif)
-- **Body/UI**: DM Sans (sans-serif)
-
-### Animations
-- Mesh gradient shift (12s loop)
-- Floating leaves (15-28s per leaf)
+**Typography**
+- Headlines: Playfair Display
+- Body: DM Sans
 - Card entrance animation
 - Rotating fact ticker (5s interval)
 - Loading spinner

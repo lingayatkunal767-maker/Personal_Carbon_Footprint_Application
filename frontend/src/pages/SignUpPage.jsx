@@ -388,7 +388,7 @@ export default function SignUpPage() {
 
         .right-panel {
           background: var(--warm-off);
-          padding: clamp(2.5rem, 3.5vw, 4rem) clamp(1.5rem, 3vw, 2rem) clamp(2rem, 3vw, 3rem);
+          padding: clamp(0.7rem, 1.2vw, 1.1rem) clamp(0.8rem, 1.2vw, 1rem) clamp(0.7rem, 1.2vw, 1rem);
           display: flex;
           flex-direction: column;
           align-items: center;
@@ -398,14 +398,14 @@ export default function SignUpPage() {
           width: 100%;
           min-height: 100%;
           box-sizing: border-box;
-          gap: 1.5rem;
+          gap: 0.55rem;
         }
 
         .top-link {
           position: absolute;
-          top: 1.5rem;
-          right: 2rem;
-          font-size: 0.88rem;
+          top: 0.75rem;
+          right: 1rem;
+          font-size: 0.76rem;
           color: var(--text-med);
           text-decoration: none;
           transition: color 0.3s ease;
@@ -514,14 +514,14 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .signup-card-container {
           width: 100%;
-          max-width: 520px;
+          max-width: 390px;
           animation: cardEntrance 0.8s ease-out;
         }
 
         .signup-card {
           background: linear-gradient(135deg, var(--forest) 0%, var(--moss) 100%);
-          border-radius: 24px;
-          padding: clamp(2rem, 2.6vw, 3rem) clamp(1.75rem, 2.2vw, 2.5rem);
+          border-radius: 16px;
+          padding: clamp(0.85rem, 1.1vw, 1.05rem) clamp(0.8rem, 1vw, 0.95rem);
           box-shadow: 0 20px 60px rgba(26, 61, 43, 0.3);
           position: relative;
           overflow: hidden;
@@ -531,8 +531,8 @@ export default function SignUpPage() {
           position: absolute;
           top: 0;
           right: 0;
-          width: 400px;
-          height: 400px;
+          width: 280px;
+          height: 280px;
           opacity: 0.12;
           mix-blend-mode: overlay;
           pointer-events: none;
@@ -551,48 +551,48 @@ export default function SignUpPage() {
         }
 
         .card-label {
-          font-size: 0.7rem;
+          font-size: 0.62rem;
           text-transform: uppercase;
-          letter-spacing: 1.8px;
+          letter-spacing: 1.6px;
           color: var(--mist);
           font-weight: 500;
-          margin-bottom: 0.75rem;
+          margin-bottom: 0.45rem;
         }
 
         .card-title {
           font-family: 'Playfair Display', serif;
-          font-size: 2.4rem;
+          font-size: 1.58rem;
           font-weight: 700;
           color: var(--cream);
-          line-height: 1.2;
-          margin-bottom: 1rem;
+          line-height: 1.15;
+          margin-bottom: 0.55rem;
         }
 
         .card-subtitle {
-          font-size: 1rem;
+          font-size: 0.78rem;
           color: var(--mist);
           font-weight: 300;
-          line-height: 1.7;
-          margin-bottom: 2.5rem;
+          line-height: 1.33;
+          margin-bottom: 0.95rem;
         }
 
         /* ═══════════════════════════════════════════════════════════════ */
         /* FORM STYLES */
         /* ═══════════════════════════════════════════════════════════════ */
         .signup-form {
-          margin-bottom: 1.5rem;
+          margin-bottom: 0.7rem;
         }
 
         .input-group {
-          margin-bottom: 1.25rem;
+          margin-bottom: 0.58rem;
         }
 
         .input-label {
           display: block;
-          font-size: 0.9rem;
+          font-size: 0.74rem;
           font-weight: 500;
           color: var(--mist);
-          margin-bottom: 0.5rem;
+          margin-bottom: 0.25rem;
           text-align: left;
         }
 
@@ -602,10 +602,10 @@ export default function SignUpPage() {
 
         .input-field {
           width: 100%;
-          padding: 0.95rem 1.25rem;
+          padding: 0.58rem 0.72rem;
           border: 1.5px solid rgba(200, 222, 206, 0.3);
-          border-radius: 10px;
-          font-size: 1rem;
+          border-radius: 8px;
+          font-size: 0.82rem;
           font-family: 'DM Sans', sans-serif;
           color: var(--charcoal);
           background: rgba(255, 255, 255, 0.95);
@@ -630,14 +630,14 @@ export default function SignUpPage() {
 
         .password-toggle {
           position: absolute;
-          right: 0.75rem;
+          right: 0.7rem;
           top: 50%;
           transform: translateY(-50%);
           background: none;
           border: none;
           cursor: pointer;
-          font-size: 1.2rem;
-          padding: 0.25rem;
+          font-size: 1rem;
+          padding: 0.15rem;
           opacity: 0.6;
           transition: opacity 0.2s ease;
         }
@@ -657,9 +657,9 @@ export default function SignUpPage() {
           width: 100%;
           background: var(--forest);
           border: none;
-          border-radius: 12px;
-          padding: 1rem 1.5rem;
-          font-size: 1rem;
+          border-radius: 10px;
+          padding: 0.6rem 0.75rem;
+          font-size: 0.83rem;
           font-weight: 500;
           color: white;
           cursor: pointer;
@@ -669,7 +669,7 @@ export default function SignUpPage() {
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.75rem;
+          gap: 0.6rem;
         }
 
         .email-btn:hover:not(:disabled) {
@@ -700,13 +700,13 @@ export default function SignUpPage() {
           width: 100%;
           background: rgba(255, 255, 255, 0.95);
           border: 1.5px solid rgba(200, 222, 206, 0.3);
-          border-radius: 12px;
-          padding: 1rem 1.5rem;
+          border-radius: 10px;
+          padding: 0.6rem 0.75rem;
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 0.75rem;
-          font-size: 1rem;
+          gap: 0.6rem;
+          font-size: 0.83rem;
           font-weight: 500;
           color: var(--charcoal);
           cursor: pointer;
@@ -743,14 +743,14 @@ export default function SignUpPage() {
         }
 
         .spinner {
-          width: 18px;
-          height: 18px;
+          width: 15px;
+          height: 15px;
           border: 2px solid var(--sage);
           border-top-color: transparent;
           border-radius: 50%;
           animation: spin 0.7s linear infinite;
           position: absolute;
-          left: 1.5rem;
+          left: 0.85rem;
           opacity: 0;
           transition: opacity 0.3s ease;
         }
@@ -766,9 +766,9 @@ export default function SignUpPage() {
         .divider {
           display: flex;
           align-items: center;
-          gap: 1rem;
-          margin: 1.75rem 0;
-          font-size: 0.85rem;
+          gap: 0.65rem;
+          margin: 0.75rem 0;
+          font-size: 0.72rem;
           color: var(--mist);
           font-weight: 500;
         }
@@ -784,10 +784,10 @@ export default function SignUpPage() {
         /* ═══════════════════════════════════════════════════════════════ */
         .login-link {
           text-align: center;
-          margin-top: 1.5rem;
-          padding-top: 1.5rem;
+          margin-top: 0.75rem;
+          padding-top: 0.75rem;
           border-top: 1px solid rgba(200, 222, 206, 0.3);
-          font-size: 0.95rem;
+          font-size: 0.8rem;
           color: white;
         }
 
@@ -809,22 +809,83 @@ export default function SignUpPage() {
         .trust-badges {
           display: flex;
           flex-wrap: wrap;
-          gap: 1.5rem;
+          gap: 0.9rem;
           justify-content: center;
-          margin: 1.5rem 0 2rem;
+          margin: 0;
           padding: 0;
+          position: absolute;
+          bottom: 3.1rem;
+          left: 0;
+          right: 0;
         }
 
         .badge {
           display: flex;
           align-items: center;
-          gap: 0.4rem;
-          font-size: 0.85rem;
+          gap: 0.3rem;
+          font-size: 0.72rem;
           color: var(--sage);
         }
 
         .badge-icon {
-          font-size: 1rem;
+          font-size: 0.85rem;
+        }
+
+        /* Footer */
+        .footer {
+          position: absolute;
+          bottom: 0.4rem;
+          left: 0;
+          right: 0;
+          text-align: center;
+          font-size: 0.68rem;
+          color: var(--text-lt);
+          padding: 0 1rem;
+        }
+
+        .footer-links {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 0.6rem;
+          justify-content: center;
+          margin-bottom: 0.3rem;
+        }
+
+        .footer-links a {
+          color: var(--text-lt);
+          text-decoration: none;
+          transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+          color: var(--sage);
+        }
+
+        .copyright {
+          font-size: 0.64rem;
+        }
+
+        @media (max-height: 1000px) and (min-width: 861px) {
+          .right-panel {
+            padding: 0.7rem 0.8rem 0.9rem;
+          }
+
+          .signup-card-container {
+            max-width: 370px;
+          }
+
+          .signup-card {
+            padding: 0.78rem 0.75rem;
+          }
+
+          .card-title {
+            font-size: 1.45rem;
+          }
+
+          .trust-badges,
+          .footer {
+            display: none;
+          }
         }
 
         /* ═══════════════════════════════════════════════════════════════ */
@@ -871,6 +932,18 @@ export default function SignUpPage() {
         @media (max-width: 860px) {
           .right-panel {
             padding: 3rem 1.5rem 2.5rem;
+          }
+
+          .top-link {
+            top: 1.25rem;
+            right: 1.5rem;
+            font-size: 0.85rem;
+          }
+
+          .trust-badges {
+            position: relative;
+            bottom: auto;
+            margin: 1rem 0 1.25rem;
           }
 
           .top-link {
@@ -983,21 +1056,21 @@ export default function SignUpPage() {
               {/* Logo/Brand at top */}
               <div style={{ 
                 textAlign: 'center', 
-                marginBottom: '2.5rem',
+                marginBottom: '1rem',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '0.75rem',
+                gap: '0.5rem',
                 justifyContent: 'center',
               }}>
                 <div style={{ 
-                  width: '48px', 
-                  height: '48px', 
+                  width: '36px', 
+                  height: '36px', 
                   background: 'linear-gradient(135deg, #89bb97 0%, #c8dece 100%)',
-                  borderRadius: '12px',
+                  borderRadius: '8px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
-                  fontSize: '26px',
+                  fontSize: '18px',
                   boxShadow: '0 2px 8px rgba(200, 222, 206, 0.2)'
                 }}>
                   🌿
@@ -1005,7 +1078,7 @@ export default function SignUpPage() {
                 <div style={{ textAlign: 'center' }}>
                   <h1 style={{ 
                     fontFamily: "'Playfair Display', serif",
-                    fontSize: '1.6rem',
+                    fontSize: '1.12rem',
                     fontWeight: '700',
                     color: 'var(--cream)',
                     margin: '0',
@@ -1014,11 +1087,11 @@ export default function SignUpPage() {
                     Personal Carbon Footprint
                   </h1>
                   <div style={{
-                    fontSize: '0.7rem',
+                    fontSize: '0.56rem',
                     textTransform: 'uppercase',
-                    letterSpacing: '1.5px',
+                    letterSpacing: '1.1px',
                     color: 'var(--mist)',
-                    marginTop: '5px',
+                    marginTop: '2px',
                     fontWeight: '500'
                   }}>
                     Track · Reduce · Sustain

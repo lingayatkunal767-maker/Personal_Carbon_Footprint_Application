@@ -5,6 +5,19 @@ import { Chart as ChartJS, ArcElement, Tooltip } from 'chart.js';
 ChartJS.register(ArcElement, Tooltip);
 
 const EmissionsBreakdown = ({ breakdown }) => {
+  if (!breakdown || breakdown.length === 0) {
+    return (
+      <div className="card">
+        <div className="card-title">Emissions Breakdown <span style={{fontSize:'0.75rem',color:'var(--muted)'}}>This Week</span></div>
+        <div className="card-empty">
+          <span>📊</span>
+          <p>No emissions data yet</p>
+          <small>Log activities to see your breakdown by category</small>
+        </div>
+      </div>
+    );
+  }
+
   const total = breakdown.reduce((sum, item) => sum + item.value, 0);
   const data = {
     labels: breakdown.map((item) => item.label),
