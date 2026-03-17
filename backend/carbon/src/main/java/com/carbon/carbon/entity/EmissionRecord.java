@@ -1,5 +1,7 @@
 package com.carbon.carbon.entity;
 
+import java.time.LocalDateTime;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
@@ -20,6 +22,11 @@ public class EmissionRecord {
     @JoinColumn(name = "user_id", nullable = false)
     private User user;
 
+    private LocalDateTime createdAt;
+    @PrePersist
+    protected void onCreate() {
+        createdAt = LocalDateTime.now();
+    }
     // Getters and setters
     public Long getId() { return id; }
     public void setId(Long id) { this.id = id; }

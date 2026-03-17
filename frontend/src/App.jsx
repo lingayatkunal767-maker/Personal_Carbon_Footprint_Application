@@ -7,6 +7,9 @@ import ForgotPassword from "./pages/ForgotPassword";
 import ResetPassword from "./pages/ResetPassword";
 import LifestyleSurvey from "./pages/LifestyleSurvey";
 import CarbonHistory from "./pages/CarbonHistory";
+import CreateGoal from "./pages/CreateGoal";
+import Layout from "./Layout";
+import GoalDetails from "./pages/GoalDetails";
 
 function App() {
   return (
@@ -29,6 +32,12 @@ function App() {
 
         {/* Carbon History */}
         <Route path="/carbon-history" element={<CarbonHistory />} />
+        <Route element={<Layout />}>
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/create-goal" element={<CreateGoal />} />
+        </Route>
+        <Route path="/goal-details/:id" element={<GoalDetails />} />
+        {/* <Route path="/create-goal" element={<CreateGoal />} /> */}
       </Routes>
     </BrowserRouter>
   );

@@ -32,7 +32,7 @@ export default function Dashboard() {
   const [logs, setLogs] = useState([]);
   const latestLog = logs.length > 0 ? logs[0] : null;
   const chartData = logs.map(log => ({
-  date: log.date,
+  date: new Date(log.createdAt).toLocaleDateString(),
   emission: log.totalEmission
 }));
   // Rotate eco tip
@@ -231,7 +231,7 @@ export default function Dashboard() {
                 + Add Log
               </Link>
               <Link
-                to="/carbon-history"
+                to="/create-goal"
                 className="bg-green-600 hover:bg-green-700 text-white font-semibold px-4 py-2 rounded-lg shadow-sm transition"
               >
                 + New Goal
