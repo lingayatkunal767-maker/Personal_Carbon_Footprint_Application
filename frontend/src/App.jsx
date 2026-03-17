@@ -10,6 +10,8 @@ import CarbonHistory from "./pages/CarbonHistory";
 import CreateGoal from "./pages/CreateGoal";
 import Layout from "./Layout";
 import GoalDetails from "./pages/GoalDetails";
+import Badges from "./pages/Badges";
+import Leaderboard from "./pages/Leaderboard";
 
 function App() {
   return (
@@ -35,6 +37,8 @@ function App() {
         <Route element={<Layout />}>
           <Route path="/dashboard" element={<Dashboard />} />
           <Route path="/create-goal" element={<CreateGoal />} />
+          <Route path="/badges" element={<Badges />} />
+          <Route path="/leaderboard" element={<Leaderboard />} />
         </Route>
         <Route path="/goal-details/:id" element={<GoalDetails />} />
         {/* <Route path="/create-goal" element={<CreateGoal />} /> */}
