@@ -1,6 +1,7 @@
 param(
     [int]$Port = 8081,
-    [switch]$Restart
+    [switch]$Restart,
+    [string]$JavaHome
 )
 
 $ErrorActionPreference = 'Stop'
@@ -46,6 +47,63 @@ function Test-TrackerProcess {
     return $cmd -match 'com\.sustainability\.tracker\.TrackerApplication' -or $cmd -match '\\backend\\target\\classes'
 }
 
+function Get-JavaMajorVersion {
+    param([string]$JavaExePath)
+
+    if (-not (Test-Path $JavaExePath)) {
+        return $null
+    }
+
+    try {
+        $versionOutput = & $JavaExePath -version 2>&1 | Select-Object -First 1
+        if ($versionOutput -match '"(?<major>\d+)') {
+            return [int]$Matches.major
+        }
+    } catch {
+        return $null
+    }
+
+    return $null
+}
+
+function Resolve-Java21Home {
+    param([string]$RequestedJavaHome)
+
+    $candidates = [System.Collections.Generic.List[string]]::new()
+
+    if ($RequestedJavaHome) {
+        $candidates.Add($RequestedJavaHome)
+    }
+
+    if ($env:JAVA_HOME) {
+        $candidates.Add($env:JAVA_HOME)
+    }
+
+    $javaFromPath = Get-Command java -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($javaFromPath -and $javaFromPath.Source) {
+        $candidates.Add((Split-Path -Parent (Split-Path -Parent $javaFromPath.Source)))
+    }
+
+    foreach ($pattern in @(
+        (Join-Path $env:USERPROFILE '.jdk\jdk-21*'),
+        'C:\Program Files\Microsoft\jdk-21*',
+        'C:\Program Files\Eclipse Adoptium\jdk-21*'
+    )) {
+        Get-ChildItem -Path $pattern -Directory -ErrorAction SilentlyContinue |
+            Sort-Object LastWriteTime -Descending |
+            ForEach-Object { $candidates.Add($_.FullName) }
+    }
+
+    foreach ($candidate in ($candidates | Select-Object -Unique)) {
+        $javaExe = Join-Path $candidate 'bin\java.exe'
+        if ((Get-JavaMajorVersion -JavaExePath $javaExe) -eq 21) {
+            return $candidate
+        }
+    }
+
+    return $null
+}
+
 function Get-RealMavenCommand {
     $allMvn = Get-Command mvn -All -ErrorAction SilentlyContinue
     foreach ($cmd in $allMvn) {
@@ -66,6 +124,18 @@ if (-not $realMvn) {
     Write-Error '[ERROR] Maven executable was not found. Install Maven or configure MAVEN_HOME/PATH.'
     exit 1
 }
+
+$resolvedJavaHome = Resolve-Java21Home -RequestedJavaHome $JavaHome
+if (-not $resolvedJavaHome) {
+    Write-Error '[ERROR] Java 21 was not found. Install JDK 21 or pass -JavaHome <path-to-jdk-21>.'
+    exit 1
+}
+
+$env:JAVA_HOME = $resolvedJavaHome
+$env:Path = (Join-Path $resolvedJavaHome 'bin') + ';' + $env:Path
+
+Write-Host "[INFO] Using Java 21 from $resolvedJavaHome"
+Write-Host "[INFO] Using Maven from $realMvn"
 
 $listener = Get-Listener -TargetPort $Port
 if ($listener) {
@@ -120,5 +190,5 @@ if ($listener) {
 Write-Host "[INFO] Starting backend from $backendDir"
 Set-Location $backendDir
 
-& $realMvn spring-boot:run
+& $realMvn spring-boot:run -DskipTests
 exit $LASTEXITCODE
