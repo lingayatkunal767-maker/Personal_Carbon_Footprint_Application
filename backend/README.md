@@ -2,62 +2,145 @@
 
 ## Overview
 
-This Spring Boot (Java) backend implements the API and business logic for the Personal Carbon Footprint application. It handles authentication (JWT access + refresh tokens), user management, surveys, carbon calculations, goals, gamification, marketplace transactions, and integrations with external carbon-data APIs.
+This Spring Boot (Java 17) backend powers the **Personal Carbon Footprint** application.
+
+It is responsible for:
+- OAuth2 login (Google / GitHub) and JWT token generation
+- User management (including admin block / unblock / soft delete)
+- Lifestyle surveys and carbon logs
+- Goals (create, update, monitor) and automatic progress updates
+- Badge templates, user badges, and auto‑awarding rules
+- Leaderboard calculation based on emission reductions, goals, and badges
+
+The React frontend (in `../frontend`) talks to this backend at `http://localhost:8080`.
+
+---
 
 ## Tech stack
 
-- Java 17+ with Spring Boot (REST controllers, Spring Data JPA)
-- Build: Maven (default)
-- Database: MySQL
-- Authentication: JWT (access + refresh tokens)
-- External APIs: Carbon Interface API, Open Energy Data, UN Carbon datasets
+- Java 17, Spring Boot 3
+- Spring Data JPA (Hibernate) with **PostgreSQL**
+- Spring Security (OAuth2 client + JWT)
+- Maven build
+
+---
 
 ## Prerequisites
 
 - JDK 17+
-- Maven 3.6+
-- Running MySQL instance
-- (Optional) Docker for local MySQL
+- Maven 3.8+
+- PostgreSQL running locally
+
+Recommended local DB:
+
+- Database: `carbon_tracker`
+- User: `postgres`
+- Password: `root`
+
+You can change these in `src/main/resources/application-local.properties`.
+
+---
 
 ## Configuration
 
-Set environment variables or application properties for database and security:
+Key properties (see `application.properties` + `application-local.properties`):
 
-- `SPRING_DATASOURCE_URL` (e.g. jdbc:mysql://localhost:3306/carboncalc)
-- `SPRING_DATASOURCE_USERNAME`
-- `SPRING_DATASOURCE_PASSWORD`
-- `JWT_SECRET`
-- `JWT_ACCESS_EXP_MS` (access token lifetime)
-- `JWT_REFRESH_EXP_MS` (refresh token lifetime)
-- `CARBON_INTERFACE_API_KEY` (if using Carbon Interface)
+- **Database**
+  - `spring.datasource.url=jdbc:postgresql://localhost:5432/carbon_tracker`
+  - `spring.datasource.username=postgres`
+  - `spring.datasource.password=root`
+  - `spring.jpa.hibernate.ddl-auto=update`
+- **OAuth2**
+  - `spring.security.oauth2.client.registration.google.*`
+  - `spring.security.oauth2.client.registration.github.*`
+  - `app.oauth2.authorizedRedirectUri=http://localhost:3000/oauth2/redirect`
+- **Mail (optional)**
+  - `app.mail.enabled`, `spring.mail.*` — used for forgot‑password / OTP flows.
 
-## Run (development)
+---
+
+## Database schema & seeding
+
+- Tables are created/updated automatically by Hibernate (`ddl-auto=update`).
+- `db_scripts/schema.sql` contains a reference PostgreSQL schema for manual setup.
+- `DataInitializer.java` seeds default **badge templates** and related data on startup when the database is empty.
+
+---
+
+## Running the backend (development)
+
+From the `backend` folder:
 
 ```bash
-# start MySQL and ensure DB is created (see db_scripts)
+# 1. Ensure PostgreSQL is running and the DB exists
+#    psql -U postgres -c "CREATE DATABASE carbon_tracker;"   # run once
+
+# 2. Start Spring Boot
 mvn spring-boot:run
 ```
 
-## Build and run
+Backend will listen on `http://localhost:8080`.
+
+---
+
+## Build & run (packaged JAR)
 
 ```bash
 mvn clean package
-java -jar target/*.jar
+java -jar target/carbontracker-0.0.1-SNAPSHOT.jar
 ```
 
-## Database migrations
+---
 
-SQL schema and seed scripts are in the `db_scripts/` folder. Use them to create the schema or integrate Flyway/Liquibase.
+## Important API endpoints (current project)
 
-## Key API endpoints (examples)
+### Auth & users
 
-- `POST /api/auth/register` — register user
-- `POST /api/auth/login` — login, returns access + refresh tokens
-- `POST /api/surveys` — submit lifestyle survey
-- `GET /api/carbon/logs` — get carbon logs / history
-- `POST /api/goals` — create a goal
-- `GET /api/marketplace` — list items
-- `POST /api/transactions` — purchase offset
+- `GET /api/auth/me` — current user details (used by layout, dashboard, leaderboard)
+- `GET /api/users` — list all users (admin)
+- `PUT /api/users/{id}/block` / `PUT /api/users/{id}/unblock` — admin block / unblock
+- `DELETE /api/users/{id}` — admin soft delete (marks user inactive)
+
+### Carbon logs & survey
+
+- `GET /api/carbon/logs?from=YYYY-MM-DD&to=YYYY-MM-DD` — carbon logs for current user
+- `PUT /api/carbon/logs/{id}` — update a carbon log
+- `GET /api/surveys` / `POST /api/surveys` — lifestyle survey responses (used for badges like ECO_STARTER, SURVEY_MASTER)
+
+### Goals
+
+- `POST /api/goals` — create a goal for logged‑in user
+- `GET /api/goals` — list current user’s goals
+- `GET /api/goals/admin` — all non‑admin user goals (admin dashboard)
+- `PUT /api/goals/{id}` / `DELETE /api/goals/{id}` — update / delete goals
+
+### Badges
+
+- `GET /api/badge-templates` — list badge templates
+- `POST /api/badge-templates` — create new badge template
+- `PUT /api/badge-templates/{id}` — update name/description/condition/icon/active
+- `GET /api/badges` — list badges for current user
+- `POST /api/badges/award/{userId}` — award a badge to a user (admin “Award Badge” modal)
+
+### Leaderboard
+
+- `GET /api/leaderboard` — global leaderboard for **non‑admin** users.
+
+Score formula in `LeaderboardService`:
+
+- Compute `emissionReduction` as **% drop in total emissions** (last 30 days vs previous 30).
+- Count:
+  - `goalsCompleted` = number of goals with status `COMPLETED`
+  - `badgesEarned`   = number of badges awarded to the user
+- Final score:
+
+```text
+score = (emissionReduction × 50)
+      + (goalsCompleted  × 20)
+      + (badgesEarned    × 10)
+```
+
+---
 
 ## Testing
 
@@ -65,8 +148,11 @@ SQL schema and seed scripts are in the `db_scripts/` folder. Use them to create 
 mvn test
 ```
 
-## Notes
+---
 
-- Use strong `JWT_SECRET` in production and secure DB credentials.
-- Configure HTTPS, rate limiting, and logging for production.
-- Connect external API keys via secure vault or env vars.
+## Production notes
+
+- Use separate configuration (DB, OAuth2, mail) for non‑dev environments.
+- Store secrets (DB password, OAuth client secrets, JWT keys, mail password) outside source control.
+- Add HTTPS, logging, metrics, and backups for a real deployment.
+

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
-import { NavLink, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
 import "./AppLayout.css";
 
@@ -7,9 +7,11 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
 function AppLayout({ children }) {
   const navigate = useNavigate();
+  const location = useLocation();
   const [profileOpen, setProfileOpen] = useState(false);
   const profileRef = useRef(null);
   const [user, setUser] = useState({ name: "", role: "User", avatar: null });
+  const currentAdminTab = new URLSearchParams(location.search).get("tab") || "analytics";
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -78,20 +80,10 @@ function AppLayout({ children }) {
         <span className="app-nav-icon">🎯</span>
         <span>Goals</span>
       </NavLink>
-    </>
-  )}
-
-  {/* ADMIN FEATURES */}
-  {user.role === "ADMIN" && (
-    <>
-      <NavLink to="/admindashboard" className="app-nav-item">
-        <span className="app-nav-icon">🛡️</span>
-        <span>Dashboard</span>
-      </NavLink>
 
       <NavLink to="/badges" className="app-nav-item">
         <span className="app-nav-icon">🏅</span>
-        <span>Badges</span>
+        <span>My Badges</span>
       </NavLink>
 
       <NavLink to="/leaderboard" className="app-nav-item">
@@ -100,6 +92,92 @@ function AppLayout({ children }) {
       </NavLink>
     </>
   )}
+
+          {/* ADMIN FEATURES */}
+          {user.role === "ADMIN" && (
+            <>
+              <NavLink
+                to="/AdminDashboard?tab=analytics"
+                className={() => `app-nav-item ${currentAdminTab === "analytics" ? "active" : ""}`}
+                end
+              >
+                <span className="app-nav-icon">🛡️</span>
+                <span>Dashboard</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=users"
+                className={() => `app-nav-item ${currentAdminTab === "users" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">👥</span>
+                <span>Users</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=carbon"
+                className={() => `app-nav-item ${currentAdminTab === "carbon" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🌍</span>
+                <span>Carbon Data</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=goals"
+                className={() => `app-nav-item ${currentAdminTab === "goals" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🎯</span>
+                <span>Goals</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=badges"
+                className={() => `app-nav-item ${currentAdminTab === "badges" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🏅</span>
+                <span>Badges</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=leaderboard"
+                className={() => `app-nav-item ${currentAdminTab === "leaderboard" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🏆</span>
+                <span>Leaderboard</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=marketplace"
+                className={() => `app-nav-item ${currentAdminTab === "marketplace" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🛒</span>
+                <span>Marketplace</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=transactions"
+                className={() => `app-nav-item ${currentAdminTab === "transactions" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">💳</span>
+                <span>Transactions</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=notifications"
+                className={() => `app-nav-item ${currentAdminTab === "notifications" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🔔</span>
+                <span>Notifications</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=settings"
+                className={() => `app-nav-item ${currentAdminTab === "settings" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">⚙</span>
+                <span>Settings</span>
+              </NavLink>
+            </>
+          )}
 </nav>
         <div className="app-sidebar-footer">
           {/* <a href="#settings" className="app-nav-item app-nav-item-util">

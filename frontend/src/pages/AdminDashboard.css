@@ -185,7 +185,7 @@
   padding: 18px 22px;
   border-bottom: 1px solid var(--color-border);
   flex-wrap: wrap;
-  gap: 12px;
+  gap: 16px;
 }
 
 .admin-table-title {
@@ -196,6 +196,8 @@
 }
 
 .admin-search-input {
+  box-sizing: border-box;
+  width: 100%;
   padding: 8px 14px 8px 36px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
@@ -205,10 +207,29 @@
   color: var(--color-text);
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s;
-  min-width: 220px;
+  min-width: 0;
 }
 
 .admin-search-input:focus {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px var(--color-primary-light);
+}
+
+.admin-textarea {
+  width: 100%;
+  min-height: 60px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--color-border);
+  font-family: var(--font-sans);
+  font-size: 13px;
+  resize: vertical;
+  outline: none;
+  background: var(--color-bg);
+  color: var(--color-text);
+}
+
+.admin-textarea:focus {
   border-color: var(--color-primary);
   box-shadow: 0 0 0 3px var(--color-primary-light);
 }
@@ -629,6 +650,21 @@
 .admin-notif-dot-warning { background: var(--color-accent-amber); }
 .admin-notif-dot-success { background: var(--color-accent-green); }
 .admin-notif-dot-error { background: var(--color-accent-red); }
+
+/* ── Inline alert / status message ── */
+.admin-alert {
+  margin: 0 0 16px 0;
+  padding: 10px 14px;
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  border: 1px solid var(--color-border);
+}
+
+.admin-alert-info {
+  background: var(--color-bg);
+  border-color: var(--color-primary-light);
+  color: var(--color-text);
+}
 
 /* ── Responsive ── */
 @media (max-width: 900px) {

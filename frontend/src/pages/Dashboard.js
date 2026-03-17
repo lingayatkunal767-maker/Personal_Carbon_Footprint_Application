@@ -37,90 +37,87 @@ function Dashboard() {
   // const [summaryEmission, setSummaryEmission] = useState(EMISSION_BY_PERIOD.Weekly);
   // const [trendData, setTrendData] = useState(TREND_DATA);
   // const [recentLogs, setRecentLogs] = useState(RECENT_LOGS);
-  const [user, setUser] = useState(null);
   const [logs, setLogs] = useState([]);
-const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
+
 const formatDate = (date) => {
     return date.toLocaleDateString("en-CA");
   };
 
-useEffect(() => {
-  const token = localStorage.getItem("token");
+  useEffect(() => {
+    const token = localStorage.getItem("token");
 
-  if (!token) {
-    navigate("/");
-    return;
-  }
-
-  const fetchLogs = async () => {
-    try {
-      const headers = { Authorization: `Bearer ${token}` };
-
-      const today = new Date();
-      const to = formatDate(today);
-      let fromDate = new Date();
-
-      if (timeFilter === "Daily") {
-        fromDate = today;
-      }
-
-      if (timeFilter === "Weekly") {
-        fromDate.setDate(today.getDate() - 7);
-      }
-
-      if (timeFilter === "Monthly") {
-        fromDate.setMonth(today.getMonth() - 1);
-      }
-
-      const from = formatDate(fromDate);
-      const res = await axios.get(
-        `${API_BASE}/api/carbon/logs?from=${from}&to=${to}`,
-        { headers }
-      );
-
-      setLogs(res.data);
-
-    } catch (err) {
-      localStorage.removeItem("token");
+    if (!token) {
       navigate("/");
-    } finally {
-      setLoading(false);
+      return;
     }
-  };
 
-  fetchLogs();
-}, [timeFilter]);
+    const fetchLogs = async () => {
+      try {
+        const headers = { Authorization: `Bearer ${token}` };
+        const today = new Date();
+        const to = formatDate(today);
+        let fromDate = new Date();
+
+        if (timeFilter === "Daily") {
+          fromDate = today;
+        } else if (timeFilter === "Weekly") {
+          fromDate.setDate(today.getDate() - 7);
+        } else if (timeFilter === "Monthly") {
+          fromDate.setMonth(today.getMonth() - 1);
+        }
+
+        const from = formatDate(fromDate);
+        const res = await axios.get(
+          `${API_BASE}/api/carbon/logs?from=${from}&to=${to}`,
+          { headers }
+        );
+
+        const data = Array.isArray(res.data) ? res.data : [];
+        setLogs(data);
+      } catch (err) {
+        localStorage.removeItem("token");
+        navigate("/");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, [timeFilter, navigate]);
 
   // useEffect(() => {
   //   setSummaryEmission(EMISSION_BY_PERIOD[timeFilter] ?? EMISSION_BY_PERIOD.Weekly);
   // }, [timeFilter]);
 
-  const summaryEmission = logs.reduce(
+  const safeLogs = Array.isArray(logs) ? logs : [];
+
+  const summaryEmission = safeLogs.reduce(
   (sum, log) => sum + Number(log.totalEmission),
   0
 );
 
-const transportTotal = logs.reduce(
+const transportTotal = safeLogs.reduce(
   (sum, log) => sum + Number(log.transportEmission),
   0
 );
 
-const foodTotal = logs.reduce(
+const foodTotal = safeLogs.reduce(
   (sum, log) => sum + Number(log.foodEmission),
   0
 );
 
-const energyTotal = logs.reduce(
+const energyTotal = safeLogs.reduce(
   (sum, log) => sum + Number(log.energyEmission),
   0
 );
 
-const trendData = logs.map(log => ({
+const trendData = safeLogs.map(log => ({
   date: log.date,
   value: Number(log.totalEmission)
 }));
 
-const recentLogs = [...logs]
+const recentLogs = [...safeLogs]
   .sort((a, b) => new Date(b.date) - new Date(a.date))
   .slice(0, 5);
   const maxTrend = Math.max(...trendData.map((d) => d.value), 1);
@@ -274,6 +271,7 @@ const recentLogs = [...logs]
             </table>
           </div>
         </section>
+
       </div>
     </AppLayout>
   );

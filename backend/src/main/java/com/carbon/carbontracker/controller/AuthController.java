@@ -58,6 +58,20 @@ private JwtUtil jwtUtil;
 @PostMapping("/login")
 public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
 
+    Optional<?> userOpt = userService.getUserByEmail(request.getEmail());
+
+    if (userOpt.isEmpty()) {
+        return ResponseEntity.badRequest().body("Invalid credentials");
+    }
+
+    com.carbon.carbontracker.model.User user =
+            (com.carbon.carbontracker.model.User) userOpt.get();
+
+    // Blocked users cannot log in
+    if (!user.isActive()) {
+        return ResponseEntity.status(403).body("Your account has been blocked. Please contact support.");
+    }
+
     boolean isValid = userService.validateUser(request.getEmail(), request.getPassword());
 
     if (!isValid) {
@@ -65,15 +79,6 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
     }
 
     String token = jwtUtil.generateToken(request.getEmail());
-
-    Optional<?> userOpt = userService.getUserByEmail(request.getEmail());
-
-    if (userOpt.isEmpty()) {
-        return ResponseEntity.badRequest().body("User not found");
-    }
-
-    com.carbon.carbontracker.model.User user =
-            (com.carbon.carbontracker.model.User) userOpt.get();
 
     return ResponseEntity.ok(Map.of(
             "token", token,
@@ -148,6 +153,7 @@ public ResponseEntity<?> getProfile(@RequestHeader("Authorization") String authH
             (com.carbon.carbontracker.model.User) userOpt.get();
 
     return ResponseEntity.ok(Map.of(
+            "id", user.getId(),
             "name", user.getName(),
             "email", user.getEmail(),
             "role", user.getRole()

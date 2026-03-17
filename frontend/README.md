@@ -1,78 +1,147 @@
-# CarbonCalc (Carbon Tracker)
+# CarbonCalc (Frontend)
 
-Web app to track and reduce your carbon footprint. Users register, complete a lifestyle survey (transport, food, energy), and view their dashboard, carbon history, and profile.
+React frontend for the **Personal Carbon Footprint** application.
 
-
-## Quick start (for developers)
-
-### 1. Backend
-
-```bash
-cd backend
-# Ensure PostgreSQL is running and DB exists (see backend/README.md)
-./mvnw spring-boot:run
-```
-
-- API base: **http://localhost:8080**
-
-### 2. Frontend
-
-```bash
-cd frontend
-npm start
-```
-
-- App: **http://localhost:3000**
-- By default the frontend calls **http://localhost:8080** for the API (see [Connecting frontend to backend](#connecting-frontend-to-backend)).
-
-### 3. Run both
-
-- Terminal 1: run backend (above).
-- Terminal 2: run frontend (above).
-- Open http://localhost:3000 and log in or register.
-
-
-### Profile (needed for Profile page)
-
-| Method | Path | Used by | Body / notes |
-|--------|------|--------|----------------|
-| GET | `/api/auth/me` | Profile (load) | Protected. Return `{ name, email }` (or more). |
-| PUT | `/api/auth/profile` | Profile (save) | Protected. Body: `{ name, email }` and optionally `{ password }`. |
-
-If these are missing, the Profile page will still open but load empty name/email and save will fail until the backend implements them.
-
-### Lifestyle survey 
-
-| Method | Path | Used by | Body / notes |
-|--------|------|--------|----------------|
-| POST | `/api/survey` or similar | LifestyleSurvey (submit) | Protected. Body: survey fields (transport mode, distance, fuel type, diet, meals, eat outside, electricity kWh, renewable yes/no). |
-
-Frontend currently uses mock success; replace with real POST when backend is ready.
-
-### Carbon history / dashboard
-
-- Dashboard and Carbon History currently use **mock data** in the frontend.
-- When the backend has endpoints for carbon logs or aggregated stats, the frontend can be wired to them (e.g. GET logs by date range, GET dashboard summary).
-
-
-## Changes made (summary)
-
-- **Frontend**
-  - **Dashboard:** Carbon summary card with time filter (Daily/Weekly/Monthly), category breakdown (Transport, Food, Energy), emission trend line chart, recent carbon logs table with “View details”.
-  - **Lifestyle survey (`/survey`):** Transport (mode: Car, Bike, Public, Walk, Work from home; distance; fuel type only when Car), Food (diet, meals per day, eating outside), Home energy (monthly kWh, renewable). Validations and optional distance for WFH. Submit shows success and redirects to dashboard.
-  - **Carbon history (`/carbon-history`):** Working From/To date picker with validation (no future, max 365 days, From ≤ To). Table view and trend chart toggle. Pagination. Export CSV button removed.
-  - **Profile (`/profile`):** Replaced static card with edit form: name, email (loaded from API), new password, confirm password (optional). Load from GET `/api/auth/me`, save via PUT `/api/auth/profile`.
-  - **Layout:** Shared sidebar + header; welcome message instead of search bar; profile dropdown in header (Profile → `/profile`, Logout). Sidebar: Dashboard, Lifestyle Survey, Carbon History; Settings, Logout.
-  - **Theme:** Green/slate theme; light sidebar; consistent buttons and cards.
-- **Backend connection**
-  - All API base URLs use `REACT_APP_API_URL` (default `http://localhost:8080`).
-  - Protected pages use `Authorization: Bearer <token>`.
-  - Backend team: implement GET `/api/auth/me` and PUT `/api/auth/profile` for the Profile page; optional POST for survey and endpoints for dashboard/carbon history when ready.
+Users log in via Google/GitHub, track their carbon emissions, set goals, earn badges, and view a global leaderboard.  
+Admins can manage users and badges from an admin dashboard.
 
 ---
 
-1. **CORS:** Allow the frontend origin (e.g. `http://localhost:3000` in development).
-2. **Profile:** Implement GET `/api/auth/me` and PUT `/api/auth/profile` so the Profile page can load and save name, email, and optional password.
-3. **Survey:** When ready, expose a POST endpoint for lifestyle survey data so the frontend can replace the mock submit.
-4. **Logs/aggregates:** When you have carbon logs or aggregates, define GET endpoints (e.g. by date range) so the frontend can replace mock data on Dashboard and Carbon History.
+## Quick start (for developers)
+
+### 1. Start the backend
+
+From `backend/`:
+
+```bash
+cd backend
+mvn spring-boot:run
+```
+
+Backend runs on **http://localhost:8080**.  
+See `backend/README.md` and `db_scripts/schema.sql` for PostgreSQL setup.
+
+### 2. Start the frontend
+
+From `frontend/`:
+
+```bash
+cd frontend
+npm install        # first time only
+npm start
+```
+
+Frontend runs on **http://localhost:3000**.
+
+The frontend uses `REACT_APP_API_URL` as API base (default `http://localhost:8080`).
+
+---
+
+## Main features
+
+### Layout & auth
+
+- Uses OAuth2 login (Google / GitHub) → backend redirects back with `?token=...`.
+- JWT is stored in `localStorage` and attached as `Authorization: Bearer <token>` for all API calls.
+- `AppLayout` component:
+  - Sidebar navigation (Dashboard, My Badges, Leaderboard, etc.)
+  - Header with welcome message and profile dropdown (Profile, Logout)
+  - Mobile‑friendly responsive layout.
+
+### User dashboard (`/dashboard`)
+
+- Time filter (Daily / Weekly / Monthly).
+- Calls:
+  - `GET /api/carbon/logs?from=YYYY-MM-DD&to=YYYY-MM-DD`
+- Shows:
+  - Total emissions for the period
+  - Category‑wise breakdown (Transport, Food, Energy)
+  - Emission trend chart
+  - Recent logs table with “View details” links to `/carbon-history`.
+
+### My Badges (`/badges`)
+
+- Fetches:
+  - `GET /api/badge-templates` — active templates
+  - `GET /api/badges` — earned badges for current user
+- Features:
+  - Overall progress bar (earned vs total)
+  - Filter tabs: **All / Earned / Locked**
+  - Emoji icons for each badge (resolved even if DB icon is `??`)
+  - Click a badge to open a modal with description and earned date.
+
+### Leaderboard (`/leaderboard`)
+
+- Fetches:
+  - `GET /api/auth/me` — current user
+  - `GET /api/leaderboard` — full ranking for non‑admin users
+- UI:
+  - Top‑3 podium with medals
+  - “Top 10 Rankings” table (desktop) / card list (mobile)
+  - Ensures the current user is always shown and highlighted, even if they are outside the top 10.
+
+### Admin dashboard (`/AdminDashboard`)
+
+Admin‑only panel (role `ADMIN`) with multiple tabs:
+
+- **Users**
+  - Table of non‑admin users.
+  - Inline filters: **All / Active / Blocked**.
+  - Search by name/email/ID.
+  - Actions:
+    - **Block / Unblock** → `PUT /api/users/{id}/block` / `unblock`
+    - **Delete** → `DELETE /api/users/{id}` (soft delete: marks as inactive)
+
+- **Carbon Data**
+  - Shows carbon logs using `GET /api/carbon/logs`.
+
+- **Goals**
+  - Shows goals of all non‑admin users using `GET /api/goals/admin`.
+
+- **Badges**
+  - **Badge Templates**
+    - Card grid of templates with emoji icons.
+    - Header shows `Badge Templates (N)` and inline filters: **All badges / Active / Disabled**.
+    - “+ Create Badge” opens a modal:
+      - Fields: Name, Short Description, Condition, Icon (emoji), Active.
+      - Create: `POST /api/badge-templates`
+      - Edit existing: clicking **Edit** on a card opens the same modal pre‑filled and uses `PUT /api/badge-templates/{id}`.
+      - Validation and success messages are displayed inside the modal.
+  - **Award Badge**
+    - Opens a modal with:
+      - User select (non‑admin users only) + chips for multiple selected users.
+      - Badge template select.
+    - Awards badges by calling `POST /api/badges/award/{userId}` for each selected user.
+    - Shows inline messages inside the modal:
+      - Green for success (`Badge awarded to X user(s).`).
+      - Red if the badge was already awarded or another error occurred.
+
+---
+
+## Environment configuration
+
+The frontend reads:
+
+- `REACT_APP_API_URL` — backend base URL (default `http://localhost:8080`).
+
+Example `.env` in the repo root:
+
+```bash
+REACT_APP_API_URL=http://localhost:8080
+```
+
+Restart `npm start` after changing environment variables.
+
+---
+
+## Development notes
+
+- Ensure CORS on the backend allows `http://localhost:3000`.
+- All protected routes redirect to login if the JWT is missing or invalid.
+- UI is responsive (desktop + mobile) for all main pages: Dashboard, Badges, Leaderboard, and Admin Dashboard.
+
+For backend and database details see:
+
+- `backend/README.md`
+- `db_scripts/schema.sql`
 

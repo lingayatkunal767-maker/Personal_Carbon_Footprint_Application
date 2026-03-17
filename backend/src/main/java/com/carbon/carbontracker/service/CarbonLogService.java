@@ -19,6 +19,9 @@ public class CarbonLogService {
     @Autowired
     private GoalService goalService;
 
+    @Autowired
+    private BadgeRuleService badgeRuleService;
+
     public void createOrUpdateLog(
             User user,
             double transport,
@@ -89,10 +92,13 @@ public class CarbonLogService {
         }
 
         goalService.updateGoalsForUser(
-    savedLog.getUser().getId(),
-    transportBD,
-    foodBD,
-    energyBD
-);
+                savedLog.getUser().getId(),
+                transportBD,
+                foodBD,
+                energyBD
+        );
+
+        // Badge rules based on carbon log activity
+        badgeRuleService.afterCarbonLogSaved(savedLog.getUser());
     }
 }

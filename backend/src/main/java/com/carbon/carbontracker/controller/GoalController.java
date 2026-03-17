@@ -54,6 +54,13 @@ public class GoalController {
         return ResponseEntity.ok(goals);
     }
 
+    // GET /api/goals/admin — list all non-admin user goals (for admin dashboard)
+    @GetMapping("/admin")
+    public ResponseEntity<List<GoalResponse>> getAllNonAdminGoals() {
+        List<GoalResponse> goals = goalService.getAllNonAdminGoals();
+        return ResponseEntity.ok(goals);
+    }
+
     // PUT /api/goals/{id} — update a goal (only owner can update)
     @PutMapping("/{id}")
     public ResponseEntity<?> updateGoal(@PathVariable Long id,
