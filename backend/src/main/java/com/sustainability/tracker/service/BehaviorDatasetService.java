@@ -86,6 +86,200 @@ public class BehaviorDatasetService {
         return blendWeight;
     }
 
+        public DatasetInsights generateInsights(BehaviorProfile profile) {
+        if (datasetRows.isEmpty()) {
+            return new DatasetInsights(false, 0, null, null, null, null, 0, List.of());
+        }
+
+        List<BehaviorRow> lowImpactRows = getLowImpactRows();
+        BigDecimal datasetAverage = averageFootprint(datasetRows);
+        BigDecimal lowImpactAverage = averageFootprint(lowImpactRows);
+
+        BehaviorPrediction prediction = profile != null
+            ? predict(profile)
+            : new BehaviorPrediction(null, null, true, 0);
+
+        List<DatasetTip> tips = buildDatasetTips(profile, lowImpactRows, datasetAverage, lowImpactAverage);
+
+        return new DatasetInsights(
+            true,
+            datasetRows.size(),
+            datasetAverage,
+            lowImpactAverage,
+            prediction.predictedFootprint(),
+            prediction.impactLevel(),
+            prediction.matchedSamples(),
+            tips
+        );
+        }
+
+        private List<BehaviorRow> getLowImpactRows() {
+        List<BehaviorRow> lowImpactRows = datasetRows.stream()
+            .filter(row -> "LOW".equals(normalizeToken(row.impactLevel())))
+            .toList();
+
+        if (!lowImpactRows.isEmpty()) {
+            return lowImpactRows;
+        }
+
+        int fallbackSize = Math.max(1, Math.min(50, datasetRows.size() / 4));
+        return datasetRows.stream()
+            .sorted(Comparator.comparing(BehaviorRow::carbonFootprintKg))
+            .limit(fallbackSize)
+            .toList();
+        }
+
+        private BigDecimal averageFootprint(List<BehaviorRow> rows) {
+        if (rows == null || rows.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = rows.stream()
+            .map(BehaviorRow::carbonFootprintKg)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return total.divide(BigDecimal.valueOf(rows.size()), 2, RoundingMode.HALF_UP);
+        }
+
+        private BigDecimal averageValue(List<BehaviorRow> rows, Function<BehaviorRow, BigDecimal> selector, int scale) {
+        if (rows == null || rows.isEmpty()) {
+            return BigDecimal.ZERO;
+        }
+        BigDecimal total = rows.stream()
+            .map(selector)
+            .filter(value -> value != null)
+            .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return total.divide(BigDecimal.valueOf(rows.size()), scale, RoundingMode.HALF_UP);
+        }
+
+        private String dominantToken(List<BehaviorRow> rows, Function<BehaviorRow, String> selector, String fallback) {
+        return rows.stream()
+            .map(selector)
+            .map(this::normalizeToken)
+            .filter(token -> !token.isBlank())
+            .collect(Collectors.groupingBy(Function.identity(), Collectors.counting()))
+            .entrySet()
+            .stream()
+            .max(Comparator.<Map.Entry<String, Long>>comparingLong(Map.Entry::getValue)
+                .thenComparing(Map.Entry::getKey))
+            .map(Map.Entry::getKey)
+            .orElse(fallback);
+        }
+
+        private List<DatasetTip> buildDatasetTips(
+            BehaviorProfile profile,
+            List<BehaviorRow> lowImpactRows,
+            BigDecimal datasetAverage,
+            BigDecimal lowImpactAverage
+        ) {
+        String lowImpactTransport = displayTransport(
+            dominantToken(lowImpactRows, row -> normalizeTransport(row.transportMode()), "WALK")
+        );
+        String lowImpactFood = displayFood(
+            dominantToken(lowImpactRows, row -> normalizeFood(row.foodType()), "VEG")
+        );
+
+        BigDecimal lowImpactRenewable = averageValue(lowImpactRows, BehaviorRow::renewableUsagePct, 0);
+        BigDecimal lowImpactWaste = averageValue(lowImpactRows, BehaviorRow::wasteGeneratedKg, 2);
+        BigDecimal lowImpactEcoActions = averageValue(
+            lowImpactRows,
+            row -> BigDecimal.valueOf(row.ecoActions()),
+            1
+        );
+
+        BigDecimal potentialReduction = datasetAverage.subtract(lowImpactAverage).max(BigDecimal.ZERO);
+        if (potentialReduction.compareTo(BigDecimal.ZERO) == 0) {
+            potentialReduction = new BigDecimal("1.50");
+        }
+
+        String transportDescription = profile != null
+            ? String.format(
+                "Your latest survey aligns against %d dataset samples. Low-impact users most often use %s.",
+                K_NEIGHBORS,
+                lowImpactTransport
+            )
+            : String.format(
+                "Across the connected dataset, low-impact users most often use %s for day-to-day travel.",
+                lowImpactTransport
+            );
+
+        String renewableDescription = String.format(
+            "Low-impact dataset users average %s%% renewable usage. Increase clean-energy share where possible.",
+            lowImpactRenewable.stripTrailingZeros().toPlainString()
+        );
+
+        String foodDescription = String.format(
+            "Low-impact users are mostly %s diets in the dataset. Reducing high-impact meals lowers your daily footprint.",
+            lowImpactFood
+        );
+
+        String actionsDescription = String.format(
+            "Low-impact profiles average %s kg waste/day and %s eco actions/day. Small daily actions compound quickly.",
+            lowImpactWaste.stripTrailingZeros().toPlainString(),
+            lowImpactEcoActions.stripTrailingZeros().toPlainString()
+        );
+
+        return List.of(
+            new DatasetTip(
+                "dataset-transport",
+                "🚶",
+                "#d4edda",
+                "Shift Trips To Low-Impact Transport",
+                transportDescription,
+                savingsLabel(potentialReduction.multiply(new BigDecimal("0.45")))
+            ),
+            new DatasetTip(
+                "dataset-renewable",
+                "☀️",
+                "#fef3d4",
+                "Increase Renewable Energy Share",
+                renewableDescription,
+                savingsLabel(potentialReduction.multiply(new BigDecimal("0.25")))
+            ),
+            new DatasetTip(
+                "dataset-food",
+                "🥗",
+                "#dceefb",
+                "Follow Lower-Impact Food Patterns",
+                foodDescription,
+                savingsLabel(potentialReduction.multiply(new BigDecimal("0.20")))
+            ),
+            new DatasetTip(
+                "dataset-actions",
+                "♻️",
+                "#fde8e8",
+                "Lower Waste And Raise Eco Actions",
+                actionsDescription,
+                savingsLabel(potentialReduction.multiply(new BigDecimal("0.10")))
+            )
+        );
+        }
+
+        private String savingsLabel(BigDecimal value) {
+        BigDecimal safeValue = value.max(BigDecimal.ZERO).setScale(2, RoundingMode.HALF_UP);
+        return "Save ~" + safeValue.stripTrailingZeros().toPlainString() + " kg CO2e/day";
+        }
+
+        private String displayTransport(String token) {
+        String normalized = normalizeToken(token);
+        return switch (normalized) {
+            case "EV" -> "EV";
+            case "CAR" -> "Car";
+            case "BUS" -> "Bus";
+            case "BIKE" -> "Bike";
+            case "WALK" -> "Walk";
+            default -> formatToken(normalized);
+        };
+        }
+
+        private String displayFood(String token) {
+        String normalized = normalizeToken(token);
+        return switch (normalized) {
+            case "NON-VEG" -> "Non-Veg";
+            case "MIXED" -> "Mixed";
+            case "VEG" -> "Veg";
+            default -> formatToken(normalized);
+        };
+        }
+
     private void loadDataset() {
         Optional<Path> datasetFile = resolveDatasetPath();
         if (datasetFile.isEmpty()) {
@@ -285,6 +479,26 @@ public class BehaviorDatasetService {
             boolean datasetConnected,
             int matchedSamples
     ) {}
+
+        public record DatasetTip(
+            String id,
+            String icon,
+            String bg,
+            String title,
+            String description,
+            String savings
+        ) {}
+
+        public record DatasetInsights(
+            boolean datasetConnected,
+            int datasetRecords,
+            BigDecimal averageFootprint,
+            BigDecimal lowImpactAverageFootprint,
+            BigDecimal predictedFootprint,
+            String impactLevel,
+            int matchedSamples,
+            List<DatasetTip> tips
+        ) {}
 
     private record BehaviorRow(
             String dayType,

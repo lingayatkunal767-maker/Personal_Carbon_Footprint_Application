@@ -7,21 +7,49 @@ const GOOGLE_CLIENT_ID =
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 const FACTS = [
-  'Global ocean temperatures have risen by about 0.13 F per decade since 1901.',
-  'Home efficiency improvements can reduce household emissions by 25 to 30 percent.',
-  'A single roundtrip transatlantic flight can emit about 1.6 tons of CO2 per passenger.',
-  'Producing 1 kg of beef can create about 60 kg of greenhouse gas emissions.',
-  'The fashion industry contributes close to 10 percent of global emissions.',
-  'One mature tree can absorb about 48 pounds of CO2 per year.',
-  'Recycling aluminum saves up to 95 percent of the energy used to produce new aluminum.',
-  'Biking instead of driving short trips can save about 0.9 kg CO2 per mile.'
+  'Global ocean temperatures have risen ~0.13°F per decade since 1901.',
+  'Home efficiency upgrades can cut household emissions by 25–30%.',
+  'A roundtrip transatlantic flight emits ~1.6 tons of CO₂ per passenger.',
+  'Producing 1 kg of beef generates up to 60 kg of greenhouse gases.',
+  'The fashion industry accounts for ~10% of global annual emissions.',
+  'One mature tree absorbs ~48 pounds of CO₂ per year.',
+  'Recycling aluminum saves 95% of the energy needed for new aluminum.',
+  'Biking instead of driving saves ~0.9 kg CO₂ per mile.',
 ];
 
 const STATS = [
-  { value: '4.7T', label: 'Average yearly CO2 footprint per person' },
-  { value: '28%', label: 'Of global emissions from transport' },
-  { value: '45%', label: 'Reduction needed by 2030' }
+  { value: '4.7T', label: 'Avg yearly CO₂ per person' },
+  { value: '28%', label: 'Emissions from transport' },
+  { value: '45%', label: 'Reduction needed by 2030' },
 ];
+
+const LEAVES = [
+  { top: '7%',  left: '80%', dur: '8s',  delay: '0s',  size: '28px' },
+  { top: '20%', left: '10%', dur: '9.5s',delay: '2s',  size: '22px' },
+  { top: '55%', left: '88%', dur: '7.5s',delay: '5s',  size: '20px' },
+  { top: '75%', left: '18%', dur: '10s', delay: '8s',  size: '26px' },
+  { top: '40%', left: '52%', dur: '8.5s',delay: '12s', size: '18px' },
+];
+
+function EyeOpenIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+      <circle cx="12" cy="12" r="3"/>
+    </svg>
+  );
+}
+
+function EyeClosedIcon() {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none"
+      stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/>
+      <line x1="1" y1="1" x2="23" y2="23"/>
+    </svg>
+  );
+}
 
 function GoogleIcon() {
   return (
@@ -43,7 +71,8 @@ export default function LoginPage() {
   const [emailLoading, setEmailLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [factIndex, setFactIndex] = useState(0);
-  const [toast, setToast] = useState({ text: '', visible: false });
+  const [factVisible, setFactVisible] = useState(true);
+  const [toast, setToast] = useState({ text: '', type: 'default', visible: false });
 
   const toastTimerRef = useRef(null);
 
@@ -64,9 +93,12 @@ export default function LoginPage() {
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setFactIndex((prev) => (prev + 1) % FACTS.length);
+      setFactVisible(false);
+      setTimeout(() => {
+        setFactIndex((prev) => (prev + 1) % FACTS.length);
+        setFactVisible(true);
+      }, 350);
     }, 5000);
-
     return () => clearInterval(interval);
   }, []);
 
@@ -112,15 +144,12 @@ export default function LoginPage() {
     };
   }, []);
 
-  const showToast = (text) => {
-    if (toastTimerRef.current) {
-      clearTimeout(toastTimerRef.current);
-    }
-
-    setToast({ text, visible: true });
+  const showToast = (text, type = 'default') => {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToast({ text, type, visible: true });
     toastTimerRef.current = setTimeout(() => {
-      setToast({ text: '', visible: false });
-    }, 3000);
+      setToast({ text: '', type: 'default', visible: false });
+    }, 3500);
   };
 
   const setSessionAndNavigate = (data) => {
@@ -166,10 +195,10 @@ export default function LoginPage() {
         throw new Error(data.message || 'Google login failed');
       }
 
-      showToast(`Welcome, ${data.name || 'user'}.`);
-      setTimeout(() => setSessionAndNavigate(data), 500);
+      showToast(`Welcome back, ${data.name || 'there'}! 🌿`, 'success');
+      setTimeout(() => setSessionAndNavigate(data), 600);
     } catch (error) {
-      showToast(`Google login failed: ${error.message}`);
+      showToast(`Google login failed: ${error.message}`, 'error');
     } finally {
       setGoogleLoading(false);
     }
@@ -177,12 +206,12 @@ export default function LoginPage() {
 
   const handleGoogleLogin = () => {
     if (!window.google?.accounts?.id) {
-      showToast('Google Sign-In is still loading. Try again in a moment.');
+      showToast('Google Sign-In is still loading. Try again in a moment.', 'warning');
       return;
     }
 
     if (!GOOGLE_CLIENT_ID || GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_CLIENT_ID_HERE') {
-      showToast('Google OAuth is not configured.');
+      showToast('Google OAuth is not configured.', 'warning');
       return;
     }
 
@@ -190,7 +219,7 @@ export default function LoginPage() {
     window.google.accounts.id.prompt((notification) => {
       if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
         setGoogleLoading(false);
-        showToast('Google One Tap was not shown. Please use email login.');
+        showToast('Google One Tap was not shown. Please use email login.', 'warning');
       } else {
         setGoogleLoading(false);
       }
@@ -202,13 +231,13 @@ export default function LoginPage() {
 
     const normalizedEmail = email.trim().toLowerCase();
     if (!normalizedEmail || !password) {
-      showToast('Please enter both email and password.');
+      showToast('Please enter both email and password.', 'warning');
       return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(normalizedEmail)) {
-      showToast('Please enter a valid email address.');
+      showToast('Please enter a valid email address.', 'warning');
       return;
     }
 
@@ -229,382 +258,527 @@ export default function LoginPage() {
         throw new Error(data.message || 'Login failed');
       }
 
-      showToast(data.message || 'Login successful.');
-      setTimeout(() => setSessionAndNavigate(data), 500);
+      showToast(data.message || 'Welcome back! 🌿', 'success');
+      setTimeout(() => setSessionAndNavigate(data), 600);
     } catch (error) {
-      showToast(error.message || 'Cannot reach backend server.');
+      showToast(error.message || 'Cannot reach backend server.', 'error');
     } finally {
       setEmailLoading(false);
     }
   };
 
+  const busy = emailLoading || googleLoading;
+
   return (
     <>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:wght@400;500;700&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&display=swap');
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
         :root {
           --forest: #1a3d2b;
-          --moss: #2e5e42;
-          --sage: #5a8a6a;
-          --mint: #89bb97;
-          --mist: #c8dece;
-          --cream: #f6f1e9;
-          --paper: #faf7f2;
-          --ink: #1c1e1a;
-          --ink-soft: #4a5244;
+          --moss:   #2e5e42;
+          --sage:   #5a8a6a;
+          --fern:   #89bb97;
+          --mist:   #c8dece;
+          --cream:  #f6f1e9;
+          --paper:  #faf7f2;
+          --ink:    #1c1e1a;
+          --ink2:   #4a5244;
+          --ink3:   #8a9884;
         }
 
-        * {
-          box-sizing: border-box;
-        }
+        body { font-family: 'DM Sans', sans-serif; }
 
-        body {
-          margin: 0;
-          font-family: 'DM Sans', sans-serif;
-          color: var(--ink);
-          background:
-            radial-gradient(circle at 8% 10%, rgba(137, 187, 151, 0.22), transparent 40%),
-            radial-gradient(circle at 92% 85%, rgba(200, 222, 206, 0.28), transparent 45%),
-            linear-gradient(135deg, #f9f5ed 0%, #f3efe6 100%);
-        }
-
-        .login-shell {
-          min-height: 100vh;
+        /* ── SHELL ── */
+        .lp-shell {
+          min-height: 100svh;
           display: grid;
-          grid-template-columns: 1.1fr 1fr;
+          grid-template-columns: 1fr 1fr;
         }
 
-        .hero {
-          padding: clamp(24px, 4vw, 48px);
+        /* ── LEFT HERO ── */
+        .lp-hero {
+          position: relative;
+          overflow: hidden;
+          background: linear-gradient(150deg, #152e20 0%, #1e4a30 45%, #2d6644 100%);
           display: flex;
           flex-direction: column;
           justify-content: center;
-          background: linear-gradient(145deg, rgba(26, 61, 43, 0.95), rgba(46, 94, 66, 0.9));
+          padding: clamp(1.5rem, 3.5vw, 3rem) clamp(1.5rem, 3vw, 2.5rem);
           color: var(--cream);
         }
 
-        .hero h1 {
-          margin: 0;
-          font-family: 'Playfair Display', serif;
-          font-size: clamp(2rem, 4vw, 3rem);
-          line-height: 1.15;
+        .lp-hero::before {
+          content: '';
+          position: absolute;
+          top: -140px; right: -80px;
+          width: 400px; height: 400px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(137,187,151,0.18) 0%, transparent 70%);
+          pointer-events: none;
+        }
+        .lp-hero::after {
+          content: '';
+          position: absolute;
+          bottom: -120px; left: -60px;
+          width: 320px; height: 320px;
+          border-radius: 50%;
+          background: radial-gradient(circle, rgba(200,222,206,0.12) 0%, transparent 70%);
+          pointer-events: none;
         }
 
-        .hero p {
-          margin-top: 14px;
-          font-size: 1rem;
-          color: var(--mist);
-          max-width: 540px;
+        @keyframes lp-float {
+          0%,100% { transform: translateY(0) rotate(0deg); }
+          50% { transform: translateY(-18px) rotate(8deg); }
+        }
+        .lp-leaf {
+          position: absolute;
+          opacity: 0.18;
+          pointer-events: none;
+          animation: lp-float linear infinite;
+          filter: blur(0.5px);
+          user-select: none;
         }
 
-        .stat-grid {
-          margin-top: 22px;
-          display: grid;
-          grid-template-columns: repeat(3, minmax(0, 1fr));
+        .lp-brand {
+          display: flex;
+          align-items: center;
           gap: 10px;
+          margin-bottom: 1.5rem;
+          position: relative;
+          z-index: 1;
         }
-
-        .stat-card {
-          border: 1px solid rgba(200, 222, 206, 0.25);
-          border-radius: 12px;
-          padding: 12px;
-          background: rgba(255, 255, 255, 0.07);
+        .lp-brand-icon {
+          width: 38px; height: 38px;
+          border-radius: 10px;
+          background: rgba(255,255,255,0.13);
+          display: flex; align-items: center; justify-content: center;
+          font-size: 20px;
+          backdrop-filter: blur(6px);
+          flex-shrink: 0;
         }
-
-        .stat-value {
-          font-weight: 700;
-          font-size: 1.1rem;
-          color: #e7f5ea;
-        }
-
-        .stat-label {
-          margin-top: 4px;
-          font-size: 0.8rem;
-          color: #c9dfcf;
-        }
-
-        .fact-strip {
-          margin-top: 18px;
-          border-left: 4px solid var(--mint);
-          background: rgba(255, 255, 255, 0.08);
-          border-radius: 8px;
-          padding: 12px;
-          min-height: 64px;
-          display: grid;
-          align-content: center;
-        }
-
-        .fact-strip p {
-          margin: 0;
-          color: #e1f0e5;
-          font-size: 0.9rem;
-          line-height: 1.4;
-        }
-
-        .auth-panel {
-          display: grid;
-          place-items: center;
-          padding: clamp(20px, 4vw, 48px);
-        }
-
-        .auth-card {
-          width: 100%;
-          max-width: 430px;
-          background: rgba(255, 255, 255, 0.9);
-          border-radius: 16px;
-          border: 1px solid rgba(90, 138, 106, 0.2);
-          box-shadow: 0 22px 55px rgba(26, 61, 43, 0.18);
-          padding: 24px;
-        }
-
-        .auth-card h2 {
-          margin: 0;
+        .lp-brand-name {
           font-family: 'Playfair Display', serif;
-          font-size: 1.9rem;
-          color: var(--forest);
+          font-size: 1.12rem;
+          font-weight: 700;
+          line-height: 1.2;
+          color: var(--cream);
+        }
+        .lp-brand-sub {
+          font-size: 0.6rem;
+          text-transform: uppercase;
+          letter-spacing: 2.2px;
+          color: var(--mist);
+          font-weight: 500;
+          margin-top: 2px;
         }
 
-        .auth-card p {
-          margin-top: 8px;
-          color: var(--ink-soft);
-          font-size: 0.92rem;
+        .lp-hero-headline {
+          font-family: 'Playfair Display', serif;
+          font-size: clamp(1.55rem, 2.4vw, 2.1rem);
+          font-weight: 700;
+          line-height: 1.2;
+          color: #fff;
+          margin-bottom: 0.65rem;
+          position: relative;
+          z-index: 1;
+        }
+        .lp-hero-sub {
+          font-size: 0.86rem;
+          color: #aacdb5;
+          line-height: 1.6;
+          max-width: 380px;
+          margin-bottom: 1.2rem;
+          font-weight: 400;
+          position: relative;
+          z-index: 1;
         }
 
-        .auth-form {
-          margin-top: 18px;
+        .lp-stats {
           display: grid;
-          gap: 12px;
+          grid-template-columns: repeat(3, 1fr);
+          gap: 8px;
+          margin-bottom: 1.1rem;
+          position: relative;
+          z-index: 1;
         }
-
-        .label {
-          font-size: 0.82rem;
-          color: #51604f;
-          margin-bottom: 4px;
+        .lp-stat {
+          background: rgba(255,255,255,0.07);
+          border: 1px solid rgba(200,222,206,0.18);
+          border-radius: 10px;
+          padding: 9px 8px;
+          text-align: center;
+          backdrop-filter: blur(4px);
+        }
+        .lp-stat-v {
+          font-size: 1.1rem;
+          font-weight: 700;
+          color: #e9f6ec;
+          display: block;
+        }
+        .lp-stat-l {
+          font-size: 0.65rem;
+          color: #9cbfa8;
+          margin-top: 2px;
+          line-height: 1.3;
           display: block;
         }
 
-        .input {
-          width: 100%;
-          border: 1px solid rgba(90, 138, 106, 0.35);
-          border-radius: 10px;
-          padding: 11px 12px;
-          font-size: 0.93rem;
-          background: #fff;
-          color: var(--ink);
-        }
-
-        .input:focus {
-          outline: none;
-          border-color: var(--sage);
-          box-shadow: 0 0 0 3px rgba(137, 187, 151, 0.25);
-        }
-
-        .password-row {
+        .lp-fact {
+          background: rgba(255,255,255,0.06);
+          border-left: 3px solid var(--fern);
+          border-radius: 0 10px 10px 0;
+          padding: 10px 13px;
+          min-height: 46px;
           display: flex;
-          gap: 8px;
+          align-items: center;
+          position: relative;
+          z-index: 1;
         }
-
-        .toggle-btn {
-          border: none;
-          border-radius: 10px;
-          padding: 0 12px;
-          background: #eef6ef;
-          color: #2e5e42;
-          font-weight: 600;
-          cursor: pointer;
+        .lp-fact p {
+          font-size: 0.81rem;
+          color: #d4eeda;
+          line-height: 1.6;
+          font-style: italic;
+          transition: opacity 0.35s ease, transform 0.35s ease;
         }
+        .lp-fact p.lp-hidden { opacity: 0; transform: translateY(6px); }
+        .lp-fact p.lp-visible { opacity: 1; transform: translateY(0); }
 
-        .primary-btn,
-        .google-btn {
-          width: 100%;
-          border: none;
-          border-radius: 10px;
-          height: 44px;
-          font-weight: 700;
-          cursor: pointer;
-          transition: transform 0.15s ease, box-shadow 0.15s ease;
-        }
-
-        .email-btn.loading .btn-content {
-          opacity: 0.5;
-        }
-
-        .google-btn {
-          margin-top: 6px;
-          border: 1px solid rgba(90, 138, 106, 0.35);
-          background: #fff;
-          color: #254a33;
+        /* ── RIGHT PANE ── */
+        .lp-pane {
+          background: var(--paper);
           display: flex;
           align-items: center;
           justify-content: center;
-          gap: 8px;
+          padding: clamp(1rem, 2vw, 2rem);
         }
 
-        .primary-btn:hover,
-        .google-btn:hover {
-          transform: translateY(-1px);
-          box-shadow: 0 6px 16px rgba(26, 61, 43, 0.16);
+        @keyframes lp-slide-up {
+          from { opacity: 0; transform: translateY(28px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .lp-card {
+          width: 100%;
+          max-width: 400px;
+          background: #fff;
+          border-radius: 18px;
+          border: 1px solid rgba(90,138,106,0.14);
+          box-shadow: 0 16px 48px rgba(26,61,43,0.11), 0 4px 14px rgba(26,61,43,0.06);
+          padding: clamp(1.4rem, 2.5vw, 1.9rem);
+          animation: lp-slide-up 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
         }
 
-        .primary-btn:disabled,
-        .google-btn:disabled {
-          opacity: 0.7;
-          cursor: not-allowed;
-          transform: none;
-          box-shadow: none;
-        }
-
-        .auth-links {
-          margin-top: 14px;
-          display: flex;
-          justify-content: space-between;
-          font-size: 0.82rem;
-        }
-
-        .auth-links a {
-          color: #2e5e42;
-          text-decoration: none;
+        .lp-card-badge {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          background: linear-gradient(135deg, #e3f5e8 0%, #cee9d5 100%);
+          border: 1px solid #b6dfc2;
+          border-radius: 100px;
+          padding: 4px 11px 4px 8px;
+          margin-bottom: 0.9rem;
+          font-size: 0.75rem;
           font-weight: 600;
+          color: var(--forest);
+        }
+        .lp-card-badge-dot {
+          width: 7px; height: 7px;
+          border-radius: 50%;
+          background: #34a853;
+          animation: lp-pulse 2s infinite;
+        }
+        @keyframes lp-pulse {
+          0%,100% { opacity: 1; transform: scale(1); }
+          50% { opacity: 0.6; transform: scale(1.3); }
         }
 
-        .auth-links a:hover {
-          text-decoration: underline;
+        .lp-card h2 {
+          font-family: 'Playfair Display', serif;
+          font-size: 1.55rem;
+          font-weight: 700;
+          color: var(--forest);
+          margin-bottom: 0.25rem;
+          line-height: 1.2;
+        }
+        .lp-card-sub {
+          font-size: 0.83rem;
+          color: var(--ink2);
+          margin-bottom: 1.15rem;
+          line-height: 1.5;
         }
 
-        .toast {
-          position: fixed;
-          top: 20px;
-          right: 20px;
-          max-width: 360px;
+        .lp-field { margin-bottom: 0.8rem; }
+        .lp-label {
+          display: block;
+          font-size: 0.77rem;
+          font-weight: 600;
+          color: var(--ink2);
+          margin-bottom: 0.3rem;
+          letter-spacing: 0.2px;
+        }
+        .lp-input-wrap { position: relative; }
+        .lp-input {
+          width: 100%;
+          border: 1.5px solid #d6e4da;
           border-radius: 10px;
-          padding: 10px 14px;
-          background: #1f4d33;
+          padding: 9px 12px;
+          font-size: 0.91rem;
+          font-family: 'DM Sans', sans-serif;
+          color: var(--ink);
+          background: #fdfdfd;
+          transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
+          appearance: none;
+        }
+        .lp-input:focus {
+          outline: none;
+          border-color: var(--sage);
+          box-shadow: 0 0 0 3.5px rgba(90,138,106,0.13);
+          background: #fff;
+        }
+        .lp-input::placeholder { color: #b0bcb4; }
+        .lp-input.lp-has-eye { padding-right: 46px; }
+
+        .lp-eye {
+          position: absolute; right: 12px; top: 50%;
+          transform: translateY(-50%);
+          background: none; border: none; cursor: pointer;
+          color: var(--ink3); display: flex; align-items: center;
+          padding: 4px; transition: color 0.2s; border-radius: 6px;
+        }
+        .lp-eye:hover { color: var(--sage); }
+
+        .lp-btn-primary {
+          width: 100%; height: 42px;
+          border: none;
+          border-radius: 10px;
+          background: linear-gradient(135deg, #1a3d2b 0%, #2e5e42 100%);
           color: #fff;
           font-size: 0.88rem;
-          z-index: 1000;
-          box-shadow: 0 12px 28px rgba(17, 39, 27, 0.28);
+          font-weight: 600;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          transition: transform 0.15s, box-shadow 0.2s, opacity 0.2s;
+          display: flex; align-items: center; justify-content: center; gap: 8px;
+          margin-top: 0.2rem;
+          letter-spacing: 0.2px;
+        }
+        .lp-btn-primary:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 10px 24px rgba(26,61,43,0.28);
+        }
+        .lp-btn-primary:active:not(:disabled) { transform: translateY(0); }
+        .lp-btn-primary:disabled { opacity: 0.62; cursor: not-allowed; }
+
+        .lp-divider {
+          display: flex; align-items: center; gap: 12px;
+          margin: 0.75rem 0; font-size: 0.74rem;
+          color: var(--ink3); font-weight: 500; letter-spacing: 0.5px;
+        }
+        .lp-divider-line { flex: 1; height: 1px; background: #e4ede6; }
+
+        .lp-btn-google {
+          width: 100%; height: 42px;
+          border: 1.5px solid #d6e4da;
+          border-radius: 10px;
+          background: #fff;
+          color: var(--ink);
+          font-size: 0.86rem;
+          font-weight: 500;
+          font-family: 'DM Sans', sans-serif;
+          cursor: pointer;
+          display: flex; align-items: center; justify-content: center; gap: 10px;
+          transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s;
+        }
+        .lp-btn-google:hover:not(:disabled) {
+          border-color: var(--fern);
+          transform: translateY(-1px);
+          box-shadow: 0 8px 20px rgba(137,187,151,0.22);
+        }
+        .lp-btn-google:disabled { opacity: 0.62; cursor: not-allowed; }
+
+        @keyframes lp-spin { to { transform: rotate(360deg); } }
+        .lp-spinner {
+          width: 17px; height: 17px;
+          border: 2px solid rgba(255,255,255,0.3);
+          border-top-color: #fff;
+          border-radius: 50%;
+          animation: lp-spin 0.7s linear infinite;
+          flex-shrink: 0;
+        }
+        .lp-spinner--dark {
+          border-color: rgba(44,90,60,0.25);
+          border-top-color: var(--moss);
         }
 
-        @media (max-width: 960px) {
-          .login-shell {
-            grid-template-columns: 1fr;
-          }
-
-          .hero {
-            padding: 20px;
-          }
-
-          .stat-grid {
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-          }
-
-          .auth-panel {
-            padding-top: 6px;
-          }
+        .lp-links {
+          display: flex; justify-content: space-between;
+          margin-top: 0.85rem; padding-top: 0.75rem;
+          border-top: 1px solid #edf2ee;
+          font-size: 0.8rem;
         }
+        .lp-links a {
+          color: var(--moss); text-decoration: none;
+          font-weight: 600; transition: color 0.18s;
+        }
+        .lp-links a:hover { color: var(--forest); text-decoration: underline; }
 
-        @media (max-width: 640px) {
-          .hero {
-            display: none;
-          }
+        @keyframes lp-toast-in {
+          from { opacity: 0; transform: translate(-50%, -14px); }
+          to   { opacity: 1; transform: translate(-50%, 0); }
+        }
+        .lp-toast {
+          position: fixed; top: 22px; left: 50%;
+          transform: translateX(-50%);
+          padding: 12px 22px; border-radius: 12px;
+          font-size: 0.89rem; font-weight: 500;
+          z-index: 9999; max-width: 90vw;
+          box-shadow: 0 14px 34px rgba(0,0,0,0.18);
+          animation: lp-toast-in 0.3s ease;
+          white-space: nowrap; font-family: 'DM Sans', sans-serif;
+        }
+        .lp-toast--default { background: #1a3d2b; color: #e4f5e9; }
+        .lp-toast--success { background: #155e30; color: #c0f0cc; }
+        .lp-toast--error   { background: #5e1e1e; color: #fcd4d4; }
+        .lp-toast--warning { background: #4a3a0e; color: #faeab8; }
 
-          .auth-card {
-            padding: 20px;
-          }
-
-          .auth-links {
-            gap: 10px;
-            flex-wrap: wrap;
-          }
+        @media (max-width: 860px) {
+          .lp-shell { grid-template-columns: 1fr; }
+          .lp-hero { padding: 2rem 1.5rem; }
+        }
+        @media (max-width: 560px) {
+          .lp-hero { display: none; }
+          .lp-pane { padding: 2.5rem 1.25rem; align-items: flex-start; padding-top: 3.5rem; }
         }
       `}</style>
 
-      <div className="login-shell">
-        <section className="hero">
-          <h1>Track your footprint. Build cleaner habits.</h1>
-          <p>
-            Sign in to monitor daily emissions, set measurable goals, and see progress from your transport,
-            food, and home energy choices.
+      <div className="lp-shell">
+        {/* ── LEFT HERO ── */}
+        <aside className="lp-hero">
+          {LEAVES.map((l, i) => (
+            <span key={i} className="lp-leaf"
+              style={{ top: l.top, left: l.left, animationDuration: l.dur, animationDelay: l.delay, fontSize: l.size }}>
+              🍃
+            </span>
+          ))}
+
+          <div className="lp-brand">
+            <div className="lp-brand-icon">🌿</div>
+            <div>
+              <div className="lp-brand-name">Personal Carbon<br/>Footprint</div>
+              <div className="lp-brand-sub">Track · Reduce · Sustain</div>
+            </div>
+          </div>
+
+          <h1 className="lp-hero-headline">
+            Track your footprint.<br/>
+            Build cleaner habits.
+          </h1>
+          <p className="lp-hero-sub">
+            Monitor daily emissions, set measurable goals, and see real progress from your
+            transport, food, and home energy choices — powered by real behavioral data.
           </p>
 
-          <div className="stat-grid">
-            {STATS.map((item) => (
-              <div className="stat-card" key={item.label}>
-                <div className="stat-value">{item.value}</div>
-                <div className="stat-label">{item.label}</div>
+          <div className="lp-stats">
+            {STATS.map((s) => (
+              <div className="lp-stat" key={s.label}>
+                <span className="lp-stat-v">{s.value}</span>
+                <span className="lp-stat-l">{s.label}</span>
               </div>
             ))}
           </div>
 
-          <div className="fact-strip">
-            <p>{FACTS[factIndex]}</p>
+          <div className="lp-fact">
+            <p className={factVisible ? 'lp-visible' : 'lp-hidden'}>
+              💡 {FACTS[factIndex]}
+            </p>
           </div>
-        </section>
+        </aside>
 
-        <section className="auth-panel">
-          <div className="auth-card">
-            <h2>Welcome Back</h2>
-            <p>Sign in to continue to your carbon dashboard.</p>
+        {/* ── RIGHT FORM ── */}
+        <main className="lp-pane">
+          <div className="lp-card">
+            <div className="lp-card-badge">
+              <span className="lp-card-badge-dot" />
+              Secure Login
+            </div>
 
-            <form className="auth-form" onSubmit={handleEmailLogin}>
-              <div>
-                <label className="label" htmlFor="login-email">Email</label>
+            <h2>Welcome back</h2>
+            <p className="lp-card-sub">Sign in to continue to your carbon dashboard.</p>
+
+            <form onSubmit={handleEmailLogin} noValidate>
+              <div className="lp-field">
+                <label className="lp-label" htmlFor="lp-email">Email address</label>
                 <input
-                  id="login-email"
-                  className="input"
+                  id="lp-email"
+                  className="lp-input"
                   type="email"
+                  autoComplete="email"
+                  placeholder="you@example.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="name@example.com"
-                  disabled={emailLoading || googleLoading}
-                  autoComplete="email"
+                  disabled={busy}
                 />
               </div>
 
-              <div>
-                <label className="label" htmlFor="login-password">Password</label>
-                <div className="password-row">
+              <div className="lp-field">
+                <label className="lp-label" htmlFor="lp-pw">Password</label>
+                <div className="lp-input-wrap">
                   <input
-                    id="login-password"
-                    className="input"
+                    id="lp-pw"
+                    className="lp-input lp-has-eye"
                     type={showPassword ? 'text' : 'password'}
+                    autoComplete="current-password"
+                    placeholder="Enter your password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Enter your password"
-                    disabled={emailLoading || googleLoading}
-                    autoComplete="current-password"
+                    disabled={busy}
                   />
                   <button
                     type="button"
-                    className="toggle-btn"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    disabled={emailLoading || googleLoading}
+                    className="lp-eye"
+                    onClick={() => setShowPassword((p) => !p)}
+                    tabIndex={-1}
+                    aria-label={showPassword ? 'Hide password' : 'Show password'}
                   >
-                    {showPassword ? 'Hide' : 'Show'}
+                    {showPassword ? <EyeOpenIcon /> : <EyeClosedIcon />}
                   </button>
                 </div>
               </div>
 
-              <button className="primary-btn" type="submit" disabled={emailLoading || googleLoading}>
-                {emailLoading ? 'Signing In...' : 'Sign In'}
+              <button type="submit" className="lp-btn-primary" disabled={busy}>
+                {emailLoading ? (
+                  <><span className="lp-spinner" /> Signing in…</>
+                ) : 'Sign In'}
               </button>
             </form>
 
-            <button className="google-btn" type="button" onClick={handleGoogleLogin} disabled={emailLoading || googleLoading}>
-              <GoogleIcon />
-              {googleLoading ? 'Opening Google...' : 'Continue with Google'}
+            <div className="lp-divider">
+              <div className="lp-divider-line" />
+              <span>OR</span>
+              <div className="lp-divider-line" />
+            </div>
+
+            <button className="lp-btn-google" type="button" onClick={handleGoogleLogin} disabled={busy}>
+              {googleLoading ? (
+                <><span className="lp-spinner lp-spinner--dark" /> Opening Google…</>
+              ) : (
+                <><GoogleIcon />Continue with Google</>
+              )}
             </button>
 
-            <div className="auth-links">
+            <div className="lp-links">
               <Link to="/signup">Create account</Link>
               <Link to="/admin/login">Admin login</Link>
             </div>
           </div>
-        </section>
+        </main>
       </div>
 
-      {toast.visible && <div className="toast">{toast.text}</div>}
+      {toast.visible && (
+        <div className={`lp-toast lp-toast--${toast.type}`}>{toast.text}</div>
+      )}
     </>
   );
 }

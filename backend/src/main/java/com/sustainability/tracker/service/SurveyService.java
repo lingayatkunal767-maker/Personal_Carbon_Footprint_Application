@@ -2,6 +2,8 @@ package com.sustainability.tracker.service;
 
 import com.sustainability.tracker.dto.SurveyRequest;
 import com.sustainability.tracker.dto.SurveyResponse;
+import com.sustainability.tracker.dto.DatasetInsightsDTO;
+import com.sustainability.tracker.dto.EcoTipDTO;
 import com.sustainability.tracker.entity.CarbonLog;
 import com.sustainability.tracker.entity.LifestyleSurvey;
 import com.sustainability.tracker.exception.UserNotFoundException;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -69,6 +72,40 @@ public class SurveyService {
         );
     }
 
+            @Transactional(readOnly = true)
+            public DatasetInsightsDTO getDatasetInsights(Long userId) {
+            userRepository.findById(userId)
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
+
+            BehaviorDatasetService.BehaviorProfile profile = surveyRepository
+                .findTopByUserIdOrderBySurveyDateDescIdDesc(userId)
+                .map(this::buildBehaviorProfileFromSurvey)
+                .orElse(null);
+
+            BehaviorDatasetService.DatasetInsights insights = behaviorDatasetService.generateInsights(profile);
+            List<EcoTipDTO> tips = insights.tips().stream()
+                .map(tip -> new EcoTipDTO(
+                    tip.id(),
+                    tip.icon(),
+                    tip.bg(),
+                    tip.title(),
+                    tip.description(),
+                    tip.savings()
+                ))
+                .toList();
+
+            return new DatasetInsightsDTO(
+                insights.datasetConnected(),
+                insights.datasetRecords(),
+                insights.averageFootprint(),
+                insights.lowImpactAverageFootprint(),
+                insights.predictedFootprint(),
+                insights.impactLevel(),
+                insights.matchedSamples(),
+                tips
+            );
+            }
+
     private LifestyleSurvey mapToEntity(SurveyRequest request, Long userId) {
         LifestyleSurvey survey = new LifestyleSurvey();
         survey.setUserId(userId);
@@ -102,6 +139,25 @@ public class SurveyService {
         );
     }
 
+            private BehaviorDatasetService.BehaviorProfile buildBehaviorProfileFromSurvey(LifestyleSurvey survey) {
+            LocalDate surveyDate = Optional.ofNullable(survey.getSurveyDate()).orElse(LocalDate.now());
+            BigDecimal dailyElectricity = Optional.ofNullable(survey.getElectricityKwhPerMonth())
+                .orElse(BigDecimal.ZERO)
+                .divide(new BigDecimal("30"), 2, RoundingMode.HALF_UP);
+
+            return new BehaviorDatasetService.BehaviorProfile(
+                resolveDayType(surveyDate),
+                resolveTransportMode(survey),
+                Optional.ofNullable(survey.getDistanceKmPerDay()).orElse(BigDecimal.ZERO),
+                dailyElectricity,
+                resolveRenewableUsagePct(survey),
+                resolveFoodType(survey),
+                new BigDecimal("5.0"),
+                new BigDecimal("0.8"),
+                1
+            );
+            }
+
     private String resolveDayType(LocalDate surveyDate) {
         DayOfWeek day = surveyDate.getDayOfWeek();
         return (day == DayOfWeek.SATURDAY || day == DayOfWeek.SUNDAY) ? "Weekend" : "Weekday";
@@ -125,9 +181,40 @@ public class SurveyService {
         };
     }
 
+    private String resolveTransportMode(LifestyleSurvey survey) {
+        if (survey == null || survey.getTransportMode() == null) {
+            return "Car";
+        }
+
+        if (survey.getTransportMode() == LifestyleSurvey.TransportMode.CAR
+                && survey.getFuelType() == LifestyleSurvey.FuelType.EV) {
+            return "EV";
+        }
+
+        return switch (survey.getTransportMode()) {
+            case CAR -> "Car";
+            case BUS, TRAIN, METRO, AUTO -> "Bus";
+            case BIKE -> "Bike";
+            case WALK -> "Walk";
+        };
+    }
+
     private String resolveFoodType(SurveyRequest request) {
         int nonVegMeals = Optional.ofNullable(request.getMealsNonVegPerWeek()).orElse(0);
         int vegMeals = Optional.ofNullable(request.getMealsVegPerWeek()).orElse(0);
+
+        if (nonVegMeals == 0 && vegMeals > 0) {
+            return "Veg";
+        }
+        if (nonVegMeals > vegMeals) {
+            return "Non-Veg";
+        }
+        return "Mixed";
+    }
+
+    private String resolveFoodType(LifestyleSurvey survey) {
+        int nonVegMeals = Optional.ofNullable(survey.getMealsNonVegPerWeek()).orElse(0);
+        int vegMeals = Optional.ofNullable(survey.getMealsVegPerWeek()).orElse(0);
 
         if (nonVegMeals == 0 && vegMeals > 0) {
             return "Veg";
@@ -143,6 +230,13 @@ public class SurveyService {
             return request.getRenewableUsagePct();
         }
         if (request.getFuelType() == LifestyleSurvey.FuelType.EV) {
+            return new BigDecimal("75");
+        }
+        return BigDecimal.ZERO;
+    }
+
+    private BigDecimal resolveRenewableUsagePct(LifestyleSurvey survey) {
+        if (survey.getFuelType() == LifestyleSurvey.FuelType.EV) {
             return new BigDecimal("75");
         }
         return BigDecimal.ZERO;

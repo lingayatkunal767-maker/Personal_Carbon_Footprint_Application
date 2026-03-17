@@ -168,6 +168,11 @@ export const surveyAPI = {
       body: JSON.stringify(surveyData),
     });
   },
+
+  // Get dataset-backed tips and benchmarks for a user
+  getDatasetInsights: async (userId) => {
+    return fetchAPI(`/survey/insights/user/${userId}`);
+  },
 };
 
 // Carbon Log APIs

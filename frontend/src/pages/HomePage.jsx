@@ -20,7 +20,9 @@ import '../styles/Dashboard.css';
 const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
-const DEFAULT_TAGS = ['🌿 Eco Hero', '🚗 Transport Pro', '⚡ Energy Saver'];
+const DEFAULT_TAGS = [];
+
+const BADGE_HEX_CLASSES = ['bh1', 'bh2', 'bh3', 'bh4', 'bh5'];
 
 const CATEGORY_COLORS = {
   transport: '#2d7a4f',
@@ -58,12 +60,17 @@ const GOAL_COLORS = [
   'linear-gradient(90deg,#e05c5c,#f4a261)',
 ];
 
-const DEFAULT_TIPS = [
-  { id: 'tip-1', icon: '🚲', bg: '#d4edda', title: 'Cycle to work twice a week', description: 'Replaces short car trips under 5 km', savings: 'Save ~18 kg CO₂/month' },
-  { id: 'tip-2', icon: '🌡️', bg: '#fef3d4', title: 'Lower thermostat by 2°C', description: 'Small change, big impact on heating bills', savings: 'Save ~12 kg CO₂/month' },
-  { id: 'tip-3', icon: '🥦', bg: '#dceefb', title: 'Try 3 meat-free days per week', description: 'Significantly cuts food-related emissions', savings: 'Save ~22 kg CO₂/month' },
-  { id: 'tip-4', icon: '🛁', bg: '#fde8e8', title: 'Switch baths to 5-min showers', description: 'Reduces water heating energy by up to 70%', savings: 'Save ~8 kg CO₂/month' },
-];
+function resolveBadgeIcon(badgeType, badgeName = '') {
+  const type = (badgeType || '').toLowerCase();
+  const name = (badgeName || '').toLowerCase();
+
+  if (type.includes('transport') || name.includes('transport') || name.includes('bike')) return '🚗';
+  if (type.includes('energy') || name.includes('energy') || name.includes('solar')) return '⚡';
+  if (type.includes('food') || name.includes('food') || name.includes('veg')) return '🥦';
+  if (type.includes('offset') || name.includes('tree') || name.includes('carbon')) return '🌳';
+  if (type.includes('milestone') || type.includes('achievement')) return '🏅';
+  return '🏅';
+}
 
 function formatRelativeDate(dateStr) {
   if (!dateStr) return 'Today';
@@ -287,7 +294,8 @@ export default function HomePage() {
   const [profile, setProfile] = useState({ name: '', email: '', memberSince: '', tags: DEFAULT_TAGS, profilePicture: null });
   const [goals, setGoals] = useState([]);
   const [activities, setActivities] = useState([]);
-  const [tips, setTips] = useState(DEFAULT_TIPS);
+  const [tips, setTips] = useState([]);
+  const [tipsMeta, setTipsMeta] = useState({ datasetConnected: false, datasetRecords: 0 });
   const [notifications, setNotifications] = useState([]);
   const [footprintData, setFootprintData] = useState({ week: { labels: [], data: [] }, month: { labels: [], data: [] }, year: { labels: [], data: [] } });
   const [breakdown, setBreakdown] = useState([]);
@@ -364,7 +372,17 @@ export default function HomePage() {
     const loadAll = async () => {
       setLoading(true);
       try {
-        const [activitiesRes, goalsRes, statsRes, breakdownRes, monthlyRes, badgesRes, leaderboardRes] =
+        const [
+          activitiesRes,
+          goalsRes,
+          statsRes,
+          breakdownRes,
+          monthlyRes,
+          badgesRes,
+          badgeDefinitionsRes,
+          leaderboardRes,
+          tipsRes,
+        ] =
           await Promise.allSettled([
             fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json()),
             fetch(`${API_BASE}/goals/user/${userId}`).then(r => r.json()),
@@ -372,7 +390,9 @@ export default function HomePage() {
             fetch(`${API_BASE}/stats/user/${userId}/breakdown`).then(r => r.json()),
             fetch(`${API_BASE}/stats/user/${userId}/monthly?months=6`).then(r => r.json()),
             fetch(`${API_BASE}/badges/user/${userId}`).then(r => r.json()),
+            fetch(`${API_BASE}/admin/badges/definitions`).then(r => r.json()),
             fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json()),
+            fetch(`${API_BASE}/survey/insights/user/${userId}`).then(r => r.json()),
           ]);
 
         // Activities
@@ -412,36 +432,71 @@ export default function HomePage() {
           setMonthlyComparison(buildMonthlyChartData(monthlyRes.value));
         }
 
-        // Badges
-        if (badgesRes.status === 'fulfilled' && Array.isArray(badgesRes.value)) {
-          const ALL_BADGES = [
-            { icon: '🚗', label: 'Transport Pro', pts: '+200 pts', hexClass: 'bh1', type: 'transport' },
-            { icon: '⚡', label: 'Energy Saver',  pts: '+150 pts', hexClass: 'bh2', type: 'energy' },
-            { icon: '🌳', label: 'Tree Planter',  pts: '+180 pts', hexClass: 'bh3', type: 'offset' },
-            { icon: '🏃', label: 'Tree Runner',   pts: '+120 pts', hexClass: 'bh4', type: 'other' },
-            { icon: '🥦', label: 'Green Eater',   pts: '+90 pts',  hexClass: 'bh5', type: 'food' },
-            { icon: '🔒', label: 'Solar Champ',   pts: 'Locked',   hexClass: 'bhL', type: 'solar' },
-            { icon: '🔒', label: 'Zero Waste',    pts: 'Locked',   hexClass: 'bhL', type: 'waste' },
-            { icon: '🔒', label: 'Bike Legend',   pts: 'Locked',   hexClass: 'bhL', type: 'bike' },
-          ];
-          const earnedTypes = badgesRes.value.map(b => (b.badgeType || '').toLowerCase());
-          setBadges(ALL_BADGES.map(b => ({
-            ...b,
-            id: `badge-${b.type}`,
-            locked: !earnedTypes.includes(b.type) && b.pts === 'Locked',
-          })));
+        // Dataset-backed tips
+        if (tipsRes.status === 'fulfilled' && tipsRes.value && Array.isArray(tipsRes.value.tips)) {
+          setTips(tipsRes.value.tips);
+          setTipsMeta({
+            datasetConnected: !!tipsRes.value.datasetConnected,
+            datasetRecords: Number(tipsRes.value.datasetRecords) || 0,
+          });
         } else {
-          setBadges([
-            { id: 'badge-transport', icon: '🚗', label: 'Transport Pro', pts: '+200 pts', hexClass: 'bh1', locked: false },
-            { id: 'badge-energy',    icon: '⚡', label: 'Energy Saver',  pts: '+150 pts', hexClass: 'bh2', locked: false },
-            { id: 'badge-tree',      icon: '🌳', label: 'Tree Planter',  pts: '+180 pts', hexClass: 'bh3', locked: false },
-            { id: 'badge-runner',    icon: '🏃', label: 'Tree Runner',   pts: '+120 pts', hexClass: 'bh4', locked: false },
-            { id: 'badge-food',      icon: '🥦', label: 'Green Eater',   pts: '+90 pts',  hexClass: 'bh5', locked: false },
-            { id: 'badge-solar',     icon: '🔒', label: 'Solar Champ',   pts: 'Locked',   hexClass: 'bhL', locked: true },
-            { id: 'badge-waste',     icon: '🔒', label: 'Zero Waste',    pts: 'Locked',   hexClass: 'bhL', locked: true },
-            { id: 'badge-bike',      icon: '🔒', label: 'Bike Legend',   pts: 'Locked',   hexClass: 'bhL', locked: true },
-          ]);
+          setTips([]);
+          setTipsMeta({ datasetConnected: false, datasetRecords: 0 });
         }
+
+        // Badges (definitions + earned instances)
+        const earnedBadges = badgesRes.status === 'fulfilled' && Array.isArray(badgesRes.value)
+          ? badgesRes.value
+          : [];
+        const badgeDefinitions = badgeDefinitionsRes.status === 'fulfilled' && Array.isArray(badgeDefinitionsRes.value)
+          ? badgeDefinitionsRes.value
+          : [];
+
+        const earnedBadgeNames = new Set(
+          earnedBadges
+            .map((badge) => (badge.badgeName || '').trim().toLowerCase())
+            .filter(Boolean)
+        );
+
+        if (badgeDefinitions.length > 0) {
+          setBadges(
+            badgeDefinitions.map((definition, index) => {
+              const badgeName = definition.badgeName || `Badge ${index + 1}`;
+              const isEarned = earnedBadgeNames.has(badgeName.trim().toLowerCase());
+              const threshold = Number(definition.thresholdPercent);
+              const hasThreshold = Number.isFinite(threshold);
+              return {
+                id: `badge-definition-${definition.id ?? index}`,
+                icon: isEarned ? resolveBadgeIcon(definition.badgeType, badgeName) : '🔒',
+                label: badgeName,
+                pts: isEarned
+                  ? 'Earned'
+                  : hasThreshold
+                    ? `${Math.round(threshold)}% target`
+                    : 'Locked',
+                hexClass: isEarned ? BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length] : 'bhL',
+                locked: !isEarned,
+              };
+            })
+          );
+        } else {
+          setBadges(
+            earnedBadges.map((badge, index) => ({
+              id: `badge-earned-${badge.id ?? index}`,
+              icon: resolveBadgeIcon(badge.badgeType, badge.badgeName),
+              label: badge.badgeName || 'Earned Badge',
+              pts: 'Earned',
+              hexClass: BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length],
+              locked: false,
+            }))
+          );
+        }
+
+        const earnedTags = earnedBadges
+          .slice(0, 3)
+          .map((badge) => `🏅 ${badge.badgeName}`)
+          .filter((tag) => tag !== '🏅 undefined');
+        setProfile((prev) => ({ ...prev, tags: earnedTags.length ? earnedTags : prev.tags }));
 
         // Leaderboard
         if (leaderboardRes.status === 'fulfilled' && Array.isArray(leaderboardRes.value)) {
@@ -649,7 +704,24 @@ export default function HomePage() {
     }, ...prev]);
   };
 
-  const handleRefreshTips = () => setTips(prev => [...prev].sort(() => Math.random() - 0.5));
+  const handleRefreshTips = async () => {
+    if (!userId) return;
+    try {
+      const response = await fetch(`${API_BASE}/survey/insights/user/${userId}`);
+      if (!response.ok) return;
+
+      const data = await response.json();
+      if (Array.isArray(data?.tips)) {
+        setTips(data.tips);
+        setTipsMeta({
+          datasetConnected: !!data.datasetConnected,
+          datasetRecords: Number(data.datasetRecords) || 0,
+        });
+      }
+    } catch (err) {
+      console.error('Refresh tips error:', err);
+    }
+  };
   const handleToggleNotifications = async () => {
     const next = !notificationsOpen;
     setNotificationsOpen(next);
@@ -753,7 +825,7 @@ export default function HomePage() {
 
         {/* Row 4: Monthly Comparison + Eco Tips */}
         <MonthlyComparison data={monthlyComparison} />
-        <EcoTips tips={tips} onRefresh={handleRefreshTips} />
+        <EcoTips tips={tips} onRefresh={handleRefreshTips} meta={tipsMeta} />
 
         {/* Row 5: Leaderboard+Badges (stacked) + Carbon Calculator */}
         <div className="dashboard-stack">

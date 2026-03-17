@@ -6,6 +6,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface LifestyleSurveyRepository extends JpaRepository<LifestyleSurvey, Long> {
@@ -13,4 +14,6 @@ public interface LifestyleSurveyRepository extends JpaRepository<LifestyleSurvey
 	List<LifestyleSurvey> findAllByOrderBySurveyDateDesc();
 
 	List<LifestyleSurvey> findBySurveyDateBetweenOrderBySurveyDateDesc(LocalDate from, LocalDate to);
+
+	Optional<LifestyleSurvey> findTopByUserIdOrderBySurveyDateDescIdDesc(Long userId);
 }
