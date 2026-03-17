@@ -13,8 +13,8 @@ import ForgotPassword  from "./components/ForgotPassword";
 import ResetPassword   from "./components/ResetPassword";
 import CarbonHistory   from "./components/CarbonHistory";
 import LifestyleSurvey from "./components/LifeStyleSurvey";
-import EcoBadgePage    from "./components/EcoBadgePage";
-import GoalPage        from "./components/GoalPage";
+import EcoBadgePage from "./components/EcoBadgePage";
+import GoalPage from "./components/GoalPage";
 
 import axios from 'axios';
 // Attach JWT token to every axios request automatically
@@ -62,11 +62,18 @@ function App() {
 
       {/* ── Authenticated pages (with Layout/sidebar) ── */}
       <Route element={<Layout />}>
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/goals"     element={<GoalPage />} />
-        <Route path="/badges/:type" element={<EcoBadgePage />} />
-        <Route path="/history"   element={<CarbonHistory />} />
-        <Route path="/survey"    element={<LifestyleSurvey />} />
+      
+      <Route path="/oauth-success" element={<OAuthSuccess />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+
+      <Route path="/goals" element={<GoalPage />} />
+      
+        <Route path="/badges" element={<EcoBadgePage />} /> 
+        <Route path="/badges/:type" element={<EcoBadgePage />} /> 
+        
+      <Route path="/history" element={<CarbonHistory />} />
+      <Route path="/survey" element={<LifestyleSurvey />} />
+
       </Route>
 
       {/* ── Legal ── */}
