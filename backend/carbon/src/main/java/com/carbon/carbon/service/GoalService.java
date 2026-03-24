@@ -10,7 +10,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -20,10 +24,13 @@ public class GoalService {
 
     private final GoalRepository goalRepository;
     private final UserRepository userRepository;
+    private final BadgeAwardingService badgeAwardingService;
 
-    public GoalService(GoalRepository goalRepository, UserRepository userRepository) {
+    public GoalService(GoalRepository goalRepository, UserRepository userRepository,
+                       BadgeAwardingService badgeAwardingService) {
         this.goalRepository = goalRepository;
         this.userRepository = userRepository;
+        this.badgeAwardingService = badgeAwardingService;
     }
 
     /**
@@ -78,7 +85,7 @@ public class GoalService {
      * Create new goal for a user
      */
     @Transactional
-    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission) {
+    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission, LocalDateTime startDate, LocalDateTime endDate) {
         log.info("Creating goal for user ID: {} with title: {}", userId, goalTitle);
         
         // Validate inputs
@@ -110,6 +117,8 @@ public class GoalService {
         goal.setTargetEmission(targetEmission);
         goal.setCurrentEmission(BigDecimal.ZERO);
         goal.setStatus("active");
+        goal.setStartDate(startDate);
+        goal.setEndDate(endDate);
 
         Goal saved = goalRepository.save(goal);
         log.info("Goal created with ID: {}", saved.getId());
@@ -169,6 +178,10 @@ public class GoalService {
         goal.setStatus("completed");
         Goal updated = goalRepository.save(goal);
         log.info("Goal completed successfully");
+
+        // Award goal completion badges
+        badgeAwardingService.awardGoalCompletionBadges(goal.getUser().getId());
+
         return convertToDTO(updated);
     }
 
@@ -230,6 +243,48 @@ public class GoalService {
     }
 
     /**
+     * Get goal activities/progress history
+     */
+    public List<Map<String, Object>> getGoalActivities(Long goalId) {
+        log.debug("Fetching activities for goal ID: {}", goalId);
+
+        Goal goal = goalRepository.findById(goalId)
+                .orElseThrow(() -> {
+                    log.warn("Goal not found with ID: {}", goalId);
+                    return new RuntimeException("Goal not found");
+                });
+
+        List<Map<String, Object>> activities = new ArrayList<>();
+
+        // Add goal creation activity
+        Map<String, Object> creation = new HashMap<>();
+        creation.put("date", goal.getCreatedAt());
+        creation.put("action", "Goal Created");
+        creation.put("description", "Set target: " + goal.getTargetEmission() + " kg CO2");
+        activities.add(creation);
+
+        // Add progress updates (mock for now, can be enhanced with actual progress logs)
+        if (goal.getCurrentEmission().compareTo(BigDecimal.ZERO) > 0) {
+            Map<String, Object> progress = new HashMap<>();
+            progress.put("date", LocalDateTime.now());
+            progress.put("action", "Progress Update");
+            progress.put("description", "Current emission: " + goal.getCurrentEmission() + " kg CO2");
+            activities.add(progress);
+        }
+
+        // Add completion if applicable
+        if ("completed".equals(goal.getStatus())) {
+            Map<String, Object> completion = new HashMap<>();
+            completion.put("date", LocalDateTime.now());
+            completion.put("action", "Goal Completed");
+            completion.put("description", "Target achieved!");
+            activities.add(completion);
+        }
+
+        return activities;
+    }
+
+    /**
      * Convert entity to DTO with progress percentage
      */
     private GoalDTO convertToDTO(Goal goal) {
@@ -247,6 +302,8 @@ public class GoalService {
                 goal.getCurrentEmission(),
                 goal.getStatus(),
                 goal.getCreatedAt(),
+                goal.getStartDate(),
+                goal.getEndDate(),
                 progressPercentage
         );
     }

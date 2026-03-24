@@ -17,5 +17,7 @@ public class GoalDTO {
     private BigDecimal currentEmission;
     private String status;
     private LocalDateTime createdAt;
+    private LocalDateTime startDate;
+    private LocalDateTime endDate;
     private double progressPercentage;
 }

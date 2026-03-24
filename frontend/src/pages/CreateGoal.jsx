@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { Target, CheckCircle, Globe, Calendar } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
 
 export default function CreateGoal() {
   const [category, setCategory] = useState("Transport");
@@ -10,31 +11,43 @@ export default function CreateGoal() {
   const navigate = useNavigate();
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
   
-const handleCreateGoal = () => {
+const handleCreateGoal = async () => {
 
   if (!title) {
     alert("Goal title is required");
     return;
   }
 
-  const goalData = {
-    id: Date.now(),
-    title,
-    category,
-    timeframe,
-    recurrence,
-    reductionTarget,
-    description,
-    createdDate: new Date().toISOString(),
-    current: 0,
-    target: reductionTarget,
-    activities: []
-  };
+  if (reductionTarget === 0) {
+    alert("Please set reduction target");
+    return;
+  }
 
-  localStorage.setItem("goalData", JSON.stringify(goalData));
+  try {
+    const response = await apiFetch("/api/goals", {
+      method: "POST",
+      body: JSON.stringify({
+        userId: 1, // Assume user ID, or get from context
+        goalTitle: title,
+        targetEmission: reductionTarget,
+        startDate: startDate ? new Date(startDate).toISOString() : null,
+        endDate: endDate ? new Date(endDate).toISOString() : null,
+      }),
+    });
 
-  navigate(`/goal-details/${goalData.id}`);
+    if (response.ok) {
+      const goal = await response.json();
+      navigate(`/goal-details/${goal.id}`);
+    } else {
+      alert("Failed to create goal");
+    }
+  } catch (error) {
+    console.error(error);
+    alert("Error creating goal");
+  }
 };
 //   const handleCreateGoal = () => {
 
@@ -202,6 +215,32 @@ const handleCreateGoal = () => {
   placeholder="Detail the specific actions you'll take..."
 />
 
+              </div>
+
+              {/* START AND END DATES */}
+              <div className="grid md:grid-cols-2 gap-6">
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">
+                    START DATE (Optional)
+                  </p>
+                  <input
+                    type="date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    className="w-full border rounded-lg px-4 py-2"
+                  />
+                </div>
+                <div>
+                  <p className="text-xs font-semibold text-gray-500 mb-2">
+                    END DATE (Optional)
+                  </p>
+                  <input
+                    type="date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    className="w-full border rounded-lg px-4 py-2"
+                  />
+                </div>
               </div>
 
             </div>

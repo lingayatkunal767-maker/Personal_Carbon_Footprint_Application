@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import { apiFetch } from "../utils/api";
 
 import {
   LineChart,
@@ -24,16 +25,10 @@ export default function GoalDetails() {
 
   useEffect(() => {
 
-    fetch(`http://localhost:9599/api/goals/${id}`, {
-  credentials: "include"
-})
-      .then(res => res.json())
+    apiFetch(`/api/goals/${id}`)
       .then(data => setGoal(data));
 
-    fetch(`http://localhost:9599/api/goals/${id}/activities`, {
-  credentials: "include"
-})
-      .then(res => res.json())
+    apiFetch(`/api/goals/${id}/activities`)
       .then(data => setActivities(data));
 
   }, [id]);
@@ -67,17 +62,13 @@ const handleCompleteGoal = async () => {
 
   try {
 
-    const res = await fetch(
-      `http://localhost:9599/api/goals/${goal.goalId}/complete`,
-      {
-        method: "PATCH",
-        credentials: "include"
-      }
-    );
+    const updatedGoal = await apiFetch(`/api/goals/${goal.goalId}/complete`, {
+      method: "PUT"
+    });
 
-    if (res.ok) {
+    if (updatedGoal) {
 
-      const updatedGoal = await res.json();
+      setGoal(updatedGoal);
       setGoal(updatedGoal);
 
       alert("Goal marked as completed 🎉");
@@ -116,7 +107,9 @@ const handleCompleteGoal = async () => {
             </div>
 
             <p className="text-gray-500 text-sm">
-              Active Goal • Started {goal?.createdDate}
+              Active Goal • Created {goal?.createdAt ? new Date(goal.createdAt).toLocaleDateString() : 'N/A'}
+              {goal?.startDate && ` • Starts ${new Date(goal.startDate).toLocaleDateString()}`}
+              {goal?.endDate && ` • Ends ${new Date(goal.endDate).toLocaleDateString()}`}
             </p>
 
 

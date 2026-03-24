@@ -7,19 +7,27 @@ import com.carbon.carbon.entity.User;
 import com.carbon.carbon.repository.SurveyRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
+
 @Service
 public class SurveyService {
 
     private final SurveyRepository surveyRepository;
     private final CarbonCalculationService calculationService;
     private final CarbonLogService carbonLogService;
+    private final BadgeAwardingService badgeAwardingService;
+    private final LeaderboardScoreService leaderboardScoreService;
 
     public SurveyService(SurveyRepository surveyRepository,
                          CarbonCalculationService calculationService,
-                         CarbonLogService carbonLogService) {
+                         CarbonLogService carbonLogService,
+                         BadgeAwardingService badgeAwardingService,
+                         LeaderboardScoreService leaderboardScoreService) {
         this.surveyRepository = surveyRepository;
         this.calculationService = calculationService;
         this.carbonLogService = carbonLogService;
+        this.badgeAwardingService = badgeAwardingService;
+        this.leaderboardScoreService = leaderboardScoreService;
     }
 
     public SurveyResponse processSurvey(User user, SurveyRequest request) {
@@ -55,6 +63,12 @@ public class SurveyService {
         surveyRepository.save(survey);
 
         carbonLogService.createOrUpdateDailyLog(user, transport, food, energy, total);
+
+        // Check and award badges after survey submission
+        badgeAwardingService.checkAndAwardBadges(user.getId());
+
+        // Update leaderboard score
+        leaderboardScoreService.updateScoreBasedOnEmissions(user.getId(), BigDecimal.valueOf(total));
 
         return new SurveyResponse(transport, food, energy, total);
     }

@@ -24,7 +24,7 @@ const ECO_TIPS = [
 export default function Dashboard() {
   const navigate = useNavigate();
   const [emissions, setEmissions] = useState([]);
-  const [form, setForm] = useState({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+  const [form, setForm] = useState({ category: '', activityType: '', quantity: '', carbonOutput: '', createdAt: '' });
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [tipIndex, setTipIndex] = useState(0);
@@ -100,11 +100,12 @@ export default function Dashboard() {
           category: form.category,
           activityType: form.activityType,
           quantity: parseFloat(form.quantity),
-          carbonOutput: parseFloat(form.carbonOutput)
+          carbonOutput: parseFloat(form.carbonOutput),
+          createdAt: form.createdAt ? new Date(form.createdAt).toISOString() : null
         })
       });
       setEmissions(prev => [...prev, newEmission]);
-      setForm({ category: '', activityType: '', quantity: '', carbonOutput: '' });
+      setForm({ category: '', activityType: '', quantity: '', carbonOutput: '', createdAt: '' });
     } catch (err) {
       if (err.status === 401) navigate('/login');
       else setError(err.message || 'Failed to add emission.');
@@ -161,12 +162,6 @@ export default function Dashboard() {
       if (err.status === 401) navigate('/login');
       else setError(err.message || 'Failed to delete emission.');
     }
-  };
-
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    navigate('/login');
   };
 
   // Calculate summary
@@ -361,6 +356,15 @@ export default function Dashboard() {
                     required
                     min="0"
                     step="any"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-gray-500 uppercase mb-1">Date (Optional)</label>
+                  <input
+                    type="date"
+                    value={form.createdAt}
+                    onChange={e => setForm(f => ({ ...f, createdAt: e.target.value }))}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent text-sm"
                   />
                 </div>
               </div>

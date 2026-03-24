@@ -1,5 +1,6 @@
 import { Link, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useState, useEffect } from "react";
+import { apiFetch } from "./utils/api";
 
 function Layout() {
   const [user, setUser] = useState(null);
@@ -11,14 +12,8 @@ function Layout() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch("http://localhost:9599/api/users/me", {
-          credentials: "include",
-        });
-
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
+        const data = await apiFetch("/api/users/me");
+        setUser(data);
       } catch {
         setUser(null);
       }
@@ -32,11 +27,8 @@ function Layout() {
   }, []);
 
   const handleLogout = async () => {
-    await fetch("http://localhost:9599/api/auth/logout", {
-      method: "POST",
-      credentials: "include",
-    });
-
+    // For JWT, just clear token client-side
+    localStorage.removeItem('token');
     setUser(null);
     navigate("/login");
   };
@@ -58,7 +50,12 @@ function Layout() {
       {/* 🔥 TOP BAR */}
       <div style={topBar}>
         <button onClick={() => setMobileOpen(true)} style={menuBtn}>☰</button>
-        <span style={{ fontWeight: "bold" }}>🌱 CarbonCalc</span>
+        <span style={{ fontWeight: "bold", flex: 1 }}>🌱 CarbonCalc</span>
+        {user && (
+          <button onClick={handleLogout} style={topLogoutBtn}>
+            🚪 Logout
+          </button>
+        )}
       </div>
 
       {/* 🔥 SIDEBAR */}
@@ -218,6 +215,16 @@ const menuBtn = {
   background: "transparent",
   border: "none",
   color: "#1b5e20",
+};
+
+const topLogoutBtn = {
+  padding: "5px 10px",
+  background: "#2e7d32",
+  border: "none",
+  color: "white",
+  cursor: "pointer",
+  borderRadius: "6px",
+  fontSize: "14px",
 };
 
 const overlay = {

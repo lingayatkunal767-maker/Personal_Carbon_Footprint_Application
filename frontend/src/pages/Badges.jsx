@@ -40,17 +40,9 @@ export default function Badges() {
   useEffect(() => {
     async function loadUser() {
       try {
-        const res = await fetch("http://localhost:9599/api/users/me", {
-          credentials: "include",
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        if (res.ok) {
-          const data = await res.json();
-          setUser(data);
-        }
-      } catch (err) {
+        const data = await apiFetch("/api/users/me");
+        setUser(data);
+      } catch {
         console.log("User not logged in");
       }
     }
@@ -94,12 +86,6 @@ export default function Badges() {
     loadBadges();
     return () => { mounted = false; };
   }, [user, navigate]);
-
-  // Logout
-  const handleLogout = () => {
-    localStorage.removeItem("token");
-    navigate("/login");
-  };
 
   // Get badge icon
   const getBadgeIcon = (badgeName) => {

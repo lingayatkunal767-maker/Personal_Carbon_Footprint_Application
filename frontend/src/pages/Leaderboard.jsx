@@ -20,17 +20,9 @@ export default function Leaderboard() {
     useEffect(() => {
         async function loadUser() {
             try {
-                const res = await fetch("http://localhost:9599/api/users/me", {
-                    credentials: "include",
-                    headers: {
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setUser(data);
-                }
-            } catch (err) {
+                const data = await apiFetch("/api/users/me");
+                setUser(data);
+            } catch {
                 console.log("User not logged in");
             }
         }
@@ -74,12 +66,6 @@ export default function Leaderboard() {
         loadLeaderboard();
         return () => { mounted = false; };
     }, [navigate]);
-
-    // Logout
-    const handleLogout = () => {
-        localStorage.removeItem("token");
-        navigate("/login");
-    };
 
     // Format date
     const formatDate = (dateStr) => {

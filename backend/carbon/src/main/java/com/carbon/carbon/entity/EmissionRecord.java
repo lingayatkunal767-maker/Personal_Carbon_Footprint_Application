@@ -25,7 +25,9 @@ public class EmissionRecord {
     private LocalDateTime createdAt;
     @PrePersist
     protected void onCreate() {
-        createdAt = LocalDateTime.now();
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
     }
     // Getters and setters
     public Long getId() { return id; }
@@ -40,4 +42,6 @@ public class EmissionRecord {
     public void setCarbonOutput(Double carbonOutput) { this.carbonOutput = carbonOutput; }
     public User getUser() { return user; }
     public void setUser(User user) { this.user = user; }
+    public LocalDateTime getCreatedAt() { return createdAt; }
+    public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

@@ -43,7 +43,7 @@ public class OAuth2LoginSuccessHandler implements AuthenticationSuccessHandler {
         String token = jwtUtil.generateToken(email);
 
         // Redirect to frontend with token as query param
-        String redirectUrl = "http://localhost:5174/dashboard?token=" + token;
+        String redirectUrl = "http://localhost:5173/dashboard?token=" + token;
         response.sendRedirect(redirectUrl);
     }
 }

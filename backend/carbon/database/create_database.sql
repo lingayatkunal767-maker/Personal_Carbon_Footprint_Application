@@ -210,6 +210,8 @@ CREATE TABLE IF NOT EXISTS goals (
     current_emission NUMERIC(10, 2) DEFAULT 0,
     status VARCHAR(50) DEFAULT 'active' CHECK (status IN ('active', 'completed', 'abandoned')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    start_date TIMESTAMP,
+    end_date TIMESTAMP,
     
     CONSTRAINT fk_goal_user 
         FOREIGN KEY (user_id) 

@@ -5,6 +5,7 @@ import com.carbon.carbon.entity.User;
 import com.carbon.carbon.repository.CarbonLogRepository;
 import org.springframework.stereotype.Service;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
@@ -12,9 +13,15 @@ import java.util.Optional;
 public class CarbonLogService {
 
     private final CarbonLogRepository carbonLogRepository;
+    private final BadgeAwardingService badgeAwardingService;
+    private final LeaderboardScoreService leaderboardScoreService;
 
-    public CarbonLogService(CarbonLogRepository carbonLogRepository) {
+    public CarbonLogService(CarbonLogRepository carbonLogRepository,
+                            BadgeAwardingService badgeAwardingService,
+                            LeaderboardScoreService leaderboardScoreService) {
         this.carbonLogRepository = carbonLogRepository;
+        this.badgeAwardingService = badgeAwardingService;
+        this.leaderboardScoreService = leaderboardScoreService;
     }
 
     public void createOrUpdateDailyLog(User user,
@@ -38,5 +45,11 @@ public class CarbonLogService {
         log.setTotalEmission(total);
 
         carbonLogRepository.save(log);
+
+        // Check and award badges after logging emissions
+        badgeAwardingService.checkAndAwardBadges(user.getId());
+
+        // Update leaderboard score
+        leaderboardScoreService.updateScoreBasedOnEmissions(user.getId(), BigDecimal.valueOf(total));
     }
 }

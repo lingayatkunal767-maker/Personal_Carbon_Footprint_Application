@@ -9,6 +9,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -93,8 +94,10 @@ public class GoalController {
             Long userId = Long.valueOf(request.get("userId").toString());
             String goalTitle = request.get("goalTitle").toString();
             BigDecimal targetEmission = new BigDecimal(request.get("targetEmission").toString());
+            LocalDateTime startDate = request.get("startDate") != null ? LocalDateTime.parse(request.get("startDate").toString()) : null;
+            LocalDateTime endDate = request.get("endDate") != null ? LocalDateTime.parse(request.get("endDate").toString()) : null;
 
-            GoalDTO goal = goalService.createGoal(userId, goalTitle, targetEmission);
+            GoalDTO goal = goalService.createGoal(userId, goalTitle, targetEmission, startDate, endDate);
             return ResponseEntity.status(HttpStatus.CREATED).body(goal);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid input for goal creation: {}", e.getMessage());
@@ -222,6 +225,26 @@ public class GoalController {
             log.error("Error counting active goals", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to count goals"));
+        }
+    }
+
+    /**
+     * Get goal activities/progress history
+     */
+    @GetMapping("/{goalId}/activities")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<?> getGoalActivities(@PathVariable Long goalId) {
+        try {
+            List<Map<String, Object>> activities = goalService.getGoalActivities(goalId);
+            return ResponseEntity.ok(activities);
+        } catch (RuntimeException e) {
+            log.warn("Goal not found: {}", goalId);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", "Goal not found"));
+        } catch (Exception e) {
+            log.error("Error fetching goal activities", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to fetch goal activities"));
         }
     }
 }

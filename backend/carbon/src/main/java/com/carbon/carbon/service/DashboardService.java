@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
@@ -52,13 +53,26 @@ public class DashboardService {
             metrics.setUserName(user.getName());
 
             // Emission Metrics - calculate from carbon logs
-            Double totalEmissions = carbonLogRepository.findAll().stream()
-                    .filter(log -> log.getUser().getId().equals(userId))
-                    .mapToDouble(log -> log.getTotalEmission())
+            List<com.carbon.carbon.entity.CarbonLog> allLogs = carbonLogRepository.findByUserId(userId);
+
+            Double totalEmissions = allLogs.stream()
+                    .mapToDouble(cl -> cl.getTotalEmission())
                     .sum();
             metrics.setMonthlyEmissions(totalEmissions);
-            metrics.setTodayEmissions(0.0);
-            metrics.setWeeklyEmissions(0.0);
+
+            LocalDate today = LocalDate.now();
+            Double todayEmissions = allLogs.stream()
+                    .filter(cl -> today.equals(cl.getDate()))
+                    .mapToDouble(cl -> cl.getTotalEmission())
+                    .sum();
+            metrics.setTodayEmissions(todayEmissions);
+
+            LocalDate weekAgo = today.minusDays(7);
+            Double weeklyEmissions = allLogs.stream()
+                    .filter(cl -> cl.getDate() != null && !cl.getDate().isBefore(weekAgo))
+                    .mapToDouble(cl -> cl.getTotalEmission())
+                    .sum();
+            metrics.setWeeklyEmissions(weeklyEmissions);
 
             // Goal Metrics
             List<Goal> allGoals = goalRepository.findByUserId(userId);
@@ -70,12 +84,14 @@ public class DashboardService {
 
             Long completedGoalsThisMonth = allGoals.stream()
                     .filter(g -> "completed".equalsIgnoreCase(g.getStatus()) &&
+                            g.getCreatedAt() != null &&
                             g.getCreatedAt().isAfter(LocalDateTime.now().minusMonths(1)))
                     .count();
             metrics.setGoalsCompletedThisMonth(completedGoalsThisMonth);
 
-            double goalsPercentage = activeGoals.isEmpty() ? 0 :
-                    (completedGoalsThisMonth.doubleValue() / (activeGoals.size() + completedGoalsThisMonth)) * 100;
+            long totalGoals = allGoals.size();
+            double goalsPercentage = totalGoals == 0 ? 0 :
+                    (completedGoalsThisMonth.doubleValue() / totalGoals) * 100;
             metrics.setGoalsCompletionPercentage(goalsPercentage);
 
             // Badge Metrics
@@ -145,9 +161,9 @@ public class DashboardService {
             stats.setEmail(user.getEmail());
 
             // Total Emissions from carbon logs
-            Double totalEmissions = carbonLogRepository.findAll().stream()
-                    .filter(log -> log.getUser().getId().equals(userId))
-                    .mapToDouble(log -> log.getTotalEmission())
+            List<com.carbon.carbon.entity.CarbonLog> userLogs = carbonLogRepository.findByUserId(userId);
+            Double totalEmissions = userLogs.stream()
+                    .mapToDouble(cl -> cl.getTotalEmission())
                     .sum();
             stats.setTotalEmissions(totalEmissions);
             stats.setMonthlyEmissions(totalEmissions);
@@ -245,7 +261,8 @@ public class DashboardService {
         }
 
         activeGoals.forEach(goal -> {
-            if (goal.getCurrentEmission().compareTo(goal.getTargetEmission()) > 0) {
+            if (goal.getCurrentEmission() != null && goal.getTargetEmission() != null
+                    && goal.getCurrentEmission().compareTo(goal.getTargetEmission()) > 0) {
                 recommendations.add("You're exceeding your goal: " + goal.getGoalTitle());
             }
         });
@@ -270,9 +287,10 @@ public class DashboardService {
     }
 
     private String determineLevel(int badgeCount, Double totalEmissions, long completedGoals) {
-        if (badgeCount >= 10 && totalEmissions >= 5000 && completedGoals >= 5) return "Hero";
-        if (badgeCount >= 8 && totalEmissions >= 1000 && completedGoals >= 3) return "Champion";
-        if (badgeCount >= 5 && totalEmissions >= 500 && completedGoals >= 2) return "Eco Warrior";
+        // Lower emissions = better environmental impact; rewards badge & goal achievements
+        if (badgeCount >= 10 && totalEmissions <= 500 && completedGoals >= 5) return "Hero";
+        if (badgeCount >= 8 && totalEmissions <= 1000 && completedGoals >= 3) return "Champion";
+        if (badgeCount >= 5 && totalEmissions <= 2000 && completedGoals >= 2) return "Eco Warrior";
         if (badgeCount >= 2) return "Green Advocate";
         return "Beginner";
     }

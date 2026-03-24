@@ -65,7 +65,7 @@ function Register() {
 
     setLoading(true);
     try {
-      const response = await apiFetch("/api/auth/register", {
+      await apiFetch("/api/auth/register", {
         method: "POST",
         body: JSON.stringify({
           name: formData.name,
