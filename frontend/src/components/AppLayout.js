@@ -234,7 +234,7 @@ function AppLayout({ children }) {
         </main>
 
         <footer className="app-footer">
-          <span>© 2024 CarbonCalc – Environmentally Conscious Tracking</span>
+          <span>© 2025 CarbonCalc – Environmentally Conscious Tracking</span>
         </footer>
       </div>
     </div>
