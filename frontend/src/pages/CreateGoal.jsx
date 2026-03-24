@@ -75,10 +75,7 @@ const handleCreateGoal = () => {
 
       <div className="max-w-7xl mx-auto px-6 py-8">
 
-        {/* Breadcrumb */}
-        <div className="text-sm text-gray-500 mb-6">
-          Dashboard / <span className="text-gray-800 font-medium">Create New Goal</span>
-        </div>
+        
 
         {/* MAIN GRID */}
         <div className="grid lg:grid-cols-3 gap-6">

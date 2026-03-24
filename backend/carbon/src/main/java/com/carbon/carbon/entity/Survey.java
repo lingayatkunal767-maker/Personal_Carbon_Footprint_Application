@@ -16,13 +16,14 @@ public class Survey {
     private Long id;
 
     private String transportMode;
-    private double distance;
+    @Column(name = "distance" , nullable = false)
+    private Double distance;
     private String fuelType;
 
     private String dietType;
     private int mealsPerDay;
-
-    private double monthlyKwh;
+    @Column(name = "monthly_kwh", nullable = false)
+    private Double monthlyKwh;
     private Boolean renewable;
 
     private LocalDateTime createdAt;

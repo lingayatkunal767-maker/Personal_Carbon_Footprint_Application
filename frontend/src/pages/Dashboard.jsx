@@ -185,32 +185,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578]">
-      {/* Navbar */}
-      <nav className="bg-white/80 backdrop-blur-md shadow-sm sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6 py-3 flex items-center justify-between">
-          <Link to="/" className="flex items-center gap-2">
-            <span className="text-2xl font-bold text-green-800">CarbonCalc</span>
-            <span className="text-xl">🌱</span>
-          </Link>
-          <div className="flex items-center gap-6">
-            <div className="flex gap-6">
-              <span className="text-sm text-green-800 font-semibold border-b-2 border-green-600 pb-0.5">Dashboard</span>
-              <Link to="/lifestyle-survey" className="text-sm text-green-800 hover:text-green-900 font-semibold transition">
-                Lifestyle Survey
-              </Link>
-              <Link to="/carbon-history" className="text-sm text-green-800 hover:text-green-900 font-semibold transition">
-                Carbon History
-              </Link>
-            </div>
-            <button
-              onClick={handleLogout}
-              className="ml-2 bg-green-800 hover:bg-green-900 text-white text-sm px-4 py-2 rounded-lg transition font-medium"
-            >
-              Logout
-            </button>
-          </div>
-        </div>
-      </nav>
 
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome + Eco Tip */}

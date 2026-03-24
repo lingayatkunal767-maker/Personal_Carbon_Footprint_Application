@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
 import Home from "./pages/Home";
 import Register from "./pages/Register";
 import Login from "./pages/Login";
@@ -17,31 +17,25 @@ function App() {
   return (
     <BrowserRouter>
       <Routes>
-        {/* Landing page */}
-        <Route path="/" element={<Home />} />
 
-        {/* Auth Routes */}
+        {/* Public Routes */}
+        <Route path="/" element={<Home />} />
         <Route path="/register" element={<Register />} />
         <Route path="/login" element={<Login />} />
         <Route path="/forgot-password" element={<ForgotPassword />} />
         <Route path="/reset-password" element={<ResetPassword />} />
 
-        {/* Dashboard */}
-        <Route path="/dashboard" element={<Dashboard />} />
-
-        {/* Lifestyle Survey */}
-        <Route path="/lifestyle-survey" element={<LifestyleSurvey />} />
-
-        {/* Carbon History */}
-        <Route path="/carbon-history" element={<CarbonHistory />} />
+        {/* Protected / Layout Routes */}
         <Route element={<Layout />}>
-          <Route path="/dashboard" element={<Dashboard />} />
-          <Route path="/create-goal" element={<CreateGoal />} />
-          <Route path="/badges" element={<Badges />} />
-          <Route path="/leaderboard" element={<Leaderboard />} />
+          <Route path="dashboard" element={<Dashboard />} />
+          <Route path="lifestyle-survey" element={<LifestyleSurvey />} />
+          <Route path="carbon-history" element={<CarbonHistory />} />
+          <Route path="create-goal" element={<CreateGoal />} />
+          <Route path="badges" element={<Badges />} />
+          <Route path="leaderboard" element={<Leaderboard />} />
+          <Route path="goal-details/:id" element={<GoalDetails />} />
         </Route>
-        <Route path="/goal-details/:id" element={<GoalDetails />} />
-        {/* <Route path="/create-goal" element={<CreateGoal />} /> */}
+
       </Routes>
     </BrowserRouter>
   );

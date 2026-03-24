@@ -4,7 +4,7 @@
 
 -- Create database (run this as superuser/postgres)
 -- Note: If database already exists, you can skip this step
-CREATE DATABASE carboncals;
+
 
 -- Connect to the carboncals database before running the following commands
 -- \c carboncals
@@ -256,3 +256,5 @@ COMMENT ON COLUMN badges.user_id IS 'Foreign key to users table';
 COMMENT ON COLUMN badges.badge_name IS 'Name of the achievement badge';
 COMMENT ON COLUMN badges.description IS 'Description of what the badge represents';
 COMMENT ON COLUMN badges.awarded_at IS 'Timestamp when badge was awarded';
+ALTER TABLE surveys DROP COLUMN IF EXISTS average_distance;
+ALTER TABLE surveys DROP COLUMN IF EXISTS energy_usage;

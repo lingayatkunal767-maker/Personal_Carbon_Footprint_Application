@@ -14,7 +14,7 @@ public class SurveyRequest {
     private String transportMode;
 
     @Min(0)
-    private double distance;
+    private Double distance;
 
     private String fuelType;
 
@@ -25,7 +25,7 @@ public class SurveyRequest {
     private int mealsPerDay;
 
     @Min(0)
-    private double monthlyKwh;
+    private Double monthlyKwh;
 
     @NotNull
     private Boolean renewable;
