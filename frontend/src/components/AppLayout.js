@@ -89,6 +89,16 @@ function AppLayout({ children }) {
         <span className="app-nav-icon">🏆</span>
         <span>Leaderboard</span>
       </NavLink>
+
+      <NavLink to="/marketplace" className="app-nav-item">
+        <span className="app-nav-icon">🛒</span>
+        <span>Eco Marketplace</span>
+      </NavLink>
+
+      <NavLink to="/notifications" className="app-nav-item">
+        <span className="app-nav-icon">🔔</span>
+        <span>Notifications</span>
+      </NavLink>
     </>
   )}
 
