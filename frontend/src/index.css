@@ -17,3 +17,25 @@ html, body, #root {
 body {
   font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
 }
+
+/* Leaderboard animations */
+@layer utilities {
+  .page-bg {
+    position: absolute;
+    inset: 0;
+    background:
+      radial-gradient(circle at 12% 20%, rgba(16,185,129,0.18), transparent 45%),
+      radial-gradient(circle at 85% 10%, rgba(14,116,144,0.12), transparent 38%),
+      radial-gradient(circle at 80% 80%, rgba(250,204,21,0.18), transparent 45%),
+      linear-gradient(150deg, #f8fafc 0%, #eff6ff 40%, #ecfeff 70%, #fef9c3 100%);
+    pointer-events: none;
+  }
+
+  @keyframes fade-up {
+    0%   { opacity:0; transform:translateY(12px); }
+    100% { opacity:1; transform:translateY(0); }
+  }
+  .animate-fade-up   { animation: fade-up 600ms ease-out both; }
+  .animate-fade-up-2 { animation: fade-up 650ms ease-out both; animation-delay:120ms; }
+  .animate-fade-up-3 { animation: fade-up 700ms ease-out both; animation-delay:240ms; }
+}
