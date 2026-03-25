@@ -8,20 +8,6 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
-// Fallback demo data so UI always looks great
-const DEMO_DATA = [
-  { id: 1,  username: "EcoHero",    score: 980 },
-  { id: 2,  username: "SolarMike",  score: 875 },
-  { id: 3,  username: "LeafLisa",   score: 843 },
-  { id: 4,  username: "GreenGuru",  score: 812 },
-  { id: 5,  username: "CleanCarla", score: 799 },
-  { id: 6,  username: "BikeRider",  score: 755 },
-  { id: 7,  username: "WindWilla",  score: 730 },
-  { id: 8,  username: "RainDrop",   score: 698 },
-  { id: 9,  username: "TideTom",    score: 670 },
-  { id: 10, username: "NatureNeil", score: 645 },
-];
-
 function Leaderboard() {
   const navigate = useNavigate();
   const [entries, setEntries]           = useState([]);
@@ -29,7 +15,6 @@ function Leaderboard() {
   const [refreshing, setRefreshing]     = useState(false);
 
   const [currentUserId, setCurrentUserId] = useState(null);
-  const [usingDemo, setUsingDemo]       = useState(false);
   const [search, setSearch]             = useState("");
 
   const fetchData = useCallback((isRefresh = false) => {
@@ -50,24 +35,17 @@ function Leaderboard() {
       .get(`${API_BASE}/api/leaderboard`, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
-        if (data.length === 0) {
-          setEntries(DEMO_DATA);
-          setUsingDemo(true);
-        } else {
-          const mapped = data.map((e, idx) => ({
-            id:       e.userId   || e.user?.id   || idx,
-            // backend sends `userName` (capital N) — support all variants
-            username: e.userName || e.username || e.user?.name || e.user?.username || `User ${idx + 1}`,
-            score:    Number(e.score) || 0,
-          }));
-          mapped.sort((a, b) => b.score - a.score);
-          setEntries(mapped);
-          setUsingDemo(false);
-        }
+        const mapped = data.map((e, idx) => ({
+          id:       e.userId   || e.user?.id   || idx,
+          // backend sends `userName` (capital N) — support all variants
+          username: e.userName || e.username || e.user?.name || e.user?.username || `User ${idx + 1}`,
+          score:    Number(e.score) || 0,
+        }));
+        mapped.sort((a, b) => b.score - a.score);
+        setEntries(mapped);
       })
       .catch(() => {
-        setEntries(DEMO_DATA);
-        setUsingDemo(true);
+        setEntries([]);
       })
       .finally(() => {
         setLoading(false);
@@ -78,11 +56,24 @@ function Leaderboard() {
   useEffect(() => { fetchData(); }, [fetchData]);
 
   // ── Derived data ─────────────────────────────────────────
-  const displayList = search.trim()
+  const filteredList = search.trim()
     ? entries.filter((e) =>
         e.username.toLowerCase().includes(search.trim().toLowerCase())
       )
     : entries;
+
+  // Show only top 10 in the main list, but always include current user
+  const baseTopTen = filteredList.slice(0, 10);
+  const myIndexInFiltered = filteredList.findIndex(
+    (e) => e.id === currentUserId
+  );
+  const myEntry =
+    myIndexInFiltered >= 0 ? filteredList[myIndexInFiltered] : null;
+
+  const displayList =
+    myEntry && !baseTopTen.some((e) => e.id === myEntry.id)
+      ? [...baseTopTen, myEntry]
+      : baseTopTen;
 
   const top3 = entries.slice(0, 3);  // podium always from full list
 
@@ -102,11 +93,8 @@ function Leaderboard() {
             <h1 className="lb-title">🏆 Leaderboard</h1>
             <p className="lb-subtitle">
               See how you rank against other eco-conscious users.
-              {usingDemo && (
-                <span className="lb-demo-badge">DEMO</span>
-              )}
             </p>
-            {myRank > 0 && !usingDemo && (
+            {myRank > 0 && (
               <p style={{ marginTop: 6, fontSize: 13, color: "var(--color-primary)", fontWeight: 700 }}>
                 🎯 Your rank: #{myRank}
               </p>
@@ -167,8 +155,8 @@ function Leaderboard() {
 
             {/* ── Rankings table ── */}
             <section className="lb-table-section card">
-              <div className="lb-table-header">
-                <h2 className="section-heading">Full Rankings</h2>
+          <div className="lb-table-header">
+          <h2 className="section-heading">Top 10 Rankings</h2>
                 <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>
                   {/* Search */}
                   <input
@@ -180,7 +168,7 @@ function Leaderboard() {
                     aria-label="Search leaderboard"
                   />
                   <span className="lb-total-chip">
-                    {displayList.length} users
+                    Showing {displayList.length} of {filteredList.length} users
                   </span>
                 </div>
               </div>

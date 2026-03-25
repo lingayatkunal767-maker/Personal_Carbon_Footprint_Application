@@ -25,6 +25,9 @@ public class GoalService {
     @Autowired
     private UserRepository userRepository;
 
+    @Autowired
+    private BadgeRuleService badgeRuleService;
+
     // ---------------------------------------------------------------
     // Create a new goal
     // ---------------------------------------------------------------
@@ -66,6 +69,9 @@ public class GoalService {
 
     Goal saved = goalRepository.save(goal);
 
+    // Badge rule: first goal created
+    badgeRuleService.afterGoalCreated(userId);
+
     return toResponse(saved);
 }
 
@@ -76,6 +82,22 @@ public class GoalService {
 
         return goalRepository.findByUser_Id(userId)
                 .stream()
+                .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------------------------------------------------------
+    // List all goals for non-admin users (for admin dashboard)
+    // ---------------------------------------------------------------
+    public List<GoalResponse> getAllNonAdminGoals() {
+        return goalRepository.findAll()
+                .stream()
+                .filter(goal -> {
+                    String role = goal.getUser() != null ? goal.getUser().getRole() : null;
+                    if (role == null) return true;
+                    String r = role.trim().toLowerCase();
+                    return !r.contains("admin");
+                })
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -121,6 +143,9 @@ public class GoalService {
 
         Goal updated = goalRepository.save(goal);
 
+        // Badge rule: goal potentially completed
+        badgeRuleService.afterGoalStatusUpdated(userId, updated.getStatus());
+
         return toResponse(updated);
     }
 
@@ -147,6 +172,7 @@ public class GoalService {
         return GoalResponse.builder()
         .id(goal.getId())
         .userId(goal.getUser().getId())
+        .userName(goal.getUser().getName() != null ? goal.getUser().getName() : goal.getUser().getEmail())
         .goalTitle(goal.getGoalTitle())
         .category(goal.getCategory())
         .reductionTarget(goal.getReductionTarget())

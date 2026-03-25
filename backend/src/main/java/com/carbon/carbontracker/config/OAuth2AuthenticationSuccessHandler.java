@@ -16,6 +16,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.Map;
+import java.util.Optional;
 
 @Component
 public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccessHandler {
@@ -67,14 +68,27 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         if (emailToStore != null && !emailToStore.isBlank()) {
             String finalEmail = emailToStore;
             String finalName = name;
-            userRepository.findByEmail(finalEmail).orElseGet(() -> {
+
+            Optional<User> existingOpt = userRepository.findByEmail(finalEmail);
+
+            // If user exists and is blocked, deny login
+            if (existingOpt.isPresent()) {
+                User existing = existingOpt.get();
+                if (!existing.isActive()) {
+                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Your account has been blocked. Please contact support.");
+                    return;
+                }
+            } else {
+                // Create new active user with default USER role
                 User user = User.builder()
                         .name(finalName)
                         .email(finalEmail)
                         .createdAt(LocalDateTime.now())
+                        .role("USER")
+                        .active(true)
                         .build();
-                return userRepository.save(user);
-            });
+                userRepository.save(user);
+            }
         }
 
         String token = jwtUtil.generateToken(subject);

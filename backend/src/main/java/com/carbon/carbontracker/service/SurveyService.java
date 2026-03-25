@@ -14,6 +14,7 @@ public class SurveyService {
     @Autowired private SurveyRepository surveyRepository;
     @Autowired private CarbonCalculationService calculationService;
     @Autowired private CarbonLogService carbonLogService;
+    @Autowired private BadgeRuleService badgeRuleService;
     @Autowired private UserRepository userRepository;
 
     public void processSurvey(SurveyRequest request, String email) {
@@ -39,5 +40,8 @@ public class SurveyService {
                 .build();
 
         surveyRepository.save(survey);
+
+        // Badge rules related to survey submission
+        badgeRuleService.afterSurveySubmitted(user.getId());
     }
 }

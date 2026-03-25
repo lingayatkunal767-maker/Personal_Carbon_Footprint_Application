@@ -6,26 +6,8 @@ import "./Badges.css";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
-// Badge metadata — maps backend badgeName to icon/color/description
-const BADGE_META = {
-  "First Log":      { icon: "🌱", color: "badge-green",  desc: "Logged your very first carbon entry." },
-  "Week Warrior":   { icon: "📅", color: "badge-blue",   desc: "Logged carbon data for 7 consecutive days." },
-  "Low Emitter":    { icon: "🍃", color: "badge-green",  desc: "Kept daily emissions under 10 kg CO₂e." },
-  "Eco Streak":     { icon: "🔥", color: "badge-amber",  desc: "Maintained a 14-day low-emission streak." },
-  "Survey Master":  { icon: "📋", color: "badge-purple", desc: "Completed the full lifestyle survey." },
-  "Carbon Cutter":  { icon: "✂️", color: "badge-blue",   desc: "Reduced emissions by 20% vs last month." },
-  "Green Champion": { icon: "🏆", color: "badge-amber",  desc: "Reached the top 10% of low emitters." },
-  "Tree Planter":   { icon: "🌳", color: "badge-green",  desc: "Offset 100 kg CO₂e through logged actions." },
-  "Solar Hero":     { icon: "☀️", color: "badge-amber",  desc: "Logged zero energy emissions for a week." },
-  "Team Player":    { icon: "🤝", color: "badge-purple", desc: "Joined and contributed to a team." },
-};
-
-const ALL_BADGES = Object.entries(BADGE_META).map(([name, meta]) => ({
-  name,
-  ...meta,
-  earned: false,
-  earnedAt: null,
-}));
+// Default color mapping by icon / code; backend is source of truth
+const DEFAULT_COLOR = "badge-green";
 
 const FILTER_OPTIONS = [
   { key: "all",    label: "All" },
@@ -40,32 +22,94 @@ function Badges() {
   const [selectedBadge, setSelectedBadge] = useState(null);
   const [filter, setFilter]             = useState("all");
 
+  const resolveIcon = (tpl) => {
+    const code = tpl.code || "";
+    switch (code) {
+      case "FIRST_LOG": return "🌱";
+      case "WEEK_WARRIOR": return "📅";
+      case "LOW_EMITTER": return "🍃";
+      case "ECO_STREAK": return "🔥";
+      case "SURVEY_MASTER": return "📋";
+      case "CARBON_CUTTER": return "✂️";
+      case "GREEN_CHAMPION": return "🏆";
+      case "TREE_PLANTER": return "🌳";
+      case "SOLAR_HERO": return "☀️";
+      case "TEAM_PLAYER": return "🤝";
+      case "GOAL_SETTER": return "🎯";
+      case "GOAL_ACHIEVER": return "✅";
+      case "ECO_STARTER": return "🌱";
+      case "GREEN_ACHIEVER": return "🏆";
+      case "CARBON_SAVER": return "✂️";
+      case "NIGHT_LOGGER": return "🌙";
+      case "PUBLIC_TRANSPORT_PRO": return "🚆";
+      case "PLANT_BASED_HERO": return "🥦";
+      case "ENERGY_SAVER": return "💡";
+      case "WEEKLY_CHECKIN": return "📆";
+      case "CONSISTENCY_KING": return "👑";
+      case "COMMUNITY_LEADER": return "🤝";
+      default:
+        if (tpl.icon && tpl.icon !== "??") return tpl.icon;
+        return "🏅";
+    }
+  };
+
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) { navigate("/"); return; }
 
-    axios
-      .get(`${API_BASE}/api/badges`, { headers: { Authorization: `Bearer ${token}` } })
-      .then((res) => {
-        const earned = Array.isArray(res.data) ? res.data : [];
-        const earnedNames = new Set(
-          earned.map((b) => b.badgeName || b.name)
+    const headers = { Authorization: `Bearer ${token}` };
+
+    // Fetch catalog (badge templates) + earned badges in parallel
+    Promise.all([
+      axios.get(`${API_BASE}/api/badge-templates`, { headers }),
+      axios.get(`${API_BASE}/api/badges`, { headers }),
+    ])
+      .then(([templateRes, earnedRes]) => {
+        const allTemplates = Array.isArray(templateRes.data) ? templateRes.data : [];
+        // Only show active badge templates to end users
+        const templates = allTemplates.filter((t) => t.active !== false);
+        const earned = Array.isArray(earnedRes.data) ? earnedRes.data : [];
+
+        const earnedByName = new Map(
+          earned.map((b) => [b.badgeName || b.name, b])
         );
-        const merged = ALL_BADGES.map((b) => {
-          const serverBadge = earned.find(
-            (e) => (e.badgeName || e.name) === b.name
-          );
+
+        const merged = templates.map((tpl) => {
+          const name = tpl.name;
+          const earnedBadge = earnedByName.get(name);
+
+          // Derive icon/color for frontend
+          const icon = resolveIcon(tpl);
+          const color =
+            icon === "📅" ? "badge-blue" :
+            icon === "🍃" ? "badge-green" :
+            icon === "🔥" ? "badge-amber" :
+            icon === "📋" ? "badge-purple" :
+            icon === "✂️" ? "badge-blue" :
+            icon === "🏆" ? "badge-amber" :
+            icon === "🌳" ? "badge-green" :
+            icon === "☀️" ? "badge-amber" :
+            icon === "🤝" ? "badge-purple" :
+            icon === "🎯" ? "badge-amber" :
+            icon === "✅" ? "badge-green" :
+            DEFAULT_COLOR;
+
           return {
-            ...b,
-            earned: earnedNames.has(b.name),
-            earnedAt: serverBadge?.earnedAt || serverBadge?.createdAt || null,
+            id: tpl.id,
+            name,
+            icon,
+            color,
+            desc: tpl.description || tpl.conditionText || "",
+            earned: Boolean(earnedBadge),
+            earnedAt: earnedBadge?.awardedAt || earnedBadge?.createdAt || null,
           };
         });
+
         setBadges(merged);
       })
       .catch(() => {
-        // Backend not reachable – show all as locked with graceful fallback
-        setBadges(ALL_BADGES);
+        // If backend unreachable, show empty list
+        setBadges([]);
       })
       .finally(() => setLoading(false));
   }, [navigate]);
@@ -167,7 +211,7 @@ function Badges() {
                 <div className="badges-grid">
                   {filteredBadges.map((badge) => (
                     <button
-                      key={badge.name}
+                      key={badge.id || badge.name}
                       type="button"
                       className={`badge-tile ${badge.earned ? `earned ${badge.color}` : "locked"} card`}
                       onClick={() => setSelectedBadge(badge)}

@@ -46,9 +46,20 @@ function Login() {
         email,
         password,
       });
-      localStorage.setItem("token", response.data);
-      setNotification({ type: "success", message: "Login successful. Redirecting..." });
-      setTimeout(() => navigate("/dashboard"), 800);
+      const token = response.data.token;
+const role = response.data.role;
+
+localStorage.setItem("token", token);
+
+setNotification({ type: "success", message: "Login successful. Redirecting..." });
+
+setTimeout(() => {
+  if (role === "ADMIN") {
+    navigate("/admindashboard");
+  } else {
+    navigate("/dashboard");
+  }
+}, 800);
     } catch (err) {
       setNotification({ type: "error", message: err.response?.data || "Invalid email or password." });
     }

@@ -38,6 +38,7 @@ function App() {
         <Route path="/admin" element={<AdminDashboard />} />
         <Route path="/oauth2/redirect" element={<OAuth2RedirectHandler />} />
         <Route path="/Goals" element={<Goals />} />
+        <Route path="/AdminDashboard" element={<AdminDashboard/>}/>
       </Routes>
     </Router>
   );

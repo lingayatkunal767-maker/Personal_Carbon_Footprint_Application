@@ -18,6 +18,7 @@ public class GoalResponse {
 
     private Long id;
     private Long userId;
+    private String userName;
     private String goalTitle;
     private BigDecimal targetEmission;
     private BigDecimal currentEmission;

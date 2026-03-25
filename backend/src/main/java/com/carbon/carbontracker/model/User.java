@@ -31,7 +31,11 @@ public class User {
     private String resetToken;
     private LocalDateTime resetTokenExpiry;
 
-    private String role;
+    @Builder.Default
+    private String role = "USER";
+
+    @Builder.Default
+    private boolean active = true;
 
     // One user → many carbon logs
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL)
