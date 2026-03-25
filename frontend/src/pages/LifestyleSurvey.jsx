@@ -42,7 +42,6 @@ export default function LifestyleSurvey() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [step, setStep] = useState("transport");
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
@@ -89,16 +88,9 @@ export default function LifestyleSurvey() {
     return true;
   };
 
-  const handleNextStep = (nextStep) => {
-    const currentStep = step;
-    if (currentStep === "transport" && !validateTransport()) return;
-    if (currentStep === "diet" && !validateDiet()) return;
-    setStep(nextStep);
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateEnergy()) return;
+    if (!validateTransport() || !validateDiet() || !validateEnergy()) return;
 
     setError("");
     setLoading(true);
@@ -133,15 +125,15 @@ export default function LifestyleSurvey() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578]">
+    <div className="min-h-screen bg-gradient-to-br from-[#d4edda] via-[#b5dfca] to-[#5cb578] pb-10 pt-6 flex flex-col">
      
-      <div className="max-w-4xl mx-auto px-6 py-8">
+      <div className="w-full max-w-[1400px] mx-auto px-4 md:px-6">
         {/* Page Header */}
-        <div className="mb-8">
+        <div className="mb-8 text-center">
           <h1 className="text-3xl font-bold text-green-900">
             Lifestyle Assessment
           </h1>
-          <p className="text-green-800/70 mt-1">
+          <p className="text-green-800/70 mt-2 text-base">
             Help us calculate your personal carbon footprint by answering a few
             questions about your daily habits.
           </p>
@@ -149,38 +141,35 @@ export default function LifestyleSurvey() {
 
         {/* Error Message */}
         {error && (
-          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg">
+          <div className="mb-6 bg-red-50 border-l-4 border-red-500 p-4 rounded-lg max-w-4xl mx-auto">
             <p className="text-red-700 font-medium text-sm">{error}</p>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="flex flex-col gap-10">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 md:gap-8 items-stretch">
           {/* TRANSPORT INFORMATION */}
-          {(step === "transport" || step === "diet" || step === "energy") && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
-              <div className="flex items-start gap-3 mb-6">
-                <div className="text-2xl">🚗</div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 xl:p-10 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-5">
+                <div className="text-3xl">🚗</div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Transport Information
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Transport Info
                   </h2>
-                  <p className="text-gray-600 text-sm mt-1">
-                    How do you get around on a daily basis?
-                  </p>
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-7 flex-1">
                 {/* Primary Mode */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-base font-semibold text-gray-700 mb-3">
                     Primary Mode
                   </label>
                   <select
                     name="primaryMode"
                     value={formData.primaryMode}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white text-lg"
                   >
                     <option value="">Select mode...</option>
                     {TRANSPORT_MODES.map((mode) => (
@@ -193,8 +182,8 @@ export default function LifestyleSurvey() {
 
                 {/* Average Daily Distance */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Average Daily Distance (km)
+                  <label className="block text-base font-semibold text-gray-700 mb-3">
+                    Average Daily Distance
                   </label>
                   <div className="relative">
                     <input
@@ -203,56 +192,42 @@ export default function LifestyleSurvey() {
                       value={formData.averageDailyDistance}
                       onChange={handleChange}
                       placeholder="e.g. 15"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition text-lg pr-14"
                     />
-                    <span className="absolute right-4 top-3.5 text-gray-500 text-sm font-medium">
+                    <span className="absolute right-5 top-4 text-gray-500 text-base font-medium">
                       km
                     </span>
                   </div>
-                  <p className="text-xs text-gray-500 mt-1">
+                  <p className="text-sm text-gray-500 mt-2">
                     For mixed journeys, calculate combined distance
                   </p>
                 </div>
               </div>
 
-              {step === "transport" && (
-                <button
-                  type="button"
-                  onClick={() => handleNextStep("diet")}
-                  className="w-full mt-8 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition"
-                >
-                  Next: Food & Diet →
-                </button>
-              )}
             </div>
-          )}
 
           {/* FOOD & DIET INFORMATION */}
-          {(step === "diet" || step === "energy") && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
-              <div className="flex items-start gap-3 mb-6">
-                <div className="text-2xl">🥗</div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 xl:p-10 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-5">
+                <div className="text-3xl">🥗</div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Food & Diet Information
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Food & Diet
                   </h2>
-                  <p className="text-gray-600 text-sm mt-1">
-                    What does your typical plate look like?
-                  </p>
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-7 flex-1">
                 {/* Diet Type */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
+                  <label className="block text-base font-semibold text-gray-700 mb-3">
                     Diet Type
                   </label>
                   <select
                     name="dietType"
                     value={formData.dietType}
                     onChange={handleChange}
-                    className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                    className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white text-lg"
                   >
                     <option value="">Select diet...</option>
                     {DIET_TYPES.map((diet) => (
@@ -264,9 +239,9 @@ export default function LifestyleSurvey() {
                 </div>
 
                 {/* Meals Per Day */}
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-5">
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
+                    <label className="block text-base font-semibold text-gray-700 mb-3">
                       Meals Per Day
                     </label>
                     <div className="relative">
@@ -276,23 +251,23 @@ export default function LifestyleSurvey() {
                         value={formData.mealsPerDay}
                         onChange={handleChange}
                         placeholder="3"
-                        className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                        className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition text-lg"
                       />
                     </div>
                   </div>
 
                   {/* Eating Frequency */}
                   <div>
-                    <label className="block text-sm font-semibold text-gray-700 mb-2">
-                      Outside Eating Frequency
+                    <label className="block text-base font-semibold text-gray-700 mb-3">
+                      Eating Out freq.
                     </label>
                     <select
                       name="eatingFrequency"
                       value={formData.eatingFrequency}
                       onChange={handleChange}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white"
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white text-lg"
                     >
-                      <option value="">Select frequency...</option>
+                      <option value="">Select...</option>
                       {EATING_FREQUENCIES.map((freq) => (
                         <option key={freq} value={freq}>
                           {freq}
@@ -303,47 +278,24 @@ export default function LifestyleSurvey() {
                 </div>
               </div>
 
-              {step === "diet" && (
-                <div className="flex gap-4 mt-8">
-                  <button
-                    type="button"
-                    onClick={() => setStep("transport")}
-                    className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg transition"
-                  >
-                    ← Back
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleNextStep("energy")}
-                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition"
-                  >
-                    Next: Energy →
-                  </button>
-                </div>
-              )}
             </div>
-          )}
 
           {/* HOME ENERGY USAGE */}
-          {(step === "energy") && (
-            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8">
-              <div className="flex items-start gap-3 mb-6">
-                <div className="text-2xl">⚡</div>
+            <div className="bg-white/90 backdrop-blur-sm rounded-xl shadow-lg p-8 xl:p-10 h-full flex flex-col">
+              <div className="flex items-center gap-3 mb-8 border-b border-gray-100 pb-5">
+                <div className="text-3xl">⚡</div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-800">
-                    Home Energy Usage
+                  <h2 className="text-2xl font-bold text-gray-800">
+                    Home Energy
                   </h2>
-                  <p className="text-gray-600 text-sm mt-1">
-                    Understanding your utility footprint
-                  </p>
                 </div>
               </div>
 
-              <div className="space-y-5">
+              <div className="space-y-7 flex-1 flex flex-col justify-between">
                 {/* Monthly Electricity */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-700 mb-2">
-                    Monthly Electricity (kWh)
+                  <label className="block text-base font-semibold text-gray-700 mb-3">
+                    Monthly Electricity
                   </label>
                   <div className="relative">
                     <input
@@ -352,22 +304,22 @@ export default function LifestyleSurvey() {
                       value={formData.monthlyElectricity}
                       onChange={handleChange}
                       placeholder="e.g. 250"
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition"
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition text-lg pr-14"
                     />
-                    <span className="absolute right-4 top-3.5 text-gray-500 text-sm font-medium">
+                    <span className="absolute right-5 top-4 text-gray-500 text-base font-medium">
                       kWh
                     </span>
                   </div>
                 </div>
 
                 {/* Renewable Energy Toggle */}
-                <div className="flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200">
+                <div className="flex items-center justify-between p-5 bg-gradient-to-r from-green-50 to-blue-50 rounded-lg border-2 border-green-200 mt-4">
                   <div>
-                    <p className="font-semibold text-gray-800">
-                      Renewable Energy Source
+                    <p className="font-semibold text-gray-800 text-base">
+                      Renewable Energy
                     </p>
-                    <p className="text-sm text-gray-600 mt-1">
-                      Do you use solar panels or a green energy provider?
+                    <p className="text-sm text-gray-600 mt-1.5">
+                      Do you use solar / green energy?
                     </p>
                   </div>
                   <div className="relative">
@@ -376,39 +328,39 @@ export default function LifestyleSurvey() {
                       name="renewableEnergy"
                       checked={formData.renewableEnergy}
                       onChange={handleChange}
-                      className="w-6 h-6 cursor-pointer"
+                      className="w-7 h-7 cursor-pointer accent-green-600"
                     />
                   </div>
                 </div>
               </div>
-
-              {/* Action Buttons */}
-              <div className="flex gap-4 mt-8">
-                <button
-                  type="button"
-                  onClick={handleCancel}
-                  disabled={loading}
-                  className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 font-semibold py-3 rounded-lg transition disabled:opacity-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-3 rounded-lg transition disabled:opacity-50 flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <span className="inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                      Calculating...
-                    </>
-                  ) : (
-                    "Calculate Footprint 🌱"
-                  )}
-                </button>
-              </div>
             </div>
-          )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex gap-5 justify-center max-w-[800px] mx-auto w-full mt-6">
+            <button
+              type="button"
+              onClick={handleCancel}
+              disabled={loading}
+              className="w-1/3 bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-4 rounded-xl transition disabled:opacity-50 text-lg"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-2/3 bg-green-600 hover:bg-green-700 text-white font-bold py-4 rounded-xl transition disabled:opacity-50 flex items-center justify-center gap-2 text-lg shadow-md"
+            >
+              {loading ? (
+                <>
+                  <span className="inline-block w-6 h-6 border-4 border-white border-t-transparent rounded-full animate-spin"></span>
+                  Calculating...
+                </>
+              ) : (
+                "Calculate Footprint 🌱"
+              )}
+            </button>
+          </div>
         </form>
       </div>
     </div>
