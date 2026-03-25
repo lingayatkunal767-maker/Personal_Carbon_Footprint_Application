@@ -66,13 +66,15 @@
   display: flex;
   flex-wrap: nowrap;
   align-items: center;
+  justify-content: space-between;
   gap: 20px;
   margin-bottom: 24px;
   padding: 16px 0;
 }
 
 .history-toolbar .history-date-range-picker-wrap {
-  flex-shrink: 0;
+  flex: 1;
+  min-width: 0;
 }
 
 .history-toolbar .history-filters {
@@ -88,14 +90,16 @@
 .history-date-range-picker-wrap {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  align-items: flex-start;
+  gap: 10px;
 }
 
 .history-date-range-picker {
   display: flex;
   align-items: center;
   gap: 12px;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  white-space: nowrap;
 }
 
 .history-date-range-picker-error .history-date-input {
@@ -123,13 +127,15 @@
 }
 
 .history-date-input {
+  white-space: nowrap;
   padding: 6px 10px;
   border: 1px solid var(--color-border);
   border-radius: var(--radius-md);
-  font-size: 14px;
+  font-size: 13px;
   font-family: var(--font-sans);
   color: var(--color-text);
   background: var(--color-surface);
+  margin-top: 21px; /* move only date input field down */
 }
 
 .history-date-input:focus {
@@ -179,7 +185,8 @@
   border: 1px solid var(--color-border);
   border-radius: var(--radius-full);
   overflow: hidden;
-  margin-left: auto;
+  margin-left: 0;
+  flex-shrink: 0;
 }
 
 .history-view-btn {
@@ -473,6 +480,11 @@
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
+  }
+
+  .history-date-range-picker {
+    flex-wrap: wrap;
+    white-space: normal;
   }
 
   .history-toolbar .history-filters {

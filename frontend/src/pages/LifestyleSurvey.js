@@ -83,7 +83,7 @@ function LifestyleSurvey() {
 
   const validate = () => {
     const next = {};
-    if (!form.primaryMode.trim()) next.primaryMode = "Required.";
+    if (!form.primaryMode.trim()) next.primaryMode = "Please choose how you usually travel.";
     const dist = parseFloat(form.dailyDistanceKm, 10);
     if (noTravel) {
       if (form.dailyDistanceKm !== "" && !isNaN(dist) && dist < 0) {
@@ -94,13 +94,13 @@ function LifestyleSurvey() {
         next.dailyDistanceKm = "Enter distance in km (0 or more).";
       }
     }
-    if (showFuelType && !form.fuelType.trim()) next.fuelType = "Required when transport is Car.";
-    if (!form.dietType.trim()) next.dietType = "Required.";
+    if (showFuelType && !form.fuelType.trim()) next.fuelType = "Please select a fuel type for your car.";
+    if (!form.dietType.trim()) next.dietType = "Please select a diet type.";
     const meals = parseInt(form.mealsPerDay, 10);
     if (form.mealsPerDay === "" || isNaN(meals) || meals < 1 || meals > 6) {
       next.mealsPerDay = "Enter between 1 and 6 (typical meals per day).";
     }
-    if (!form.eatOutside.trim()) next.eatOutside = "Required.";
+    if (!form.eatOutside.trim()) next.eatOutside = "Please select how often you eat out.";
     const kwh = parseFloat(form.monthlyElectricityKwh, 10);
     if (form.monthlyElectricityKwh === "" || isNaN(kwh) || kwh < 0) {
       next.monthlyElectricityKwh = "Enter your monthly usage in kWh (0 if off-grid or unknown).";
@@ -154,7 +154,7 @@ function LifestyleSurvey() {
   setTimeout(() => navigate("/dashboard"), 2000);
 
 } catch (err) {
-  setErrors({ submit: "Submission failed. Please try again." });
+  setErrors({ submit: "Something went wrong. Check your connection and try again." });
 }
   };
 
@@ -177,25 +177,36 @@ function LifestyleSurvey() {
   return (
     <AppLayout>
       <div className="survey-page">
-        <div className="survey-breadcrumb">Step 1 of 1 → Setup Profile</div>
+        <div className="survey-breadcrumb">Set up your carbon profile</div>
         <h1 className="survey-title">Lifestyle Survey</h1>
+        <p className="survey-desc">
+          Tell us about your usual habits. Rough estimates are fine — you can change answers anytime from your dashboard.
+        </p>
 
-        <form className="survey-form card" onSubmit={handleSubmit}>
+
+        <form className="survey-form card" onSubmit={handleSubmit} aria-label="Lifestyle and carbon footprint survey">
+          <div className="survey-sections-cols">
           {/* Transport */}
-          <section className="survey-section">
+          <section className="survey-section" aria-labelledby="survey-section-transport-title">
             <div className="survey-section-header survey-section-transport">
-              <span className="survey-section-icon">🚗</span>
-              <h2 className="survey-section-title">Transport</h2>
+              <span className="survey-section-icon" aria-hidden>🚗</span>
+              <div>
+                <h2 id="survey-section-transport-title" className="survey-section-title">Transport</h2>
+                <p className="survey-section-desc">How you usually travel on a typical day.</p>
+              </div>
             </div>
             <div className="survey-fields">
               <label className="survey-label">
-                Primary transport mode
+                <span className="survey-label-text">
+                  Primary transport mode <span className="survey-required" aria-hidden="true">*</span>
+                </span>
                 <select
                   name="primaryMode"
                   value={form.primaryMode}
                   onChange={handleChange}
                   className="survey-input survey-select"
                   aria-invalid={!!errors.primaryMode}
+                  aria-required="true"
                 >
                   <option value="">Select mode...</option>
                   {TRANSPORT_OPTIONS.map((o) => (
@@ -205,7 +216,14 @@ function LifestyleSurvey() {
                 {errors.primaryMode && <span className="survey-error">{errors.primaryMode}</span>}
               </label>
               <label className="survey-label">
-                Average distance per day (km) {noTravel && <span className="survey-label-optional">— optional if you don’t travel</span>}
+                <span className="survey-label-text">
+                  Average distance per day (km)
+                  {noTravel ? (
+                    <span className="survey-label-optional"> — optional if you don’t commute</span>
+                  ) : (
+                    <span className="survey-required" aria-hidden="true"> *</span>
+                  )}
+                </span>
                 <input
                   type="number"
                   name="dailyDistanceKm"
@@ -216,18 +234,28 @@ function LifestyleSurvey() {
                   min="0"
                   step="0.1"
                   aria-invalid={!!errors.dailyDistanceKm}
+                  aria-required={!noTravel}
+                  aria-describedby="hint-distance"
                 />
+                <span id="hint-distance" className="survey-hint">
+                  {noTravel
+                    ? "Skip this if you work from home every day."
+                    : "One-way or round-trip — use what matches your routine."}
+                </span>
                 {errors.dailyDistanceKm && <span className="survey-error">{errors.dailyDistanceKm}</span>}
               </label>
               {showFuelType && (
                 <label className="survey-label">
-                  Fuel type
+                  <span className="survey-label-text">
+                    Fuel type <span className="survey-required" aria-hidden="true">*</span>
+                  </span>
                   <select
                     name="fuelType"
                     value={form.fuelType}
                     onChange={handleChange}
                     className="survey-input survey-select"
                     aria-invalid={!!errors.fuelType}
+                    aria-required="true"
                   >
                     <option value="">Select fuel type...</option>
                     {FUEL_OPTIONS.map((o) => (
@@ -241,20 +269,26 @@ function LifestyleSurvey() {
           </section>
 
           {/* Food */}
-          <section className="survey-section">
+          <section className="survey-section" aria-labelledby="survey-section-food-title">
             <div className="survey-section-header survey-section-food">
-              <span className="survey-section-icon">🍽</span>
-              <h2 className="survey-section-title">Food & diet</h2>
+              <span className="survey-section-icon" aria-hidden>🍽</span>
+              <div>
+                <h2 id="survey-section-food-title" className="survey-section-title">Food & diet</h2>
+                <p className="survey-section-desc">Typical eating pattern — not a perfect diet audit.</p>
+              </div>
             </div>
             <div className="survey-fields">
               <label className="survey-label">
-                Diet type
+                <span className="survey-label-text">
+                  Diet type <span className="survey-required" aria-hidden="true">*</span>
+                </span>
                 <select
                   name="dietType"
                   value={form.dietType}
                   onChange={handleChange}
                   className="survey-input survey-select"
                   aria-invalid={!!errors.dietType}
+                  aria-required="true"
                 >
                   <option value="">Select diet...</option>
                   {DIET_OPTIONS.map((o) => (
@@ -264,7 +298,9 @@ function LifestyleSurvey() {
                 {errors.dietType && <span className="survey-error">{errors.dietType}</span>}
               </label>
               <label className="survey-label">
-                Meals per day
+                <span className="survey-label-text">
+                  Meals per day <span className="survey-required" aria-hidden="true">*</span>
+                </span>
                 <input
                   type="number"
                   name="mealsPerDay"
@@ -275,37 +311,52 @@ function LifestyleSurvey() {
                   max="6"
                   className="survey-input"
                   aria-invalid={!!errors.mealsPerDay}
+                  aria-required="true"
+                  aria-describedby="hint-meals"
                 />
                 {errors.mealsPerDay && <span className="survey-error">{errors.mealsPerDay}</span>}
               </label>
               <label className="survey-label">
-                How often do you eat outside (restaurants, takeaways)?
+                <span className="survey-label-text">
+                  Eating out (restaurants, takeaways) <span className="survey-required" aria-hidden="true">*</span>
+                </span>
                 <select
                   name="eatOutside"
                   value={form.eatOutside}
                   onChange={handleChange}
                   className="survey-input survey-select"
                   aria-invalid={!!errors.eatOutside}
+                  aria-required="true"
+                  aria-describedby="hint-eatout"
                 >
                   <option value="">Select frequency...</option>
                   {EAT_OUTSIDE_OPTIONS.map((o) => (
                     <option key={o.value} value={o.value}>{o.label}</option>
                   ))}
                 </select>
+                <span id="hint-eatout" className="survey-hint">
+                  Include restaurants, delivery, and takeaway — not home-cooked meals.
+                </span>
                 {errors.eatOutside && <span className="survey-error">{errors.eatOutside}</span>}
               </label>
             </div>
           </section>
 
           {/* Energy */}
-          <section className="survey-section">
+          <section className="survey-section" aria-labelledby="survey-section-energy-title">
             <div className="survey-section-header survey-section-energy">
-              <span className="survey-section-icon">⚡</span>
-              <h2 className="survey-section-title">Home energy</h2>
+              <span className="survey-section-icon" aria-hidden>⚡</span>
+              <div>
+                <h2 id="survey-section-energy-title" className="survey-section-title">Home energy</h2>
+                <p className="survey-section-desc">Electricity for your home.</p>
+              </div>
             </div>
             <div className="survey-fields">
             <label className="survey-label">
-                Electricity usage (kWh)
+                <span className="survey-label-text">
+                  Monthly electricity <span className="survey-unit-inline">(kWh)</span>{" "}
+                  <span className="survey-required" aria-hidden="true">*</span>
+                </span>
                 <input
                   type="number"
                   name="monthlyElectricityKwh"
@@ -316,30 +367,50 @@ function LifestyleSurvey() {
                   min="0"
                   step="1"
                   aria-invalid={!!errors.monthlyElectricityKwh}
+                  aria-required="true"
+                  aria-describedby="hint-kwh"
                 />
+                <span id="hint-kwh" className="survey-hint">
+                  Find “kWh” on your power bill, or estimate — use 0 only if truly off-grid.
+                </span>
                 {errors.monthlyElectricityKwh && <span className="survey-error">{errors.monthlyElectricityKwh}</span>}
               </label>
               <label className="survey-label survey-toggle-wrap">
-                <div>
-                  <span className="survey-toggle-label">Renewable energy usage</span>
-                  <span className="survey-toggle-desc">Yes / No</span>
+                <div className="survey-toggle-copy">
+                  <span className="survey-toggle-label">Renewable or green energy plan</span>
+                  <span className="survey-toggle-desc">Solar, wind, or utility green tariff</span>
                 </div>
-                <button
-                  type="button"
-                  role="switch"
-                  aria-checked={form.renewableEnergy}
-                  className={`survey-toggle ${form.renewableEnergy ? "on" : ""}`}
-                  onClick={() => setForm((p) => ({ ...p, renewableEnergy: !p.renewableEnergy }))}
-                >
-                  <span className="survey-toggle-thumb" />
-                </button>
+                <div className="survey-toggle-controls">
+                  <span className={`survey-toggle-state ${form.renewableEnergy ? "is-on" : ""}`} aria-live="polite">
+                    {form.renewableEnergy ? "On" : "Off"}
+                  </span>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={form.renewableEnergy}
+                    aria-label={form.renewableEnergy ? "Renewable energy: on. Press to turn off." : "Renewable energy: off. Press to turn on."}
+                    className={`survey-toggle ${form.renewableEnergy ? "on" : ""}`}
+                    onClick={() => setForm((p) => ({ ...p, renewableEnergy: !p.renewableEnergy }))}
+                  >
+                    <span className="survey-toggle-thumb" />
+                  </button>
+                </div>
               </label>
+              <p className="survey-tip">
+                <span className="survey-tip-icon" aria-hidden>💡</span>
+                Not sure about kWh? Many homes use roughly 200–400 kWh per month — pick a number in that range to start.
+              </p>
             </div>
           </section>
+          </div>
 
           {errors.submit && <div className="survey-error survey-error-block" role="alert">{errors.submit}</div>}
 
           <div className="survey-actions">
+            <p className="survey-actions-hint">
+              When you’re ready, we’ll estimate your footprint and save it to your profile.
+            </p>
+            <div className="survey-actions-buttons">
             <button type="button" className="btn btn-ghost" onClick={handleCancel} disabled={loading}>
               Cancel
             </button>
@@ -349,9 +420,10 @@ function LifestyleSurvey() {
                   <span className="survey-spinner" aria-hidden /> Calculating…
                 </>
               ) : (
-                <>Calculate Footprint →</>
+                <>Calculate footprint</>
               )}
             </button>
+            </div>
           </div>
         </form>
       </div>

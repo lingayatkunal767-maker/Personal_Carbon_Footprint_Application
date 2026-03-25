@@ -174,3 +174,183 @@
   border-color: var(--color-primary);
   color: var(--color-primary);
 }
+
+/* —— Edit Carbon Log (uses LifestyleSurvey.css + .carbon-log-edit) —— */
+
+.carbon-log-edit .survey-desc {
+  max-width: none;
+}
+
+.carbon-log-intro {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin: 0 0 20px 0;
+  padding: 14px 16px;
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  box-shadow: var(--shadow-sm);
+}
+
+.carbon-log-intro-icon {
+  flex-shrink: 0;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--color-primary);
+  background: var(--color-primary-light);
+}
+
+.carbon-log-intro-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--color-text);
+  margin-bottom: 6px;
+}
+
+.carbon-log-intro-text {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.5;
+  color: var(--color-text-muted);
+}
+
+.carbon-log-edit .survey-edit-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.carbon-log-edit .survey-edit-output {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--color-border);
+}
+
+.carbon-log-edit .survey-label-output {
+  margin-top: 0;
+  padding: 8px 10px;
+  background: var(--color-bg);
+  border: 1px solid var(--color-border);
+  border-left: 3px solid var(--color-primary);
+  border-radius: var(--radius-sm);
+  gap: 4px;
+}
+
+.carbon-log-edit .survey-label-output .survey-output-badge {
+  margin-bottom: 0;
+  text-transform: none;
+  letter-spacing: 0.02em;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-primary);
+}
+
+.carbon-log-edit .survey-output-title {
+  display: block;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text);
+  margin-bottom: 0;
+  line-height: 1.3;
+}
+
+/* One line: number + unit together inside the bordered pill (no wide gap) */
+.carbon-log-edit .survey-label-output .survey-input-wrap {
+  margin-top: 4px;
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  width: auto;
+  max-width: 100%;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+.carbon-log-edit .survey-label-output .survey-input-wrap .survey-input {
+  flex: 0 1 auto;
+  width: auto;
+  min-width: 0;
+  max-width: 10rem;
+  margin: 0;
+  padding: 0;
+  border: none;
+  box-shadow: none;
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1.3;
+  color: var(--color-text);
+  background: transparent;
+  font-variant-numeric: tabular-nums;
+  appearance: textfield;
+}
+
+.carbon-log-edit .survey-label-output .survey-input-wrap .survey-input:focus {
+  outline: none;
+  box-shadow: none;
+}
+
+.carbon-log-edit .survey-label-output .survey-unit {
+  flex-shrink: 0;
+  margin: 0;
+  padding: 0;
+  border: none;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--color-text-muted);
+  white-space: nowrap;
+}
+
+.carbon-log-total-section {
+  background: var(--color-bg);
+}
+
+.carbon-log-total-fields {
+  gap: 0;
+  align-items: flex-start;
+}
+
+/*
+ * Grand total: same compact “Live estimate” card as the three columns — not a full-width box.
+ * The whole label (border + background) is capped to ~column width.
+ */
+.carbon-log-edit .survey-label-output--grand {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: min(100%, 20rem);
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 8px 10px;
+  border-left-width: 3px;
+}
+
+.carbon-log-edit .survey-label-output--grand .survey-input-wrap {
+  border-color: rgba(21, 128, 61, 0.35);
+}
+
+.carbon-log-edit .survey-hint.carbon-log-total-hint {
+  margin-top: 8px;
+  display: block;
+  line-height: 1.45;
+  font-size: 12px;
+}
+
+@media (max-width: 600px) {
+  .carbon-log-intro {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
