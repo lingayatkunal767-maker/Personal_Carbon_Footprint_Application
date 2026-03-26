@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { Outlet, useNavigate, useLocation } from "react-router-dom";
 import {
-  LogOut, Leaf, LayoutDashboard,
-  ClipboardList, History, Settings, Search,
-  Bell, TrendingUp, Award, Trophy, Shield
+  LogOut, Leaf, LayoutDashboard, 
+  ClipboardList, History, Settings, Search, 
+  Bell, TrendingUp, ShoppingBag, 
+  Trophy // 1. Added Trophy icon import
 } from "lucide-react";
 
 const Layout = () => {
@@ -42,31 +43,43 @@ const Layout = () => {
           </div>
         </div>
 
-        <nav className="flex-1 px-4 space-y-1 mt-2">
-          {isAdmin && (
-            <SidebarItem icon={Shield} label="Admin Dashboard"
-              active={location.pathname === "/admin-dashboard"}
-              onClick={() => navigate("/admin-dashboard")}
-              color="text-purple-600" />
-          )}
-          <SidebarItem icon={LayoutDashboard} label="Dashboard"
-            active={location.pathname === "/dashboard"}
-            onClick={() => navigate("/dashboard")} />
-          <SidebarItem icon={ClipboardList} label="Lifestyle Survey"
-            active={location.pathname === "/survey"}
-            onClick={() => navigate("/survey")} />
-          <SidebarItem icon={History} label="Carbon History"
-            active={location.pathname === "/history"}
-            onClick={() => navigate("/history")} />
-          <SidebarItem icon={TrendingUp} label="My Goals"
-            active={location.pathname === "/goals"}
-            onClick={() => navigate("/goals")} />
-          <SidebarItem icon={Award} label="Eco Badges"
-            active={location.pathname.startsWith("/badges")}
-            onClick={() => navigate("/badges")} />
-          <SidebarItem icon={Trophy} label="Leaderboard"
-            active={location.pathname === "/leaderboard"}
-            onClick={() => navigate("/leaderboard")} />
+        <nav className="flex-1 px-4 space-y-2 mt-4">
+          <SidebarItem 
+            icon={LayoutDashboard} label="Dashboard" 
+            active={location.pathname === "/dashboard"} 
+            onClick={() => navigate("/dashboard")} 
+          />
+          <SidebarItem 
+            icon={ClipboardList} label="Lifestyle Survey" 
+            active={location.pathname === "/survey"} 
+            onClick={() => navigate("/survey")} 
+          />
+          <SidebarItem 
+            icon={History} label="Carbon History" 
+            active={location.pathname === "/history"} 
+            onClick={() => navigate("/history")} 
+          />
+          
+          
+
+          <SidebarItem 
+            icon={TrendingUp} label="My Goals" 
+            active={location.pathname === "/goals"} 
+            onClick={() => navigate("/goals")} 
+          />
+          
+          <SidebarItem 
+            icon={ShoppingBag} label="Eco Marketplace" 
+            active={location.pathname === "/marketplace"} 
+            onClick={() => navigate("/marketplace")} 
+          />
+
+          {/* 2. Added Leaderboard Sidebar Item */}
+          <SidebarItem 
+            icon={Trophy} label="Leaderboard" 
+            active={location.pathname === "/leaderboard"} 
+            onClick={() => navigate("/leaderboard")} 
+          />
         </nav>
 
         <div className="p-4 border-t border-gray-100 space-y-1">
@@ -98,6 +111,7 @@ const Layout = () => {
             </div>
           </div>
         </header>
+
         <Outlet />
       </main>
     </div>

@@ -1,4 +1,5 @@
 import { Routes, Route, useLocation } from "react-router-dom";
+import axios from "axios";
 import Layout from "./components/Layout";
 
 import LoginPage         from "./components/Login";
@@ -7,18 +8,17 @@ import Dashboard         from "./components/Dashboard";
 import OAuthSuccess      from "./components/OAuthSuccessPage";
 import PrivacyPolicy     from "./pages/PrivacyPolicy";
 import TermsAndConditions from "./pages/TermsAndConditions";
-import OtpVerification   from "./pages/OtpVerification";
-import ForgotPassword    from "./components/ForgotPassword";
-import ResetPassword     from "./components/ResetPassword";
-import CarbonHistory     from "./components/CarbonHistory";
-import LifestyleSurvey   from "./components/LifeStyleSurvey";
-import EcoBadgePage      from "./components/EcoBadgePage";
-import GoalPage          from "./components/GoalPage";
-import Leaderboard       from "./components/Leaderboard";
-import AdminDashboard    from "./components/AdminDashboard";
-
-import axios from "axios";
-
+import OtpVerification from "./pages/OtpVerification";
+import ForgotPassword  from "./components/ForgotPassword";
+import ResetPassword   from "./components/ResetPassword";
+import CarbonHistory   from "./components/CarbonHistory";
+import LifestyleSurvey from "./components/LifeStyleSurvey";
+import EcoBadgePage from "./components/EcoBadgePage";
+import GoalPage from "./components/GoalPage";
+import EcoMarketplace from "./components/EcoMarketplace";
+import TransactionHistory from './components/TransactionHistory';
+import AdminDashboard from "./components/AdminDashboard";
+import Leaderboard from "./components/Leaderboard";
 // Attach JWT token to every axios request automatically
 axios.interceptors.request.use(config => {
   const token = localStorage.getItem("token");
@@ -65,17 +65,28 @@ function App() {
       {/* ── Admin (no Layout — full screen) ── */}
       <Route path="/admin-dashboard" element={<AdminDashboard />} />
 
-      {/* ── Leaderboard (no Layout — own full page) ── */}
-      <Route path="/leaderboard"     element={<Leaderboard />} />
+
 
       {/* ── Authenticated pages (with Layout/sidebar) ── */}
       <Route element={<Layout />}>
-        <Route path="/dashboard"       element={<Dashboard />} />
-        <Route path="/goals"           element={<GoalPage />} />
-        <Route path="/badges"          element={<EcoBadgePage />} />
-        <Route path="/badges/:type"    element={<EcoBadgePage />} />
-        <Route path="/history"         element={<CarbonHistory />} />
-        <Route path="/survey"          element={<LifestyleSurvey />} />
+      
+      <Route path="/oauth-success" element={<OAuthSuccess />} />
+      <Route path="/dashboard" element={<Dashboard />} />
+
+      <Route path="/goals" element={<GoalPage />} />
+      
+        <Route path="/badges" element={<EcoBadgePage />} /> 
+        <Route path="/badges/:type" element={<EcoBadgePage />} /> 
+        
+      <Route path="/history" element={<CarbonHistory />} />
+      <Route path="/survey" element={<LifestyleSurvey />} />
+      
+      <Route path="/leaderboard"     element={<Leaderboard />} />
+
+      {/* ── Marketplace Route ── */}
+      <Route path="/marketplace" element={<EcoMarketplace />} />
+      <Route path="/transhistory" element={<TransactionHistory />} />
+
       </Route>
 
       {/* ── Legal ── */}

@@ -20,7 +20,7 @@ export type User = {
   memberSince: string;
 } | null;
 
-export type View = 'hero' | 'login' | 'signup' | 'dashboard' | 'carbonlog' | 'leaderboard' | 'badges' | 'goals' | 'survey';
+export type View = 'hero' | 'login' | 'signup' | 'dashboard' | 'carbonlog' | 'leaderboard' | 'badges' | 'goals' | 'survey' | 'marketplace';
 
 function App() {
   const [user, setUser] = useState<User>(() => {
