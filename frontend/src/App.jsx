@@ -83,7 +83,6 @@ function App() {
       
       <Route path="/leaderboard"     element={<Leaderboard />} />
 
-      {/* ── Marketplace Route ── */}
       <Route path="/marketplace" element={<EcoMarketplace />} />
       <Route path="/transhistory" element={<TransactionHistory />} />
 
