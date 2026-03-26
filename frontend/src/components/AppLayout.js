@@ -95,6 +95,11 @@ function AppLayout({ children }) {
         <span>Eco Marketplace</span>
       </NavLink>
 
+      <NavLink to="/transactions" className="app-nav-item">
+        <span className="app-nav-icon">💳</span>
+        <span>Transactions</span>
+      </NavLink>
+
       <NavLink to="/notifications" className="app-nav-item">
         <span className="app-nav-icon">🔔</span>
         <span>Notifications</span>

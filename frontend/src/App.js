@@ -18,6 +18,7 @@ import Goals from "./pages/Goals";
 import AdminDashboard from "./pages/AdminDashboard";
 import Marketplace from "./pages/Marketplace";
 import Notifications from "./pages/Notifications";
+import Transactions from "./pages/Transactions";
 
 function App() {
   return (
@@ -42,6 +43,7 @@ function App() {
         <Route path="/Goals" element={<Goals />} />
         <Route path="/AdminDashboard" element={<AdminDashboard/>}/>
         <Route path="/marketplace" element={<Marketplace />} />
+        <Route path="/transactions" element={<Transactions />} />
         <Route path="/notifications" element={<Notifications />} />
       </Routes>
     </Router>
