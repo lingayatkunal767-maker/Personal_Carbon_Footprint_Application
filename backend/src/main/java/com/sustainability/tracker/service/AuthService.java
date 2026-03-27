@@ -193,6 +193,7 @@ public class AuthService {
         return name.trim().replaceAll("\\s+", " ");
     }
 
+    @SuppressWarnings("null")
     private void ensureAdminProfile(User user) {
         adminProfileRepository.findByUser_Id(user.getId())
                 .orElseGet(() -> adminProfileRepository.save(buildAdminProfile(user)));

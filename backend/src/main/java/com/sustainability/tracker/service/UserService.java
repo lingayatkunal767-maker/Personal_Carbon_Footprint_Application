@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -21,7 +22,8 @@ public class UserService {
     }
 
     public User getUserById(Long id) {
-        User user = userRepository.findById(id)
+        Long safeId = Objects.requireNonNull(id, "id is required");
+        User user = userRepository.findById(safeId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
 
         if (user.getRole() == null || user.getRole().isBlank()) {
@@ -66,6 +68,7 @@ public class UserService {
         return userRepository.save(existing);
     }
 
+    @SuppressWarnings("null")
     public User updateProfile(Long id, UserProfileRequest req) {
         User existing = getUserById(id);
         if (req.getName() != null && !req.getName().isBlank()) {
@@ -78,7 +81,8 @@ public class UserService {
     }
 
     public void deleteUser(Long id) {
-        getUserById(id);
-        userRepository.deleteById(id);
+        Long safeId = Objects.requireNonNull(id, "id is required");
+        getUserById(safeId);
+        userRepository.deleteById(safeId);
     }
 }

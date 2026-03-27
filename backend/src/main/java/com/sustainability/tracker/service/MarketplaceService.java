@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Marketplace Service
@@ -57,7 +58,8 @@ public class MarketplaceService {
      * Get product by ID
      */
     public Product getProductById(Long productId) {
-        return productRepository.findById(productId)
+        Long safeProductId = Objects.requireNonNull(productId, "productId is required");
+        return productRepository.findById(safeProductId)
                 .orElseThrow(() -> new RuntimeException("Product not found"));
     }
 
@@ -71,7 +73,8 @@ public class MarketplaceService {
      */
     public Order createOrder(Long userId, Map<Long, Integer> items, String shippingAddress, 
                             String contactPhone, boolean useEcoPoints) {
-        User user = userRepository.findById(userId)
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Order order = new Order();
@@ -85,7 +88,9 @@ public class MarketplaceService {
             Long productId = entry.getKey();
             Integer quantity = entry.getValue();
 
-            Product product = productRepository.findById(productId)
+                Long safeProductId = Objects.requireNonNull(productId, "productId is required");
+
+                Product product = productRepository.findById(safeProductId)
                     .orElseThrow(() -> new RuntimeException("Product not found: " + productId));
 
             // Check stock
@@ -148,7 +153,8 @@ public class MarketplaceService {
      * Confirm order
      */
     public void confirmOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Long safeOrderId = Objects.requireNonNull(orderId, "orderId is required");
+        Order order = orderRepository.findById(safeOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
         order.setStatus("CONFIRMED");
@@ -169,7 +175,8 @@ public class MarketplaceService {
      * Ship order
      */
     public void shipOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Long safeOrderId = Objects.requireNonNull(orderId, "orderId is required");
+        Order order = orderRepository.findById(safeOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
         order.setStatus("SHIPPED");
@@ -183,7 +190,8 @@ public class MarketplaceService {
      * Deliver order
      */
     public void deliverOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Long safeOrderId = Objects.requireNonNull(orderId, "orderId is required");
+        Order order = orderRepository.findById(safeOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
         
         order.setStatus("DELIVERED");
@@ -197,7 +205,8 @@ public class MarketplaceService {
      * Cancel order
      */
     public void cancelOrder(Long orderId) {
-        Order order = orderRepository.findById(orderId)
+        Long safeOrderId = Objects.requireNonNull(orderId, "orderId is required");
+        Order order = orderRepository.findById(safeOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
 
         // Only allow cancellation of pending or confirmed orders

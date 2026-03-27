@@ -13,6 +13,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.Objects;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -33,21 +34,27 @@ class CarbonCalculationServiceTest {
 
     @BeforeEach
     void setUp() {
+        CarbonCalculationService service = Objects.requireNonNull(
+            carbonCalculationService,
+            "carbonCalculationService should be initialized by Mockito"
+        );
         // Use ReflectionTestUtils to set the @Value fields
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultCarFactor", new BigDecimal("0.192"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultBusFactor", new BigDecimal("0.105"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultTrainFactor", new BigDecimal("0.041"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultAutoFactor", new BigDecimal("0.120"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultEvCarFactor", new BigDecimal("0.060"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultNonVegFactor", new BigDecimal("2.5"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultVegFactor", new BigDecimal("1.2"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultElectricityFactor", new BigDecimal("0.82"));
-        ReflectionTestUtils.setField(carbonCalculationService, "defaultLpgCylinderFactor", new BigDecimal("42.6"));
+        ReflectionTestUtils.setField(service, "defaultCarFactor", new BigDecimal("0.192"));
+        ReflectionTestUtils.setField(service, "defaultBusFactor", new BigDecimal("0.105"));
+        ReflectionTestUtils.setField(service, "defaultTrainFactor", new BigDecimal("0.041"));
+        ReflectionTestUtils.setField(service, "defaultAutoFactor", new BigDecimal("0.120"));
+        ReflectionTestUtils.setField(service, "defaultEvCarFactor", new BigDecimal("0.060"));
+        ReflectionTestUtils.setField(service, "defaultNonVegFactor", new BigDecimal("2.5"));
+        ReflectionTestUtils.setField(service, "defaultVegFactor", new BigDecimal("1.2"));
+        ReflectionTestUtils.setField(service, "defaultElectricityFactor", new BigDecimal("0.82"));
+        ReflectionTestUtils.setField(service, "defaultLpgCylinderFactor", new BigDecimal("42.6"));
 
-        when(emissionFactorService.getFactorValue(any(), any(), any())).thenAnswer(invocation -> invocation.getArgument(2));
+        when(emissionFactorService.getFactorValue(any(), any(), any()))
+            .thenAnswer(invocation -> invocation.getArgument(2, BigDecimal.class));
     }
 
     @Test
+    @SuppressWarnings("null")
     void testCalculateAndLogEmissions() {
         // Given
         LifestyleSurvey survey = new LifestyleSurvey();
@@ -62,7 +69,8 @@ class CarbonCalculationServiceTest {
         survey.setCookingGasCylindersPerMonth(new BigDecimal("0.5"));
 
         when(carbonLogRepository.findByUserIdAndLogDate(any(), any())).thenReturn(Optional.empty());
-        when(carbonLogRepository.save(any(CarbonLog.class))).thenAnswer(i -> i.getArguments()[0]);
+        when(carbonLogRepository.save(any(CarbonLog.class)))
+            .thenAnswer(invocation -> invocation.getArgument(0, CarbonLog.class));
 
         // When
         CarbonLog result = carbonCalculationService.calculateAndLogEmissions(survey);

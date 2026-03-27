@@ -17,6 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +37,8 @@ public class GoalService {
     }
 
     public GoalResponse createGoal(GoalRequest request) {
-        User user = userRepository.findById(request.getUserId())
+        Long safeUserId = Objects.requireNonNull(request.getUserId(), "request.userId is required");
+        User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
         Goal goal = new Goal();
@@ -50,8 +52,10 @@ public class GoalService {
         return toResponse(goalRepository.save(goal));
     }
 
+    @SuppressWarnings("null")
     public GoalResponse updateGoal(Long id, GoalRequest request) {
-        Goal existing = goalRepository.findById(id)
+        Long safeId = Objects.requireNonNull(id, "id is required");
+        Goal existing = goalRepository.findById(safeId)
                 .orElseThrow(() -> new RuntimeException("Goal not found with id: " + id));
         if (request.getGoalType() != null) existing.setGoalType(request.getGoalType());
         if (request.getTargetValue() != null) existing.setTargetValue(request.getTargetValue());
@@ -62,10 +66,11 @@ public class GoalService {
     }
 
     public void deleteGoal(Long id) {
-        if (!goalRepository.existsById(id)) {
+        Long safeId = Objects.requireNonNull(id, "id is required");
+        if (!goalRepository.existsById(safeId)) {
             throw new RuntimeException("Goal not found with id: " + id);
         }
-        goalRepository.deleteById(id);
+        goalRepository.deleteById(safeId);
     }
 
     /**

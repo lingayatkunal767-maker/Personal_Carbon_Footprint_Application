@@ -18,6 +18,7 @@ import java.math.RoundingMode;
 import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 @Service
@@ -32,8 +33,9 @@ public class SurveyService {
     private final BadgeEarningService badgeEarningService;
     private final GoalService goalService;
 
+    @SuppressWarnings("null")
     public SurveyResponse processSurvey(SurveyRequest request) {
-        Long userId = request.getUserId();
+        Long userId = Objects.requireNonNull(request.getUserId(), "request.userId is required");
 
         // Check if user exists
         userRepository.findById(userId)
@@ -74,11 +76,12 @@ public class SurveyService {
 
             @Transactional(readOnly = true)
             public DatasetInsightsDTO getDatasetInsights(Long userId) {
-            userRepository.findById(userId)
+            Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+            userRepository.findById(safeUserId)
                 .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + userId));
 
             BehaviorDatasetService.BehaviorProfile profile = surveyRepository
-                .findTopByUserIdOrderBySurveyDateDescIdDesc(userId)
+                .findTopByUserIdOrderBySurveyDateDescIdDesc(safeUserId)
                 .map(this::buildBehaviorProfileFromSurvey)
                 .orElse(null);
 

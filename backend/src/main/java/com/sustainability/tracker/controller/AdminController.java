@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.*;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -67,7 +68,7 @@ public class AdminController {
         String csv = adminService.exportCarbonLogsCsv(from, to);
 
         return ResponseEntity.ok()
-                .contentType(MediaType.TEXT_PLAIN)
+            .contentType(Objects.requireNonNull(MediaType.TEXT_PLAIN))
                 .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=carbon-logs-report.csv")
                 .body(csv);
     }

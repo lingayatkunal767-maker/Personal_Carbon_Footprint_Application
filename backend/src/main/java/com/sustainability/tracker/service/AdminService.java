@@ -13,6 +13,7 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Objects;
 
 @Service
 @RequiredArgsConstructor
@@ -33,7 +34,8 @@ public class AdminService {
     }
 
     public AdminUserDTO updateUserStatus(Long userId, boolean active) {
-        User user = userRepository.findById(userId)
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
         user.setIsActive(active);
         return AdminUserDTO.from(userRepository.save(user));
@@ -45,15 +47,16 @@ public class AdminService {
 
         List<SurveyMonitorDTO> result = new ArrayList<>();
         for (LifestyleSurvey survey : surveys) {
-            User user = userRepository.findById(survey.getUserId()).orElse(null);
+            Long surveyUserId = Objects.requireNonNull(survey.getUserId(), "survey.userId is required");
+            User user = userRepository.findById(surveyUserId).orElse(null);
             CarbonLog carbonLog = carbonLogRepository.findByUserIdAndLogDate(
-                    survey.getUserId(), survey.getSurveyDate()
+                surveyUserId, survey.getSurveyDate()
             ).orElse(null);
 
             String issue = detectIssue(survey, carbonLog);
             result.add(new SurveyMonitorDTO(
                     survey.getId(),
-                    survey.getUserId(),
+                    surveyUserId,
                     user != null ? user.getName() : "Unknown",
                     user != null ? user.getEmail() : "-",
                     survey.getSurveyDate(),
@@ -77,10 +80,11 @@ public class AdminService {
         List<AdminCarbonLogDTO> result = new ArrayList<>();
 
         for (CarbonLog log : logs) {
-            User user = userRepository.findById(log.getUserId()).orElse(null);
+            Long logUserId = Objects.requireNonNull(log.getUserId(), "carbonLog.userId is required");
+            User user = userRepository.findById(logUserId).orElse(null);
             result.add(new AdminCarbonLogDTO(
                     log.getId(),
-                    log.getUserId(),
+                logUserId,
                     user != null ? user.getName() : "Unknown",
                     user != null ? user.getEmail() : "-",
                     log.getLogDate(),
@@ -95,7 +99,8 @@ public class AdminService {
     }
 
     public AdminCarbonLogDTO updateCarbonLog(Long logId, CarbonLogUpdateRequest request) {
-        CarbonLog log = carbonLogRepository.findById(logId)
+        Long safeLogId = Objects.requireNonNull(logId, "logId is required");
+        CarbonLog log = carbonLogRepository.findById(safeLogId)
                 .orElseThrow(() -> new RuntimeException("Carbon log not found with id: " + logId));
 
         BigDecimal transport = safeEmission(request.getTransportEmission());
@@ -109,11 +114,12 @@ public class AdminService {
         log.setTotalEmission(total);
 
         CarbonLog saved = carbonLogRepository.save(log);
-        User user = userRepository.findById(saved.getUserId()).orElse(null);
+        Long savedUserId = Objects.requireNonNull(saved.getUserId(), "savedLog.userId is required");
+        User user = userRepository.findById(savedUserId).orElse(null);
 
         return new AdminCarbonLogDTO(
                 saved.getId(),
-                saved.getUserId(),
+                savedUserId,
                 user != null ? user.getName() : "Unknown",
                 user != null ? user.getEmail() : "-",
                 saved.getLogDate(),
@@ -125,10 +131,11 @@ public class AdminService {
     }
 
     public void deleteCarbonLog(Long logId) {
-        if (!carbonLogRepository.existsById(logId)) {
+        Long safeLogId = Objects.requireNonNull(logId, "logId is required");
+        if (!carbonLogRepository.existsById(safeLogId)) {
             throw new RuntimeException("Carbon log not found with id: " + logId);
         }
-        carbonLogRepository.deleteById(logId);
+        carbonLogRepository.deleteById(safeLogId);
     }
 
     @Transactional(readOnly = true)
@@ -194,7 +201,8 @@ public class AdminService {
         BadgeDefinition definition;
 
         if (request.getId() != null) {
-            definition = badgeDefinitionRepository.findById(request.getId())
+            Long badgeDefinitionId = Objects.requireNonNull(request.getId(), "badgeDefinition.id is required");
+            definition = badgeDefinitionRepository.findById(badgeDefinitionId)
                     .orElseThrow(() -> new RuntimeException("Badge definition not found with id: " + request.getId()));
         } else {
             definition = badgeDefinitionRepository.findByBadgeNameIgnoreCase(request.getBadgeName())
@@ -211,10 +219,12 @@ public class AdminService {
     }
 
     public boolean assignBadgeToUser(BadgeAssignmentRequest request) {
-        User user = userRepository.findById(request.getUserId())
+        Long requestUserId = Objects.requireNonNull(request.getUserId(), "request.userId is required");
+        User user = userRepository.findById(requestUserId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
-        BadgeDefinition definition = badgeDefinitionRepository.findById(request.getBadgeDefinitionId())
+        Long requestBadgeDefinitionId = Objects.requireNonNull(request.getBadgeDefinitionId(), "request.badgeDefinitionId is required");
+        BadgeDefinition definition = badgeDefinitionRepository.findById(requestBadgeDefinitionId)
                 .orElseThrow(() -> new RuntimeException("Badge definition not found with id: " + request.getBadgeDefinitionId()));
 
         if (userBadgeAssignmentRepository.existsByUserIdAndBadgeDefinitionId(user.getId(), definition.getId())) {
@@ -342,7 +352,8 @@ public class AdminService {
     }
 
     private BigDecimal calculateUserReductionPercent(Long userId) {
-        List<CarbonLog> logs = carbonLogRepository.findByUserIdOrderByLogDate(userId);
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        List<CarbonLog> logs = carbonLogRepository.findByUserIdOrderByLogDate(safeUserId);
         if (logs.size() < 2) {
             return BigDecimal.ZERO;
         }

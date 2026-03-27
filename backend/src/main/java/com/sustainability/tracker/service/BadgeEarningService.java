@@ -17,6 +17,7 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Badge Earning Service
@@ -39,8 +40,9 @@ public class BadgeEarningService {
      */
     public void checkAndAwardBadges(Long userId) {
         log.info("Checking badges for user: {}", userId);
-        
-        User user = userRepository.findById(userId).orElse(null);
+
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        User user = userRepository.findById(safeUserId).orElse(null);
         if (user == null) return;
 
         // Check various badge criteria

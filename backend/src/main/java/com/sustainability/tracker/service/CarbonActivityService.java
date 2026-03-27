@@ -12,6 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -36,7 +37,8 @@ public class CarbonActivityService {
     }
 
     public ActivityResponse createActivity(ActivityRequest request) {
-        User user = userRepository.findById(request.getUserId())
+        Long safeUserId = Objects.requireNonNull(request.getUserId(), "request.userId is required");
+        User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
 
         CarbonActivity activity = new CarbonActivity();
@@ -51,10 +53,11 @@ public class CarbonActivityService {
     }
 
     public void deleteActivity(Long id) {
-        if (!activityRepository.existsById(id)) {
+        Long safeId = Objects.requireNonNull(id, "id is required");
+        if (!activityRepository.existsById(safeId)) {
             throw new RuntimeException("Activity not found with id: " + id);
         }
-        activityRepository.deleteById(id);
+        activityRepository.deleteById(safeId);
     }
 
     private ActivityResponse toResponse(CarbonActivity a) {

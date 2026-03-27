@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Notification Service
@@ -49,7 +50,8 @@ public class NotificationService {
      * Mark notification as read
      */
     public void markAsRead(Long notificationId) {
-        Notification notification = notificationRepository.findById(notificationId)
+        Long safeNotificationId = Objects.requireNonNull(notificationId, "notificationId is required");
+        Notification notification = notificationRepository.findById(safeNotificationId)
                 .orElseThrow(() -> new RuntimeException("Notification not found"));
         notification.markAsRead();
         notificationRepository.save(notification);
@@ -70,7 +72,8 @@ public class NotificationService {
      */
     public Notification createNotification(Long userId, String type, String title, String message, 
                                            String priority, String relatedEntityType, Long relatedEntityId) {
-        User user = userRepository.findById(userId)
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Notification notification = new Notification();
