@@ -17,8 +17,8 @@ public class EmailService {
 
     private boolean isMailConfigured() {
         return mailUsername != null
-            && !mailUsername.startsWith("YOUR_")
-            && !mailUsername.isBlank();
+                && !mailUsername.startsWith("YOUR_")
+                && !mailUsername.isBlank();
     }
 
     public void sendOtp(String email, String otp) {

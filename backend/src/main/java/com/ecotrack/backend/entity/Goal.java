@@ -24,10 +24,15 @@ public class Goal {
     private String status;
     private LocalDateTime createdAt;
 
+    // Add this field to flag community-wide goals
+    @Builder.Default
+    private Boolean isCommunityGoal = false;
+
     @PrePersist
     public void prePersist() {
         if (createdAt == null) createdAt = LocalDateTime.now();
         if (status == null) status = "ACTIVE";
         if (currentProgress == null) currentProgress = 0.0;
+        if (isCommunityGoal == null) isCommunityGoal = false;
     }
 }

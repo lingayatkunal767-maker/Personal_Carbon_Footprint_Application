@@ -16,39 +16,48 @@ public class CarbonEntryService {
     private final CarbonEntryRepository repo;
 
     public List<CarbonEntryResponse> getAll(User user) {
-        return repo.findByUserOrderByDateDescCreatedAtDesc(user).stream().map(this::toDto).toList();
+        return repo.findByUserOrderByDateDescCreatedAtDesc(user).stream()
+                .map(this::toDto).toList();
     }
 
     public CarbonEntryResponse create(User user, CarbonEntryRequest req) {
         CarbonEntry e = CarbonEntry.builder()
-            .user(user).category(req.getCategory()).activity(req.getActivity())
-            .amount(req.getAmount()).unit(req.getUnit() != null ? req.getUnit() : "kg CO2")
-            .notes(req.getNotes()).date(req.getDate() != null ? req.getDate() : LocalDate.now())
-            .build();
+                .user(user).category(req.getCategory()).activity(req.getActivity())
+                .amount(req.getAmount()).unit(req.getUnit() != null ? req.getUnit() : "kg CO2")
+                .notes(req.getNotes()).date(req.getDate() != null ? req.getDate() : LocalDate.now())
+                .build();
         return toDto(repo.save(e));
     }
 
     public CarbonEntryResponse update(User user, Long id, CarbonEntryRequest req) {
         CarbonEntry e = repo.findById(id)
-            .filter(x -> x.getUser().getId().equals(user.getId()))
-            .orElseThrow(() -> new RuntimeException("Entry not found"));
-        e.setCategory(req.getCategory()); e.setActivity(req.getActivity());
-        e.setAmount(req.getAmount()); e.setUnit(req.getUnit()); e.setNotes(req.getNotes());
+                .filter(x -> x.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
+        e.setCategory(req.getCategory());
+        e.setActivity(req.getActivity());
+        e.setAmount(req.getAmount());
+        e.setUnit(req.getUnit());
+        e.setNotes(req.getNotes());
         if (req.getDate() != null) e.setDate(req.getDate());
         return toDto(repo.save(e));
     }
 
     public void delete(User user, Long id) {
         CarbonEntry e = repo.findById(id)
-            .filter(x -> x.getUser().getId().equals(user.getId()))
-            .orElseThrow(() -> new RuntimeException("Entry not found"));
+                .filter(x -> x.getUser().getId().equals(user.getId()))
+                .orElseThrow(() -> new RuntimeException("Entry not found"));
         repo.delete(e);
     }
 
     private CarbonEntryResponse toDto(CarbonEntry e) {
         return CarbonEntryResponse.builder()
-            .id(e.getId()).category(e.getCategory()).activity(e.getActivity())
-            .amount(e.getAmount()).unit(e.getUnit()).notes(e.getNotes())
-            .date(e.getDate()).createdAt(e.getCreatedAt()).build();
+                .id(e.getId()).category(e.getCategory()).activity(e.getActivity())
+                .amount(e.getAmount()).unit(e.getUnit()).notes(e.getNotes())
+                .date(e.getDate()).createdAt(e.getCreatedAt()).build();
+    }
+
+    // Your Milestone 4 History Logic - Restored
+    public List<CarbonEntry> getHistoryByUserId(Long userId) {
+        return repo.findByUserId(userId);
     }
 }

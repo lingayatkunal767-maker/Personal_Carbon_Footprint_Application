@@ -15,4 +15,5 @@ public class GoalResponse {
     private LocalDate deadline;
     private String status;
     private LocalDateTime createdAt;
+    private boolean isCommunityGoal;
 }

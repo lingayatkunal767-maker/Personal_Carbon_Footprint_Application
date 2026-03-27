@@ -33,7 +33,7 @@ public class LeaderboardController {
         for (int i = 0; i < entries.size(); i++) entries.get(i).put("rank", i + 1);
 
         int myRank = entries.stream().filter(e -> Boolean.TRUE.equals(e.get("isCurrentUser")))
-            .mapToInt(e -> (int) e.get("rank")).findFirst().orElse(1);
+                .mapToInt(e -> (int) e.get("rank")).findFirst().orElse(1);
         Double myT = carbonRepo.sumByUser(currentUser);
 
         Map<String, Object> result = new LinkedHashMap<>();

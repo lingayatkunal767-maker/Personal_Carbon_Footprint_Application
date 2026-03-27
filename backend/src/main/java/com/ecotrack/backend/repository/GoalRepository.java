@@ -8,4 +8,6 @@ import java.util.List;
 public interface GoalRepository extends JpaRepository<Goal, Long> {
     List<Goal> findByUserOrderByCreatedAtDesc(User user);
     long countByUserAndStatus(User user, String status);
+
+    List<Goal> findByIsCommunityGoalTrueOrderByCreatedAtDesc();
 }

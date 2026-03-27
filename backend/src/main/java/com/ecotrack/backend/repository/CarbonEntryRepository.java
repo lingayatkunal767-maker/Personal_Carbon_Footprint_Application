@@ -4,25 +4,30 @@ import com.ecotrack.backend.entity.CarbonEntry;
 import com.ecotrack.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 
 public interface CarbonEntryRepository extends JpaRepository<CarbonEntry, Long> {
+
     List<CarbonEntry> findByUserOrderByDateDescCreatedAtDesc(User user);
 
     @Query("SELECT SUM(e.amount) FROM CarbonEntry e WHERE e.user = :user")
-    Double sumByUser(User user);
+    Double sumByUser(@Param("user") User user);
 
     @Query("SELECT SUM(e.amount) FROM CarbonEntry e WHERE e.user = :user AND e.date >= :from AND e.date <= :to")
-    Double sumByUserAndDateBetween(User user, LocalDate from, LocalDate to);
+    Double sumByUserAndDateBetween(@Param("user") User user, @Param("from") LocalDate from, @Param("to") LocalDate to);
 
     @Query("SELECT e.category, SUM(e.amount) FROM CarbonEntry e WHERE e.user = :user GROUP BY e.category")
-    List<Object[]> sumByCategoryForUser(User user);
+    List<Object[]> sumByCategoryForUser(@Param("user") User user);
 
     @Query("SELECT e.date, SUM(e.amount) FROM CarbonEntry e WHERE e.user = :user AND e.date >= :from GROUP BY e.date ORDER BY e.date")
-    List<Object[]> dailySumForUser(User user, LocalDate from);
+    List<Object[]> dailySumForUser(@Param("user") User user, @Param("from") LocalDate from);
 
-    // Admin analytics — global queries
+    // Your Milestone 4 History Query
+    List<CarbonEntry> findByUserId(Long userId);
+
+    // Teammate's Admin analytics — global queries
     @Query("SELECT SUM(e.amount) FROM CarbonEntry e")
     Double sumAll();
 

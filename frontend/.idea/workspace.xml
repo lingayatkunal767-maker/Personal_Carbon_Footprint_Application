@@ -1,0 +1,82 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="9e9f22f3-45c0-46ab-af7b-fe6d1c3b27cf" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/controller/MarketplaceController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/dto/BadgeDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/MarketplaceItem.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/Transaction.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/UserBadge.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/MarketplaceRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/TransactionRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/UserBadgeRepository.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/BadgeService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/MarketplaceService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/.gitignore" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/carbonfootprint.iml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/compiler.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/dataSources.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/encodings.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/inspectionProfiles/Project_Default.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/jarRepositories.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/misc.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/modules.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../.idea/vcs.xml" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/config/CorsConfig.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/config/SecurityConfig.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/config/SecurityConfig.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/controller/LeaderboardController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/controller/LeaderboardController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/controller/SurveyController.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/controller/SurveyController.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/dto/DashboardResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/dto/DashboardResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/dto/GoalResponse.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/dto/GoalResponse.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/Badge.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/Badge.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/Goal.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/Goal.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/User.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/entity/User.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/BadgeRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/BadgeRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/CarbonEntryRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/CarbonEntryRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/GoalRepository.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/repository/GoalRepository.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/CarbonEntryService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/CarbonEntryService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/DashboardService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/DashboardService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/EmailService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/EmailService.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/GoalService.java" beforeDir="false" afterPath="$PROJECT_DIR$/../backend/src/main/java/com/ecotrack/backend/service/GoalService.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$/.." />
+  </component>
+  <component name="ProjectColorInfo"><![CDATA[{
+  "associatedIndex": 4
+}]]></component>
+  <component name="ProjectId" id="3BWvguQASBWcHneBhcVrkKFZE1P" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "git-widget-placeholder": "team-two",
+    "last_opened_file_path": "C:/Users/Aravind/OneDrive/Desktop/github/Personal_Carbon_Footprint_Application/frontend"
+  }
+}]]></component>
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9e9f22f3-45c0-46ab-af7b-fe6d1c3b27cf" name="Changes" comment="" />
+      <created>1774617754749</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1774617754749</updated>
+    </task>
+    <servers />
+  </component>
+</project>

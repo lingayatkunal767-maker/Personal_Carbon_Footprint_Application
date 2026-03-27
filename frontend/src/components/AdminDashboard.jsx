@@ -6,7 +6,8 @@ import {
   BarChart3, Award, Car, Zap, TreePine, Bike, Recycle,
   Sun, Droplets, Sparkles, ShieldCheck, ChevronLeft, RefreshCw
 } from "lucide-react";
-import axios from "axios";
+import axios
+from "axios";
 
 // ── Icon map: must match what backend stores as badge.icon ──
 const ICON_COMPONENTS = {

@@ -23,6 +23,7 @@ import java.util.List;
 @EnableWebSecurity
 @RequiredArgsConstructor
 public class SecurityConfig {
+
     private final JwtUtil jwtUtil;
     private final JwtFilter jwtFilter;
     private final AuthService authService;
@@ -30,35 +31,58 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable())
-            .cors(cors -> cors.configurationSource(corsConfigurationSource()))
-            .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) ->
-                res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")))
-            .authorizeHttpRequests(auth -> auth
-                .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
-                .requestMatchers("/api/auth/**", "/api/otp/**", "/oauth2/**", "/login/oauth2/**", "/error").permitAll()
-                .anyRequest().authenticated())
-            .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
-            .oauth2Login(oauth -> oauth.successHandler((req, res, auth) -> {
-                OAuth2User u = (OAuth2User) auth.getPrincipal();
-                var user = authService.saveOAuthUser(u.getAttribute("email"), u.getAttribute("name"));
-                String token = jwtUtil.generateToken(user.getEmail());
-                res.sendRedirect("http://localhost:5173/oauth-success?token=" + token
-                    + "&needsVerification=" + !user.isEnabled() + "&email=" + user.getEmail());
-            }));
+                .csrf(csrf -> csrf.disable())
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .exceptionHandling(ex -> ex.authenticationEntryPoint((req, res, e) ->
+                        res.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Unauthorized")
+                ))
+                .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(CorsUtils::isPreFlightRequest).permitAll()
+                        .requestMatchers(
+                                "/api/auth/**",
+                                "/api/otp/**",
+                                "/oauth2/**",
+                                "/login/oauth2/**",
+                                "/error",
+                                "/api/carbon/**",      // Allowed for Milestone 4 History
+                                "/api/marketplace/**"  // Allowed for Milestone 4 Marketplace
+                        ).permitAll()
+                        .anyRequest().authenticated()
+                )
+                .sessionManagement(sess ->
+                        sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
+                )
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class)
+                .oauth2Login(oauth -> oauth.successHandler((req, res, authentication) -> {
+                    OAuth2User oAuth2User = (OAuth2User) authentication.getPrincipal();
+                    String email = oAuth2User.getAttribute("email");
+                    String name = oAuth2User.getAttribute("name");
+
+                    var user = authService.saveOAuthUser(email, name);
+                    String token = jwtUtil.generateToken(user.getEmail());
+
+                    res.sendRedirect(
+                            "http://localhost:5173/oauth-success"
+                                    + "?token=" + token
+                                    + "&needsVerification=" + !user.isEnabled()
+                                    + "&email=" + user.getEmail()
+                    );
+                }));
+
         return http.build();
     }
 
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        cfg.setAllowedOrigins(List.of("http://localhost:5173"));
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Authorization","Content-Type","Cache-Control"));
+        cfg.setAllowedOrigins(List.of("http://localhost:5174"));
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        cfg.setAllowedHeaders(List.of("Authorization", "Content-Type", "Cache-Control"));
+        cfg.setExposedHeaders(List.of("Authorization"));
         cfg.setAllowCredentials(true);
-        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
-        src.registerCorsConfiguration("/**", cfg);
-        return src;
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", cfg);
+        return source;
     }
 }

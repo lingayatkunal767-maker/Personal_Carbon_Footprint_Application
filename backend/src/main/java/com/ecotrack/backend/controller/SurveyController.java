@@ -5,6 +5,8 @@ import com.ecotrack.backend.entity.LifestyleSurvey;
 import com.ecotrack.backend.entity.User;
 import com.ecotrack.backend.repository.CarbonEntryRepository;
 import com.ecotrack.backend.repository.SurveyRepository;
+import com.ecotrack.backend.repository.UserBadgeRepository;
+import com.ecotrack.backend.service.BadgeService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -12,7 +14,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/survey")
@@ -22,12 +26,14 @@ public class SurveyController {
 
     private final SurveyRepository surveyRepo;
     private final CarbonEntryRepository carbonRepo;
+    private final BadgeService badgeService;
+    private final UserBadgeRepository userBadgeRepository;
 
     @GetMapping
     public ResponseEntity<?> get(@AuthenticationPrincipal User user) {
         return surveyRepo.findByUser(user)
-            .map(ResponseEntity::ok)
-            .orElse(ResponseEntity.ok(null));
+                .map(ResponseEntity::ok)
+                .orElse(ResponseEntity.ok(null));
     }
 
     @PostMapping
@@ -35,7 +41,7 @@ public class SurveyController {
             @AuthenticationPrincipal User user,
             @RequestBody LifestyleSurvey req) {
 
-        // ── 1. Save / update survey ──
+        // 1. Save or update the survey
         LifestyleSurvey s = surveyRepo.findByUser(user).orElse(new LifestyleSurvey());
         s.setUser(user);
         s.setPrimaryTransport(req.getPrimaryTransport());
@@ -52,10 +58,10 @@ public class SurveyController {
         s.setShortFlightsPerYear(req.getShortFlightsPerYear());
         s.setLongFlightsPerYear(req.getLongFlightsPerYear());
 
-        // ── 2. Calculate annual footprint ──
+        // 2. Calculate annual footprint estimates
         double transportKg = 0, energyKg = 0, foodKg = 0;
 
-        // Transport
+        // Transport Calculation
         if ("car".equalsIgnoreCase(req.getPrimaryTransport())) {
             double wkm = req.getWeeklyDrivingKm() != null ? req.getWeeklyDrivingKm() : 0;
             double factor = "electric".equalsIgnoreCase(req.getCarType()) ? 0.05 : 0.21;
@@ -67,17 +73,17 @@ public class SurveyController {
             double wkm = req.getWeeklyDrivingKm() != null ? req.getWeeklyDrivingKm() : 0;
             transportKg = wkm * 52 * 0.041;
         }
-        // Add flights
+
         if (req.getShortFlightsPerYear() != null) transportKg += req.getShortFlightsPerYear() * 250;
         if (req.getLongFlightsPerYear()  != null) transportKg += req.getLongFlightsPerYear()  * 1500;
 
-        // Energy
+        // Energy Calculation
         if (req.getMonthlyElectricityKwh() != null) {
             double renewFactor = Boolean.TRUE.equals(req.getHasRenewableEnergy()) ? 0.05 : 0.5;
             energyKg = req.getMonthlyElectricityKwh() * 12 * renewFactor;
         }
 
-        // Food
+        // Food Calculation
         foodKg = switch (req.getDietType() != null ? req.getDietType().toLowerCase() : "omnivore") {
             case "vegan"      -> 600;
             case "vegetarian" -> 900;
@@ -85,54 +91,46 @@ public class SurveyController {
             default           -> 2000;
         };
         if (req.getMeatMealsPerWeek() != null && req.getMeatMealsPerWeek() > 7) {
-            foodKg += (req.getMeatMealsPerWeek() - 7) * 52 * 2.5; // extra meat penalty
+            foodKg += (req.getMeatMealsPerWeek() - 7) * 52 * 2.5;
         }
 
         double totalAnnual = transportKg + energyKg + foodKg;
         s.setEstimatedAnnualFootprint(Math.round(totalAnnual * 10.0) / 10.0);
         surveyRepo.save(s);
 
-        // ── 3. Create / replace today's survey-derived carbon entries ──
+        // 3. Update Today's Carbon Entries
         LocalDate today = LocalDate.now();
-
-        // Remove old survey entries for today to avoid duplication on re-submit
         List<CarbonEntry> existing = carbonRepo.findByUserOrderByDateDescCreatedAtDesc(user);
         existing.stream()
-            .filter(e -> e.getDate().equals(today) &&
-                (e.getActivity().startsWith("[Survey]")))
-            .forEach(carbonRepo::delete);
+                .filter(e -> e.getDate().equals(today) && e.getActivity().startsWith("[Survey]"))
+                .forEach(carbonRepo::delete);
 
-        // Daily equivalents
         double transportDaily = round1(transportKg / 365);
-        double energyDaily    = round1(energyKg    / 365);
-        double foodDaily      = round1(foodKg      / 365);
+        double energyDaily    = round1(energyKg / 365);
+        double foodDaily      = round1(foodKg / 365);
 
-        if (transportDaily > 0) {
-            carbonRepo.save(CarbonEntry.builder()
-                .user(user).category("transport")
-                .activity("[Survey] Daily transport estimate")
-                .amount(transportDaily).unit("kg CO2")
-                .notes("Auto-generated from lifestyle survey")
-                .date(today).createdAt(LocalDateTime.now()).build());
-        }
-        if (energyDaily > 0) {
-            carbonRepo.save(CarbonEntry.builder()
-                .user(user).category("energy")
-                .activity("[Survey] Daily energy estimate")
-                .amount(energyDaily).unit("kg CO2")
-                .notes("Auto-generated from lifestyle survey")
-                .date(today).createdAt(LocalDateTime.now()).build());
-        }
-        if (foodDaily > 0) {
-            carbonRepo.save(CarbonEntry.builder()
-                .user(user).category("food")
-                .activity("[Survey] Daily food estimate")
-                .amount(foodDaily).unit("kg CO2")
-                .notes("Auto-generated from lifestyle survey")
-                .date(today).createdAt(LocalDateTime.now()).build());
-        }
+        if (transportDaily > 0) saveDailyEntry(user, "transport", transportDaily, today);
+        if (energyDaily > 0)    saveDailyEntry(user, "energy", energyDaily, today);
+        if (foodDaily > 0)      saveDailyEntry(user, "food", foodDaily, today);
 
-        return ResponseEntity.ok(s);
+        // 4. Milestone 4 Logic: Award "Eco Starter" Badge
+        boolean isNewBadge = !userBadgeRepository.existsByUserIdAndBadgeName(user.getId(), "Eco Starter");
+        badgeService.awardBadge(user.getId(), "Eco Starter");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("survey", s);
+        response.put("newBadge", isNewBadge ? "Eco Starter" : null);
+
+        return ResponseEntity.ok(response);
+    }
+
+    private void saveDailyEntry(User user, String cat, double amt, LocalDate date) {
+        carbonRepo.save(CarbonEntry.builder()
+                .user(user).category(cat)
+                .activity("[Survey] Daily " + cat + " estimate")
+                .amount(amt).unit("kg CO2")
+                .notes("Auto-generated from lifestyle survey")
+                .date(date).createdAt(LocalDateTime.now()).build());
     }
 
     private double round1(double v) { return Math.round(v * 10.0) / 10.0; }

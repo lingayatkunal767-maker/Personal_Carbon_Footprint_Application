@@ -35,6 +35,8 @@ public class User {
     private String otp;
     private LocalDateTime otpExpiry;
 
+    @Builder.Default
+    private Double credits = 0.0;
     @PrePersist
     protected void onCreate() {
         if (createdAt == null) createdAt = LocalDateTime.now();

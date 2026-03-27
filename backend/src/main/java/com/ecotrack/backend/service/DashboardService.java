@@ -26,23 +26,24 @@ public class DashboardService {
     public DashboardResponse getDashboard(User user, String period) {
         LocalDate today = LocalDate.now();
 
-        // All-time total
+        // 1. All-time total
         Double total = carbonRepo.sumByUser(user);
         double totalKg = round1(total != null ? total : 0);
 
-        // This month / last month
-        LocalDate startOfMonth     = today.withDayOfMonth(1);
+        // 2. This month / last month comparison
+        LocalDate startOfMonth = today.withDayOfMonth(1);
         LocalDate startOfLastMonth = startOfMonth.minusMonths(1);
-        LocalDate endOfLastMonth   = startOfMonth.minusDays(1);
+        LocalDate endOfLastMonth = startOfMonth.minusDays(1);
 
         Double thisMonthRaw = carbonRepo.sumByUserAndDateBetween(user, startOfMonth, today);
         Double lastMonthRaw = carbonRepo.sumByUserAndDateBetween(user, startOfLastMonth, endOfLastMonth);
-        double thisMonthKg  = round1(thisMonthRaw != null ? thisMonthRaw : 0);
-        double lastMonthKg  = round1(lastMonthRaw != null ? lastMonthRaw : 0);
-        double changePct    = lastMonthKg > 0
-            ? Math.round(((thisMonthKg - lastMonthKg) / lastMonthKg) * 1000.0) / 10.0 : 0;
+        double thisMonthKg = round1(thisMonthRaw != null ? thisMonthRaw : 0);
+        double lastMonthKg = round1(lastMonthRaw != null ? lastMonthRaw : 0);
+        double changePct = lastMonthKg > 0
+                ? Math.round(((thisMonthKg - lastMonthKg) / lastMonthKg) * 1000.0) / 10.0
+                : 0;
 
-        // Period-specific (Daily / Weekly / Monthly)
+        // 3. Period-specific logic (Daily / Weekly / Monthly)
         LocalDate periodStart;
         String periodLabel;
         switch (period != null ? period : "monthly") {
@@ -51,20 +52,19 @@ public class DashboardService {
             default       -> { periodStart = startOfMonth;       periodLabel = "This Month"; }
         }
         Double periodRaw = carbonRepo.sumByUserAndDateBetween(user, periodStart, today);
-        double periodKg  = round1(periodRaw != null ? periodRaw : 0);
+        double periodKg = round1(periodRaw != null ? periodRaw : 0);
 
-        // Category breakdown — capitalize keys for frontend
+        // 4. Category breakdown — Capitalize keys for frontend UI consistency
         Map<String, Double> breakdown = new LinkedHashMap<>();
         for (Object[] row : carbonRepo.sumByCategoryForUser(user)) {
             String cat = (String) row[0];
-            // Capitalize first letter to match frontend expectations
             String key = cat != null && !cat.isEmpty()
-                ? Character.toUpperCase(cat.charAt(0)) + cat.substring(1).toLowerCase()
-                : cat;
+                    ? Character.toUpperCase(cat.charAt(0)) + cat.substring(1).toLowerCase()
+                    : cat;
             breakdown.put(key, round1((Double) row[1]));
         }
 
-        // Weekly trend (last 7 days)
+        // 5. Weekly trend (Last 7 days)
         LocalDate sevenAgo = today.minusDays(6);
         Map<LocalDate, Double> daily = new LinkedHashMap<>();
         for (int i = 6; i >= 0; i--) daily.put(today.minusDays(i), 0.0);
@@ -74,50 +74,49 @@ public class DashboardService {
         }
         DateTimeFormatter fmt = DateTimeFormatter.ofPattern("MM/dd");
         List<DashboardResponse.WeeklyPoint> trend = daily.entrySet().stream()
-            .map(e -> new DashboardResponse.WeeklyPoint(e.getKey().format(fmt), e.getValue()))
-            .collect(Collectors.toList());
+                .map(e -> new DashboardResponse.WeeklyPoint(e.getKey().format(fmt), e.getValue()))
+                .collect(Collectors.toList());
 
-        // Recent activities (last 5 entries) for the dashboard table
+        // 6. Recent activities (Last 5 entries) for the dashboard table
         List<Map<String, Object>> recentActivities = new ArrayList<>();
         List<CarbonEntry> entries = carbonRepo.findByUserOrderByDateDescCreatedAtDesc(user);
         for (int i = 0; i < Math.min(5, entries.size()); i++) {
             CarbonEntry e = entries.get(i);
             Map<String, Object> act = new LinkedHashMap<>();
-            act.put("date",           e.getDate() != null ? e.getDate().toString() : "");
-            act.put("category",       e.getCategory() != null
-                ? Character.toUpperCase(e.getCategory().charAt(0)) + e.getCategory().substring(1) : "");
-            act.put("description",    e.getActivity() != null ? e.getActivity() : "");
+            act.put("date", e.getDate() != null ? e.getDate().toString() : "");
+            act.put("category", e.getCategory() != null
+                    ? Character.toUpperCase(e.getCategory().charAt(0)) + e.getCategory().substring(1) : "");
+            act.put("description", e.getActivity() != null ? e.getActivity() : "");
             act.put("emissionAmount", round1(e.getAmount()));
             recentActivities.add(act);
         }
 
-        // Member since
+        // 7. Metadata (Member since & Survey results)
         String memberSince = user.getCreatedAt() != null
-            ? user.getCreatedAt().format(DateTimeFormatter.ofPattern("MMM dd, yyyy")) : "";
+                ? user.getCreatedAt().format(DateTimeFormatter.ofPattern("MMM dd, yyyy")) : "";
 
-        // Survey estimated footprint
         Double estimatedFootprint = surveyRepo.findByUser(user)
-            .map(LifestyleSurvey::getEstimatedAnnualFootprint)
-            .orElse(null);
+                .map(LifestyleSurvey::getEstimatedAnnualFootprint)
+                .orElse(null);
 
         return DashboardResponse.builder()
-            .userName(user.getName())
-            .memberSince(memberSince)
-            .totalCarbonKg(totalKg)
-            .thisMonthCarbonKg(thisMonthKg)
-            .lastMonthCarbonKg(lastMonthKg)
-            .monthlyChangePercent(changePct)
-            .periodCarbonKg(periodKg)
-            .periodLabel(periodLabel)
-            .categoryBreakdown(breakdown)
-            .weeklyTrend(trend)
-            .recentActivities(recentActivities)
-            .activeGoals(goalRepo.countByUserAndStatus(user, "ACTIVE"))
-            .completedGoals(goalRepo.countByUserAndStatus(user, "COMPLETED"))
-            .totalBadges(0)
-            .leaderboardRank(1)
-            .estimatedAnnualFootprint(estimatedFootprint)
-            .build();
+                .userName(user.getName())
+                .memberSince(memberSince)
+                .totalCarbonKg(totalKg)
+                .thisMonthCarbonKg(thisMonthKg)
+                .lastMonthCarbonKg(lastMonthKg)
+                .monthlyChangePercent(changePct)
+                .periodCarbonKg(periodKg)
+                .periodLabel(periodLabel)
+                .categoryBreakdown(breakdown)
+                .weeklyTrend(trend)
+                .recentActivities(recentActivities)
+                .activeGoals(goalRepo.countByUserAndStatus(user, "ACTIVE"))
+                .completedGoals(goalRepo.countByUserAndStatus(user, "COMPLETED"))
+                .totalBadges(0)
+                .leaderboardRank(1)
+                .estimatedAnnualFootprint(estimatedFootprint)
+                .build();
     }
 
     private double round1(double v) { return Math.round(v * 10.0) / 10.0; }
