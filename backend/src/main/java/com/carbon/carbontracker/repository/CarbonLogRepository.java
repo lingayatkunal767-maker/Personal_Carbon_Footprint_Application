@@ -10,6 +10,11 @@ import java.util.List;
 import com.carbon.carbontracker.model.CarbonLog;
 import com.carbon.carbontracker.model.User;
 
+// ✅ ADD THESE IMPORTS
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import java.math.BigDecimal;
+
 @Repository
 public interface CarbonLogRepository extends JpaRepository<CarbonLog, Long> {
 
@@ -23,5 +28,13 @@ public interface CarbonLogRepository extends JpaRepository<CarbonLog, Long> {
             LocalDate endDate
     );
 
-    List<CarbonLog> findByUser(User user);  
+    List<CarbonLog> findByUser(User user);
+
+    // ✅ ADD THIS METHOD
+   @Query("SELECT SUM(c.totalEmission) FROM CarbonLog c WHERE c.user.id = :userId AND c.date BETWEEN :startDate AND :endDate")
+BigDecimal sumEmissionsByUserAndDateRange(
+        @Param("userId") Long userId,
+        @Param("startDate") LocalDate startDate,
+        @Param("endDate") LocalDate endDate
+);
 }
