@@ -1,5 +1,5 @@
 {
-    "java.configuration.updateBuildConfiguration": "interactive",
+    "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
     "terminal.integrated.env.windows": {
         "JAVA_HOME": "C:\\Users\\DELL\\.jdk\\jdk-21.0.8",

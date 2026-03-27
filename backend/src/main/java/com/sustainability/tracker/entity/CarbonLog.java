@@ -37,7 +37,7 @@ public class CarbonLog {
     @Column(name = "food_emission", precision = 10, scale = 2)
     private BigDecimal foodEmission;
 
-    @Column(name = "energy_emission", precision = 10, scale = 2)
+    @Column(name = "energy_emission", columnDefinition = "float8")
     private BigDecimal energyEmission;
 
     @Column(name = "total_emission", precision = 10, scale = 2)
