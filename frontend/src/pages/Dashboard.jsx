@@ -262,6 +262,8 @@ export default function Dashboard() {
     </div>
   </div>
 )}
+        {/* Summary Cards - 2x2 Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 mb-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
@@ -309,6 +311,7 @@ export default function Dashboard() {
               <div className="bg-amber-500 h-2 rounded-full transition-all duration-500" style={{ width: `${goalProgress}%` }} />
             </div>
           </div>
+        </div>
 
         {/* Milestone 4: Sustainability Progress Sections */}
         <div className="grid lg:grid-cols-3 gap-6 mb-8">
