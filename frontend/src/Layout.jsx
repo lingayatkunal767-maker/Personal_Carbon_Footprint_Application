@@ -40,6 +40,8 @@ function Layout() {
     { path: "/create-goal", label: "Goals", icon: "🎯" },
     { path: "/badges", label: "Badges", icon: "🏅" },
     { path: "/leaderboard", label: "Leaderboard", icon: "🏆" },
+    { path: "/marketplace", label: "Marketplace", icon: "🛒" },
+    { path: "/notifications", label: "Notifications", icon: "🔔" },
   ];
 
   const isMobile = window.innerWidth < 768;

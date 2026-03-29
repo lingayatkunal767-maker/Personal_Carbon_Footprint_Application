@@ -12,6 +12,10 @@ import Layout from "./Layout";
 import GoalDetails from "./pages/GoalDetails";
 import Badges from "./pages/Badges";
 import Leaderboard from "./pages/Leaderboard";
+import MarketplacePage from "./pages/MarketplacePage";
+import MarketplaceDetails from "./pages/MarketplaceDetails";
+import PurchaseSuccess from "./pages/PurchaseSuccess";
+import Notifications from "./pages/Notifications";
 
 function App() {
   return (
@@ -34,6 +38,10 @@ function App() {
           <Route path="badges" element={<Badges />} />
           <Route path="leaderboard" element={<Leaderboard />} />
           <Route path="goal-details/:id" element={<GoalDetails />} />
+          <Route path="marketplace" element={<MarketplacePage />} />
+          <Route path="marketplace/:id" element={<MarketplaceDetails />} />
+          <Route path="purchase-success" element={<PurchaseSuccess />} />
+          <Route path="notifications" element={<Notifications />} />
         </Route>
 
       </Routes>

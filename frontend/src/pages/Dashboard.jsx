@@ -30,11 +30,18 @@ export default function Dashboard() {
   const [tipIndex, setTipIndex] = useState(0);
   const [editingId, setEditingId] = useState(null);
   const [logs, setLogs] = useState([]);
+  const [goals, setGoals] = useState([]);
+  const [badges, setBadges] = useState([]);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [notifications, setNotifications] = useState([]);
+  const [user, setUser] = useState(null);
+
   const latestLog = logs.length > 0 ? logs[0] : null;
   const chartData = logs.map(log => ({
-  date: new Date(log.createdAt).toLocaleDateString(),
-  emission: log.totalEmission
-}));
+    date: new Date(log.createdAt).toLocaleDateString(),
+    emission: log.totalEmission
+  }));
+
   // Rotate eco tip
   useEffect(() => {
     setTipIndex(Math.floor(Math.random() * ECO_TIPS.length));
@@ -54,10 +61,10 @@ export default function Dashboard() {
     }
   }, []);
 
-  // Fetch emissions on mount
+  // Fetch Dashboard Data
   useEffect(() => {
     let mounted = true;
-    const load = async () => {
+    const loadDashboardData = async () => {
       const token = localStorage.getItem('token');
       if (!token) {
         navigate('/login');
@@ -65,30 +72,52 @@ export default function Dashboard() {
       }
       setLoading(true);
       try {
-        const data = await apiFetch('/api/emissions');
-        if (mounted) setEmissions(data || []);
+        // Fetch User
+        const userData = await apiFetch('/api/users/me');
+        if (mounted) setUser(userData);
+
+        // Fetch Emissions
+        const emissionsData = await apiFetch('/api/emissions');
+        if (mounted) setEmissions(emissionsData || []);
+
+        // Fetch Logs
+        const logsData = await apiFetch('/api/carbon/logs');
+        if (mounted) setLogs(logsData || []);
+
+        // Fetch Goals
+        const goalsData = await apiFetch('/api/goals');
+        if (mounted) setGoals(goalsData || []);
+
+        // Fetch Leaderboard
+        const leaderboardData = await apiFetch('/api/leaderboard');
+        if (mounted) setLeaderboard(leaderboardData || []);
+
+        // Fetch Notifications
+        const notificationsData = await apiFetch('/api/notifications');
+        if (mounted) setNotifications(notificationsData || []);
+
       } catch (err) {
         if (err.status === 401) navigate('/login');
-        else setError(err.message || 'Could not load emissions.');
+        else setError(err.message || 'Could not load dashboard data.');
       } finally {
-        setLoading(false);
+        if (mounted) setLoading(false);
       }
     };
-    load();
+
+    loadDashboardData();
+
+    // Fetch Badges separately when user is loaded
     return () => { mounted = false; };
   }, [navigate]);
-  useEffect(() => {
-  async function loadLogs() {
-    try {
-      const data = await apiFetch("/api/carbon/logs");
-      setLogs(data);
-    } catch (err) {
-      console.error(err);
-    }
-  }
 
-  loadLogs();
-}, []);
+  useEffect(() => {
+    if (user?.id) {
+      apiFetch(`/api/badges/user/${user.id}`)
+        .then(data => setBadges(data || []))
+        .catch(err => console.error("Badges load failed", err));
+    }
+  }, [user]);
+
   // Add emission handler
   const handleAddEmission = async (e) => {
     e.preventDefault();
@@ -233,8 +262,6 @@ export default function Dashboard() {
     </div>
   </div>
 )}
-        {/* Summary Cards */}
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           <div className="bg-white/90 backdrop-blur-sm rounded-2xl shadow-md p-5 border-l-4 border-green-500">
             <div className="flex items-center justify-between">
               <div>
@@ -282,7 +309,116 @@ export default function Dashboard() {
               <div className="bg-amber-500 h-2 rounded-full transition-all duration-500" style={{ width: `${goalProgress}%` }} />
             </div>
           </div>
+
+        {/* Milestone 4: Sustainability Progress Sections */}
+        <div className="grid lg:grid-cols-3 gap-6 mb-8">
+          
+          {/* Active Goals & Badges */}
+          <div className="lg:col-span-2 space-y-6">
+            <div className="bg-white/90 rounded-2xl shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
+                  <span className="text-xl">🎯</span> Active Goals
+                </h2>
+                <Link to="/create-goal" className="text-xs font-bold text-green-600 hover:underline">View All</Link>
+              </div>
+              {goals.length === 0 ? (
+                <p className="text-gray-400 text-sm italic">No active goals. Start one to track your progress!</p>
+              ) : (
+                <div className="space-y-4">
+                  {goals.slice(0, 2).map(goal => {
+                    const progress = goal.targetEmission > 0 ? Math.min(100, Math.round((goal.currentEmission / goal.targetEmission) * 100)) : 0;
+                    return (
+                      <div key={goal.id} className="p-4 bg-green-50/50 rounded-xl border border-green-100">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="font-semibold text-green-900">{goal.goalTitle}</span>
+                          <span className="text-xs font-bold text-green-600">{progress}%</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-1.5">
+                          <div className="bg-green-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            <div className="bg-white/90 rounded-2xl shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
+                  <span className="text-xl">🏅</span> Recent Badges
+                </h2>
+                <Link to="/badges" className="text-xs font-bold text-green-600 hover:underline">View Gallery</Link>
+              </div>
+              {badges.length === 0 ? (
+                <p className="text-gray-400 text-sm italic">Unlock badges by achieving your sustainability goals!</p>
+              ) : (
+                <div className="flex gap-4 overflow-x-auto pb-2 scrollbar-hide">
+                  {badges.slice(0, 4).map(badge => (
+                    <div key={badge.id} className="flex-shrink-0 text-center group">
+                      <div className="w-14 h-14 bg-gradient-to-br from-amber-100 to-orange-100 rounded-full flex items-center justify-center mb-1 shadow-sm group-hover:scale-110 transition-transform">
+                        <span className="text-2xl">🏅</span>
+                      </div>
+                      <p className="text-[10px] font-bold text-gray-700 truncate w-14">{badge.badgeName}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Leaderboard & Notifications Sidebar */}
+          <div className="space-y-6">
+            <div className="bg-white/90 rounded-2xl shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
+                  <span className="text-xl">🏆</span> Leaderboard
+                </h2>
+                <Link to="/leaderboard" className="text-xs font-bold text-green-600 hover:underline">Full Rank</Link>
+              </div>
+              <div className="space-y-3">
+                {leaderboard.slice(0, 3).map((entry, idx) => (
+                  <div key={entry.id} className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 transition">
+                    <span className="text-sm font-black text-gray-400 w-4">{idx + 1}</span>
+                    <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center text-[10px] font-bold text-green-700 uppercase">
+                      {entry.userName?.substring(0, 2)}
+                    </div>
+                    <div className="flex-grow">
+                      <p className="text-xs font-bold text-gray-800">{entry.userName}</p>
+                      <p className="text-[10px] text-gray-500 font-medium">{entry.score} pts</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="bg-white/90 rounded-2xl shadow-md p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
+                  <span className="text-xl">🔔</span> Notifications
+                </h2>
+                <Link to="/notifications" className="text-xs font-bold text-green-600 hover:underline">Inbox</Link>
+              </div>
+              <div className="space-y-4">
+                {notifications.length === 0 ? (
+                  <p className="text-gray-400 text-[10px] italic">No new notifications.</p>
+                ) : (
+                  notifications.slice(0, 3).map(notif => (
+                    <div key={notif.id} className="flex gap-3 items-start border-l-2 border-green-200 pl-3 py-1">
+                      <div className="flex-grow">
+                        <p className="text-[11px] font-bold text-gray-800 leading-tight">{notif.title}</p>
+                        <p className="text-[10px] text-gray-500 truncate w-40">{notif.message}</p>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          </div>
+
         </div>
+
         <div className="bg-white/90 rounded-2xl shadow-md p-6 mb-8">
   <h2 className="text-lg font-bold text-green-900 mb-4">
     Carbon Emission History
