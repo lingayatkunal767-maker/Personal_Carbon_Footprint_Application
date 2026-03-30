@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import axios from "axios";
+import MarketingHeader from "../components/MarketingHeader";
 import "./Auth.css";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
@@ -66,18 +67,30 @@ setTimeout(() => {
   };
 
   return (
-    <div className="auth-wrapper">
-      <div className="auth-box">
-        <div className="top-section">
-          <h1 className="brand">
-            <span className="leaf">🍃</span> Carbon<span>Calc</span>
-          </h1>
-          <p className="subtitle">
-            Track & Start Reducing Your Emissions
-          </p>
-          <hr />
-        </div>
+    <div className="auth-page">
+      <MarketingHeader />
+      <div className="auth-page-main">
+        <div className="auth-wrapper">
+          <div className="auth-box auth-box--split">
+            <div className="auth-split">
+              <aside className="auth-panel auth-panel--visual">
+                <div className="auth-visual-blob auth-visual-blob--a" aria-hidden />
+                <div className="auth-visual-blob auth-visual-blob--b" aria-hidden />
+                <div className="auth-visual-inner">
+                  <div className="top-section">
+                    <h1 className="brand">
+                      <span className="leaf">🍃</span> Carbon<span>Calc</span>
+                    </h1>
+                    <p className="subtitle">Track &amp; Start Reducing Your Emissions</p>
+                    <hr />
+                  </div>
+                  <div className="bottom-image" aria-hidden>
+                    🌞 🌳 🌿
+                  </div>
+                </div>
+              </aside>
 
+              <div className="auth-panel auth-panel--form">
         <h2>Login to Your Account</h2>
 
         {notification.message && (
@@ -178,11 +191,17 @@ setTimeout(() => {
         <p className="bottom-text">
           Don’t have an account? <Link to="/register">Sign Up</Link>
         </p>
-
-        <div className="bottom-image">
-          🌞 🌳 🌿
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+      <footer className="auth-footer" style={{ textAlign: "center", padding: "1.5rem", color: "#666", fontSize: "0.875rem", marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+        <p style={{ fontWeight: 600, color: "#2e7d32", margin: 0, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
+          <span aria-hidden>🌿</span> CarbonCalc
+        </p>
+        <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} CarbonCalc. All rights reserved.</p>
+      </footer>
     </div>
   );
 }

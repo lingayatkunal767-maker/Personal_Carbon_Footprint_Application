@@ -57,7 +57,7 @@ function LifestyleSurvey() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
     const check = async () => {
@@ -67,7 +67,7 @@ function LifestyleSurvey() {
         });
       } catch {
         localStorage.removeItem("token");
-        navigate("/");
+        navigate("/login");
       }
     };
     check();

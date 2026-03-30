@@ -112,7 +112,7 @@ function Notifications() {
   // ── Fetch notifications ──
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) { navigate("/"); return; }
+    if (!token) { navigate("/login"); return; }
 
     const headers = { Authorization: `Bearer ${token}` };
 

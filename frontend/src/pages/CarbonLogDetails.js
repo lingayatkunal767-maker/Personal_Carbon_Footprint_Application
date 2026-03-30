@@ -63,7 +63,7 @@ function CarbonLogDetails() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
     if (!validId) {
@@ -103,7 +103,7 @@ function CarbonLogDetails() {
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem("token");
-          navigate("/");
+          navigate("/login");
           return;
         }
         setError(err.response?.status === 404 ? "Log not found. It may have been deleted or the link may be incorrect. Open a log from Carbon History." : "Failed to load log.");

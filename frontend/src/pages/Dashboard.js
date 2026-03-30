@@ -48,7 +48,7 @@ const formatDate = (date) => {
     const token = localStorage.getItem("token");
 
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
@@ -77,7 +77,7 @@ const formatDate = (date) => {
         setLogs(data);
       } catch (err) {
         localStorage.removeItem("token");
-        navigate("/");
+        navigate("/login");
       } finally {
         setLoading(false);
       }

@@ -144,3 +144,28 @@
 .profile-form-actions .btn {
   min-width: 140px;
 }
+
+@media (max-width: 480px) {
+  .profile-page {
+    max-width: 100%;
+  }
+
+  .profile-title {
+    font-size: 22px;
+  }
+
+  .profile-form.card {
+    padding: 18px 16px;
+  }
+
+  .profile-form-actions {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .profile-form-actions .btn {
+    width: 100%;
+    min-width: 0;
+  }
+}

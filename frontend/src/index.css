@@ -34,12 +34,15 @@
 
 html {
   height: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 body {
   margin: 0;
   min-height: 100%;
   overflow-x: hidden;
+  max-width: 100%;
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -49,6 +52,8 @@ body {
 
 #root {
   min-height: 100%;
+  overflow-x: hidden;
+  max-width: 100%;
 }
 
 code {
@@ -103,4 +108,27 @@ code {
   background: var(--color-primary-light);
   text-decoration: none;
   border-radius: var(--radius-full);
+}
+
+/* Mobile: safe areas (notched devices) + readable inputs (reduces iOS zoom on focus) */
+.app-layout {
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+  padding-top: env(safe-area-inset-top);
+}
+
+@media (max-width: 768px) {
+  input[type="text"],
+  input[type="email"],
+  input[type="password"],
+  input[type="number"],
+  input[type="search"],
+  input[type="tel"],
+  input[type="url"],
+  input[type="date"],
+  input[type="datetime-local"],
+  select,
+  textarea {
+    font-size: 16px;
+  }
 }

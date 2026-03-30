@@ -57,55 +57,55 @@ function AppLayout({ children }) {
         </div>
         <nav className="app-sidebar-nav">
 
-  {/* USER FEATURES */}
-  {user.role === "USER" && (
-    <>
-      <NavLink to="/dashboard" className="app-nav-item" end>
-        <span className="app-nav-icon">◉</span>
-        <span>Dashboard</span>
-      </NavLink>
+          {/* USER FEATURES */}
+          {user.role === "USER" && (
+            <>
+              <NavLink to="/dashboard" className="app-nav-item" end>
+                <span className="app-nav-icon">◉</span>
+                <span>Dashboard</span>
+              </NavLink>
 
-      <NavLink to="/survey" className="app-nav-item">
-        <span className="app-nav-icon">📋</span>
-        <span>Lifestyle Survey</span>
-      </NavLink>
+              <NavLink to="/survey" className="app-nav-item">
+                <span className="app-nav-icon">📋</span>
+                <span>Lifestyle Survey</span>
+              </NavLink>
 
-      <NavLink to="/carbon-history" className="app-nav-item">
-        <span className="app-nav-icon">🕐</span>
-        <span>Carbon History</span>
-      </NavLink>
+              <NavLink to="/carbon-history" className="app-nav-item">
+                <span className="app-nav-icon">🕐</span>
+                <span>Carbon History</span>
+              </NavLink>
 
-      <NavLink to="/goals" className="app-nav-item">
-        <span className="app-nav-icon">🎯</span>
-        <span>Goals</span>
-      </NavLink>
+              <NavLink to="/goals" className="app-nav-item">
+                <span className="app-nav-icon">🎯</span>
+                <span>Goals</span>
+              </NavLink>
 
-      <NavLink to="/badges" className="app-nav-item">
-        <span className="app-nav-icon">🏅</span>
-        <span>My Badges</span>
-      </NavLink>
+              <NavLink to="/badges" className="app-nav-item">
+                <span className="app-nav-icon">🏅</span>
+                <span>My Badges</span>
+              </NavLink>
 
-      <NavLink to="/leaderboard" className="app-nav-item">
-        <span className="app-nav-icon">🏆</span>
-        <span>Leaderboard</span>
-      </NavLink>
+              <NavLink to="/leaderboard" className="app-nav-item">
+                <span className="app-nav-icon">🏆</span>
+                <span>Leaderboard</span>
+              </NavLink>
 
-      <NavLink to="/marketplace" className="app-nav-item">
-        <span className="app-nav-icon">🛒</span>
-        <span>Eco Marketplace</span>
-      </NavLink>
+              <NavLink to="/marketplace" className="app-nav-item">
+                <span className="app-nav-icon">🛒</span>
+                <span>Eco Marketplace</span>
+              </NavLink>
 
-      <NavLink to="/transactions" className="app-nav-item">
-        <span className="app-nav-icon">💳</span>
-        <span>Transactions</span>
-      </NavLink>
+              <NavLink to="/transactions" className="app-nav-item">
+                <span className="app-nav-icon">💳</span>
+                <span>Transactions</span>
+              </NavLink>
 
-      <NavLink to="/notifications" className="app-nav-item">
-        <span className="app-nav-icon">🔔</span>
-        <span>Notifications</span>
-      </NavLink>
-    </>
-  )}
+              <NavLink to="/notifications" className="app-nav-item">
+                <span className="app-nav-icon">🔔</span>
+                <span>Notifications</span>
+              </NavLink>
+            </>
+          )}
 
           {/* ADMIN FEATURES */}
           {user.role === "ADMIN" && (
@@ -248,7 +248,10 @@ function AppLayout({ children }) {
         </main>
 
         <footer className="app-footer">
-          <span>© 2025 CarbonCalc – Environmentally Conscious Tracking</span>
+          <p className="app-footer-brand">
+            <span aria-hidden>🌿</span> CarbonCalc
+          </p>
+          <span>© 2026 CarbonCalc. All rights reserved.</span>
         </footer>
       </div>
     </div>

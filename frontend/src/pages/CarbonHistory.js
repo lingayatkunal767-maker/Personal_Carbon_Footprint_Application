@@ -164,7 +164,7 @@ const totalEntries = filteredLogs.length;
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
     const check = async () => {
@@ -174,7 +174,7 @@ const totalEntries = filteredLogs.length;
         });
       } catch {
         localStorage.removeItem("token");
-        navigate("/");
+        navigate("/login");
       }
     };
     check();

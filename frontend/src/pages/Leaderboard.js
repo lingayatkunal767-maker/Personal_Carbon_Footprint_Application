@@ -19,7 +19,7 @@ function Leaderboard() {
 
   const fetchData = useCallback((isRefresh = false) => {
     const token = localStorage.getItem("token");
-    if (!token) { navigate("/"); return; }
+    if (!token) { navigate("/login"); return; }
 
     if (isRefresh) setRefreshing(true);
     else setLoading(true);

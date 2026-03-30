@@ -725,4 +725,31 @@
     min-width: 0;
     width: 100%;
   }
+
+  .admin-sidebar {
+    padding: 12px 8px;
+  }
+
+  .admin-sidebar-nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    gap: 4px;
+    margin-top: 8px;
+    padding-bottom: 6px;
+  }
+
+  .admin-sidebar-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .admin-tab-btn {
+    flex-shrink: 0;
+  }
+
+  .admin-content-title {
+    font-size: 20px;
+    flex-wrap: wrap;
+  }
 }

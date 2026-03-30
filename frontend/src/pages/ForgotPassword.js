@@ -74,7 +74,7 @@ function ForgotPassword() {
           <h2>Password reset</h2>
           <p className="forgot-password-message">Your password has been reset. You can now log in with your new password.</p>
           <p className="bottom-text">
-            <Link to="/">Go to Login</Link>
+            <Link to="/login">Go to Login</Link>
           </p>
         </div>
       </div>
@@ -169,7 +169,7 @@ function ForgotPassword() {
               Use a different email
             </button>
             {" · "}
-            <Link to="/">Back to Login</Link>
+            <Link to="/login">Back to Login</Link>
           </p>
         </div>
       </div>
@@ -201,7 +201,7 @@ function ForgotPassword() {
           <button type="submit">Send OTP</button>
         </form>
         <p className="bottom-text">
-          <Link to="/">Back to Login</Link>
+          <Link to="/login">Back to Login</Link>
         </p>
       </div>
     </div>

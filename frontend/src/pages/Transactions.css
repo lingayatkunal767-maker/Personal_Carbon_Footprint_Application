@@ -284,5 +284,39 @@
       padding: 8px 10px;
     }
   }
-  
+
+  @media (max-width: 768px) {
+    .tx-title-wrap {
+      min-width: 0;
+    }
+
+    .tx-title {
+      font-size: 22px;
+    }
+
+    .tx-stats {
+      width: 100%;
+      justify-content: stretch;
+    }
+
+    .tx-stat {
+      flex: 1 1 calc(50% - 8px);
+      min-width: 0;
+    }
+
+    .tx-toolbar {
+      flex-wrap: wrap;
+    }
+
+    .tx-main {
+      padding: 12px 8px;
+    }
+  }
+
+  @media (max-width: 480px) {
+    .tx-stat {
+      flex: 1 1 100%;
+    }
+  }
+
   

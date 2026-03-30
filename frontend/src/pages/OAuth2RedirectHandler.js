@@ -16,7 +16,7 @@ function OAuth2RedirectHandler() {
       const t = setTimeout(() => navigate("/dashboard"), 1000);
       return () => clearTimeout(t);
     } else {
-      navigate("/");
+      navigate("/login");
     }
   }, [location, navigate]);
 

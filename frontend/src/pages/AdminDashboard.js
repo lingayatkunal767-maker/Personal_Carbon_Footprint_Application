@@ -173,7 +173,7 @@ function AdminDashboard() {
 
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
 
@@ -236,7 +236,7 @@ function AdminDashboard() {
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    if (!token) { navigate("/"); return; }
+    if (!token) { navigate("/login"); return; }
 
     const headers = { Authorization: `Bearer ${token}` };
 
@@ -340,7 +340,7 @@ function AdminDashboard() {
       })
       .catch(() => {
         localStorage.removeItem("token");
-        navigate("/");
+        navigate("/login");
       });
   }, [navigate]);
 
@@ -702,7 +702,7 @@ function AdminDashboard() {
                         onClick={async () => {
                           const token = localStorage.getItem("token");
                           if (!token) {
-                            navigate("/");
+                            navigate("/login");
                             return;
                           }
                           const headers = {
@@ -743,7 +743,7 @@ function AdminDashboard() {
                           if (!confirmDelete) return;
                           const token = localStorage.getItem("token");
                           if (!token) {
-                            navigate("/");
+                            navigate("/login");
                             return;
                           }
                           const headers = {
@@ -1057,7 +1057,7 @@ function AdminDashboard() {
     const saveTemplate = async (tpl) => {
       const token = localStorage.getItem("token");
       if (!token) {
-        navigate("/");
+        navigate("/login");
         return;
       }
       try {
@@ -1098,7 +1098,7 @@ function AdminDashboard() {
     const toggleTemplateActive = async (tpl) => {
       const token = localStorage.getItem("token");
       if (!token) {
-        navigate("/");
+        navigate("/login");
         return;
       }
       try {
@@ -1146,7 +1146,7 @@ function AdminDashboard() {
 
       const token = localStorage.getItem("token");
       if (!token) {
-        navigate("/");
+        navigate("/login");
         return;
       }
 

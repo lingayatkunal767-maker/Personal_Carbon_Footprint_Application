@@ -26,7 +26,7 @@ function Profile() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
-      navigate("/");
+      navigate("/login");
       return;
     }
     const fetchProfile = async () => {
@@ -41,7 +41,7 @@ function Profile() {
       } catch (err) {
         if (err.response?.status === 401) {
           localStorage.removeItem("token");
-          navigate("/");
+          navigate("/login");
           return;
         }
         setName("");

@@ -417,3 +417,31 @@
   color: var(--color-text-muted);
 }
 
+@media (max-width: 600px) {
+  .goals-main {
+    padding: 16px 14px;
+  }
+
+  .goals-title {
+    font-size: 22px;
+  }
+
+  .goals-form-footer {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .goals-form-footer .btn {
+    width: 100%;
+  }
+
+  .goals-list-item-header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .goals-list-actions {
+    align-self: flex-end;
+  }
+}
+

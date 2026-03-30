@@ -20,7 +20,7 @@ function ResetPassword() {
         <p className="bottom-text">
           <Link to="/forgot-password">Forgot Password</Link>
           {" · "}
-          <Link to="/">Login</Link>
+          <Link to="/login">Login</Link>
         </p>
       </div>
     </div>
