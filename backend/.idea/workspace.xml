@@ -5,9 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="b0616356-8329-41d3-a83d-eb792589c3df" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/carbon/database/create_database.sql" beforeDir="false" afterPath="$PROJECT_DIR$/carbon/database/create_database.sql" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/carbon/src/main/java/com/carbon/carbon/dto/SurveyRequest.java" beforeDir="false" afterPath="$PROJECT_DIR$/carbon/src/main/java/com/carbon/carbon/dto/SurveyRequest.java" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/carbon/src/main/java/com/carbon/carbon/entity/Survey.java" beforeDir="false" afterPath="$PROJECT_DIR$/carbon/src/main/java/com/carbon/carbon/entity/Survey.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/carbon/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/carbon/pom.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/carbon/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/carbon/src/main/resources/application.properties" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
