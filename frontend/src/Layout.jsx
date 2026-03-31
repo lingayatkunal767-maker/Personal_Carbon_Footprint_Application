@@ -42,7 +42,10 @@ function Layout() {
     { path: "/leaderboard", label: "Leaderboard", icon: "🏆" },
     { path: "/marketplace", label: "Marketplace", icon: "🛒" },
     { path: "/notifications", label: "Notifications", icon: "🔔" },
+<<<<<<< HEAD
     { path: "/admin", label: "Admin", icon: "🛡️" },
+=======
+>>>>>>> 2ab7cdfe86661fd6b09e0f5629355c8d19e6aa92
   ];
 
   const isMobile = window.innerWidth < 768;

@@ -16,7 +16,10 @@ import MarketplacePage from "./pages/MarketplacePage";
 import MarketplaceDetails from "./pages/MarketplaceDetails";
 import PurchaseSuccess from "./pages/PurchaseSuccess";
 import Notifications from "./pages/Notifications";
+<<<<<<< HEAD
 import AdminDashboard from "./pages/AdminDashboard";
+=======
+>>>>>>> 2ab7cdfe86661fd6b09e0f5629355c8d19e6aa92
 
 function App() {
   return (
@@ -45,9 +48,12 @@ function App() {
           <Route path="notifications" element={<Notifications />} />
         </Route>
 
+<<<<<<< HEAD
         {/* Standalone Admin Route */}
         <Route path="/admin" element={<AdminDashboard />} />
 
+=======
+>>>>>>> 2ab7cdfe86661fd6b09e0f5629355c8d19e6aa92
       </Routes>
     </BrowserRouter>
   );

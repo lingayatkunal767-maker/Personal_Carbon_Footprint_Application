@@ -124,6 +124,7 @@ CREATE INDEX IF NOT EXISTS idx_carbon_logs_date ON carbon_logs(date);
 -- //Marketplace Table//
 -- Standalone table for marketplace items used in carbon credit trading
 
+<<<<<<< HEAD
 CREATE TABLE IF NOT EXISTS marketplace (
     id BIGSERIAL PRIMARY KEY,
     item_name VARCHAR(255) NOT NULL,
@@ -171,10 +172,29 @@ COMMENT ON COLUMN leaderboards.updated_at IS 'Timestamp of last score update';
 -- //Transactions Table//
 -- Records all marketplace transactions (purchases of carbon credits)
 
+=======
+-- =========================================
+-- MARKETPLACE
+-- =========================================
+CREATE TABLE IF NOT EXISTS marketplace (
+    id BIGSERIAL PRIMARY KEY,
+    item_name VARCHAR(255) NOT NULL,
+    item_type VARCHAR(100),
+    price NUMERIC(10,2) NOT NULL,
+    description TEXT,
+    carbon_offset_value NUMERIC(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================================
+-- TRANSACTIONS
+-- =========================================
+>>>>>>> 2ab7cdfe86661fd6b09e0f5629355c8d19e6aa92
 CREATE TABLE IF NOT EXISTS transactions (
     id BIGSERIAL PRIMARY KEY,
     user_id BIGINT NOT NULL,
     marketplace_item_id BIGINT NOT NULL,
+<<<<<<< HEAD
     amount NUMERIC(10, 2) NOT NULL,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     
@@ -260,3 +280,122 @@ COMMENT ON COLUMN badges.description IS 'Description of what the badge represent
 COMMENT ON COLUMN badges.awarded_at IS 'Timestamp when badge was awarded';
 ALTER TABLE surveys DROP COLUMN IF EXISTS average_distance;
 ALTER TABLE surveys DROP COLUMN IF EXISTS energy_usage;
+=======
+    amount NUMERIC(10,2) NOT NULL,
+    status VARCHAR(50) DEFAULT 'pending',
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (marketplace_item_id) REFERENCES marketplace(id) ON DELETE RESTRICT
+);
+
+-- =========================================
+-- NOTIFICATIONS
+-- =========================================
+CREATE TABLE IF NOT EXISTS notifications (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    title VARCHAR(255),
+    message TEXT,
+    type VARCHAR(50),
+    is_read BOOLEAN DEFAULT FALSE,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- EMISSION HISTORY
+-- =========================================
+CREATE TABLE IF NOT EXISTS emission_history (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    date DATE NOT NULL,
+    total_emission NUMERIC(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- ACTIVITY HISTORY
+-- =========================================
+CREATE TABLE IF NOT EXISTS activity_history (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    activity_type VARCHAR(100),
+    reference_id BIGINT,
+    description TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- ADMIN LOGS
+-- =========================================
+CREATE TABLE IF NOT EXISTS admin_logs (
+    id BIGSERIAL PRIMARY KEY,
+    admin_id BIGINT NOT NULL,
+    action_type VARCHAR(100),
+    entity_type VARCHAR(100),
+    entity_id BIGINT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (admin_id) REFERENCES users(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- EMISSION FACTORS
+-- =========================================
+CREATE TABLE IF NOT EXISTS emission_factors (
+    id BIGSERIAL PRIMARY KEY,
+    category VARCHAR(100),
+    activity_type VARCHAR(100),
+    emission_factor NUMERIC(10,4),
+    unit VARCHAR(50)
+);
+
+-- =========================================
+-- BADGES (MASTER)
+-- =========================================
+CREATE TABLE IF NOT EXISTS badges (
+    id BIGSERIAL PRIMARY KEY,
+    badge_name VARCHAR(255),
+    description TEXT,
+    condition_type VARCHAR(100),
+    threshold_value NUMERIC(10,2),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+-- =========================================
+-- USER BADGES (MAPPING TABLE)
+-- =========================================
+CREATE TABLE IF NOT EXISTS user_badges (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    badge_id BIGINT NOT NULL,
+    awarded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    FOREIGN KEY (badge_id) REFERENCES badges(id) ON DELETE CASCADE
+);
+
+-- =========================================
+-- LEADERBOARDS (FIXED)
+-- =========================================
+CREATE TABLE IF NOT EXISTS leaderboards (
+    id BIGSERIAL PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    score NUMERIC(10,2),
+    rank INT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+
+    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+);
+CREATE INDEX IF NOT EXISTS idx_transactions_user ON transactions(user_id);
+CREATE INDEX IF NOT EXISTS idx_transactions_item ON transactions(marketplace_item_id);
+CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id);
+CREATE INDEX IF NOT EXISTS idx_activity_user ON activity_history(user_id);
+CREATE INDEX IF NOT EXISTS idx_emission_history_user ON emission_history(user_id);
+>>>>>>> 2ab7cdfe86661fd6b09e0f5629355c8d19e6aa92
