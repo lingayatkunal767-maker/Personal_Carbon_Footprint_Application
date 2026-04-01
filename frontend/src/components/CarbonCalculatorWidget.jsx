@@ -65,16 +65,23 @@ function withLatestSnapshot(logs, snapshot) {
   });
 }
 
+function normalizeUserId(candidate) {
+  const parsed = Number(candidate);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
 async function resolveUserId(initialUserId) {
-  if (initialUserId) return Number(initialUserId);
+  const normalizedInitialId = normalizeUserId(initialUserId);
+  if (normalizedInitialId) return normalizedInitialId;
 
   const stored = localStorage.getItem('current_user');
   if (!stored) return null;
 
   try {
     const session = JSON.parse(stored);
-    if (session?.id) {
-      return Number(session.id);
+    const normalizedSessionId = normalizeUserId(session?.id);
+    if (normalizedSessionId) {
+      return normalizedSessionId;
     }
 
     if (session?.email) {
@@ -82,11 +89,12 @@ async function resolveUserId(initialUserId) {
       if (!response.ok) return null;
 
       const user = await response.json();
-      if (!user?.id) return null;
+      const normalizedFetchedId = normalizeUserId(user?.id);
+      if (!normalizedFetchedId) return null;
 
-      const merged = { ...session, id: user.id };
+      const merged = { ...session, id: normalizedFetchedId };
       localStorage.setItem('current_user', JSON.stringify(merged));
-      return Number(user.id);
+      return normalizedFetchedId;
     }
   } catch {
     return null;
@@ -127,6 +135,7 @@ const CarbonCalculatorWidget = ({ userId }) => {
       setActiveUserId(null);
       setLoading(false);
       setLogs([]);
+      setError('Unable to identify your account. Please login again.');
       return;
     }
 

@@ -417,17 +417,19 @@ export default function HomePage() {
       memberSince: user.memberSince || 'Recently joined',
     }));
 
-    if (user.id) {
-      setUserId(user.id);
+    const parsedSessionId = Number(user.id);
+    if (Number.isFinite(parsedSessionId) && parsedSessionId > 0) {
+      setUserId(parsedSessionId);
     } else {
       // No id stored — try fetching from backend by email
       fetch(`${API_BASE}/users/email/${encodeURIComponent(user.email)}`)
         .then(r => r.ok ? r.json() : null)
         .then(data => {
-          if (data?.id) {
-            const updated = { ...user, id: data.id };
+          const parsedFetchedId = Number(data?.id);
+          if (Number.isFinite(parsedFetchedId) && parsedFetchedId > 0) {
+            const updated = { ...user, id: parsedFetchedId };
             localStorage.setItem('current_user', JSON.stringify(updated));
-            setUserId(data.id);
+            setUserId(parsedFetchedId);
           } else {
             setLoading(false);
           }

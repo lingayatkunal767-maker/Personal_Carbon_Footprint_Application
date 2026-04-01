@@ -14,34 +14,36 @@ const EATING_OUT_NON_VEG_RATIO = {
 };
 
 async function resolveUserIdFromSession() {
+  const normalizeUserId = (candidate) => {
+    const parsed = Number(candidate);
+    return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+  };
+
   const stored = localStorage.getItem('current_user');
 
   if (stored) {
     try {
       const session = JSON.parse(stored);
-      if (session?.id) {
-        return Number(session.id);
+      const normalizedSessionId = normalizeUserId(session?.id);
+      if (normalizedSessionId) {
+        return normalizedSessionId;
       }
 
       if (session?.email) {
         const response = await fetch(`${API_BASE}/users/email/${encodeURIComponent(session.email)}`);
         if (response.ok) {
           const data = await response.json();
-          if (data?.id) {
-            const merged = { ...session, id: data.id };
+          const normalizedFetchedId = normalizeUserId(data?.id);
+          if (normalizedFetchedId) {
+            const merged = { ...session, id: normalizedFetchedId };
             localStorage.setItem('current_user', JSON.stringify(merged));
-            return Number(data.id);
+            return normalizedFetchedId;
           }
         }
       }
     } catch {
       // Fall back to legacy key if session parsing fails
     }
-  }
-
-  const fallback = localStorage.getItem('userId');
-  if (fallback && !Number.isNaN(Number(fallback))) {
-    return Number(fallback);
   }
 
   throw new Error('Unable to identify current user. Please login again.');
