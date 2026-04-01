@@ -297,6 +297,17 @@ const SurveyPage = () => {
 
       // Show success message
       setResult(response);
+      const latestSnapshot = {
+        userId,
+        logDate: response?.logDate || surveyRequest.surveyDate,
+        transportEmission: Number(response?.transportEmission || 0),
+        foodEmission: Number(response?.foodEmission || 0),
+        energyEmission: Number(response?.energyEmission || 0),
+        totalEmission: Number(response?.totalEmission || 0),
+        updatedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('latest_carbon_calculation', JSON.stringify(latestSnapshot));
+      window.dispatchEvent(new CustomEvent('carbon-log-updated', { detail: latestSnapshot }));
       setShowSuccess(true);
       setLoading(false);
 
@@ -391,7 +402,7 @@ const SurveyPage = () => {
                 <h2 className="section-title">Transport Information</h2>
               </div>
               
-              <div>
+              <div className="section-grid">
                 {/* Transport Mode */}
                 <div className="form-group">
                   <label className="form-label">
@@ -469,7 +480,7 @@ const SurveyPage = () => {
                 <h2 className="section-title">Food & Diet Information</h2>
               </div>
               
-              <div>
+              <div className="section-grid">
                 {/* Diet Type */}
                 <div className="form-group">
                   <label className="form-label">
@@ -543,7 +554,7 @@ const SurveyPage = () => {
                 <h2 className="section-title">Home Energy Usage</h2>
               </div>
               
-              <div>
+              <div className="section-grid">
                 {/* Monthly electricity */}
                 <div className="form-group">
                   <label className="form-label">
@@ -649,7 +660,7 @@ const SurveyPage = () => {
                 <h2 className="section-title">Behavior Data Inputs</h2>
               </div>
 
-              <div>
+              <div className="section-grid">
                 <div className="form-group">
                   <label className="form-label">
                     Screen Time (hours/day) <span className="required">*</span>

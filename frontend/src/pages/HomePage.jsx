@@ -72,6 +72,47 @@ function resolveBadgeIcon(badgeType, badgeName = '') {
   return '🏅';
 }
 
+function buildBadgeCards(earnedBadges, badgeDefinitions) {
+  const safeEarnedBadges = Array.isArray(earnedBadges) ? earnedBadges : [];
+  const safeBadgeDefinitions = Array.isArray(badgeDefinitions) ? badgeDefinitions : [];
+
+  const earnedBadgeNames = new Set(
+    safeEarnedBadges
+      .map((badge) => (badge.badgeName || '').trim().toLowerCase())
+      .filter(Boolean)
+  );
+
+  if (safeBadgeDefinitions.length > 0) {
+    return safeBadgeDefinitions.map((definition, index) => {
+      const badgeName = definition.badgeName || `Badge ${index + 1}`;
+      const isEarned = earnedBadgeNames.has(badgeName.trim().toLowerCase());
+      const threshold = Number(definition.thresholdPercent);
+      const hasThreshold = Number.isFinite(threshold);
+      return {
+        id: `badge-definition-${definition.id ?? index}`,
+        icon: isEarned ? resolveBadgeIcon(definition.badgeType, badgeName) : '🔒',
+        label: badgeName,
+        pts: isEarned
+          ? 'Earned'
+          : hasThreshold
+            ? `${Math.round(threshold)}% target`
+            : 'Locked',
+        hexClass: isEarned ? BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length] : 'bhL',
+        locked: !isEarned,
+      };
+    });
+  }
+
+  return safeEarnedBadges.map((badge, index) => ({
+    id: `badge-earned-${badge.id ?? index}`,
+    icon: resolveBadgeIcon(badge.badgeType, badge.badgeName),
+    label: badge.badgeName || 'Earned Badge',
+    pts: 'Earned',
+    hexClass: BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length],
+    locked: false,
+  }));
+}
+
 function formatRelativeDate(dateStr) {
   if (!dateStr) return 'Today';
   const d = new Date(dateStr);
@@ -329,6 +370,36 @@ export default function HomePage() {
     }
   }, [userId]);
 
+  const refreshBadgesAndNotifications = useCallback(async () => {
+    if (!userId) return;
+
+    try {
+      const [badgesRes, badgeDefinitionsRes] = await Promise.allSettled([
+        fetch(`${API_BASE}/badges/user/${userId}`).then((r) => r.json()),
+        fetch(`${API_BASE}/admin/badges/definitions`).then((r) => r.json()),
+      ]);
+
+      const earnedBadges = badgesRes.status === 'fulfilled' && Array.isArray(badgesRes.value)
+        ? badgesRes.value
+        : [];
+      const badgeDefinitions = badgeDefinitionsRes.status === 'fulfilled' && Array.isArray(badgeDefinitionsRes.value)
+        ? badgeDefinitionsRes.value
+        : [];
+
+      setBadges(buildBadgeCards(earnedBadges, badgeDefinitions));
+
+      const earnedTags = earnedBadges
+        .slice(0, 3)
+        .map((badge) => `🏅 ${badge.badgeName}`)
+        .filter((tag) => tag !== '🏅 undefined');
+      setProfile((prev) => ({ ...prev, tags: earnedTags.length ? earnedTags : prev.tags }));
+    } catch (err) {
+      console.error('Failed to refresh badges:', err);
+    }
+
+    await refreshNotifications();
+  }, [refreshNotifications, userId]);
+
   // ── Auth guard + initial data load ────────────────────────────────────────
   useEffect(() => {
     const token = localStorage.getItem('auth_token');
@@ -452,45 +523,7 @@ export default function HomePage() {
           ? badgeDefinitionsRes.value
           : [];
 
-        const earnedBadgeNames = new Set(
-          earnedBadges
-            .map((badge) => (badge.badgeName || '').trim().toLowerCase())
-            .filter(Boolean)
-        );
-
-        if (badgeDefinitions.length > 0) {
-          setBadges(
-            badgeDefinitions.map((definition, index) => {
-              const badgeName = definition.badgeName || `Badge ${index + 1}`;
-              const isEarned = earnedBadgeNames.has(badgeName.trim().toLowerCase());
-              const threshold = Number(definition.thresholdPercent);
-              const hasThreshold = Number.isFinite(threshold);
-              return {
-                id: `badge-definition-${definition.id ?? index}`,
-                icon: isEarned ? resolveBadgeIcon(definition.badgeType, badgeName) : '🔒',
-                label: badgeName,
-                pts: isEarned
-                  ? 'Earned'
-                  : hasThreshold
-                    ? `${Math.round(threshold)}% target`
-                    : 'Locked',
-                hexClass: isEarned ? BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length] : 'bhL',
-                locked: !isEarned,
-              };
-            })
-          );
-        } else {
-          setBadges(
-            earnedBadges.map((badge, index) => ({
-              id: `badge-earned-${badge.id ?? index}`,
-              icon: resolveBadgeIcon(badge.badgeType, badge.badgeName),
-              label: badge.badgeName || 'Earned Badge',
-              pts: 'Earned',
-              hexClass: BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length],
-              locked: false,
-            }))
-          );
-        }
+        setBadges(buildBadgeCards(earnedBadges, badgeDefinitions));
 
         const earnedTags = earnedBadges
           .slice(0, 3)
@@ -513,6 +546,24 @@ export default function HomePage() {
 
     loadAll();
   }, [userId, refreshNotifications]);
+
+  useEffect(() => {
+    if (!userId) return;
+
+    const refreshAllSignals = () => {
+      refreshBadgesAndNotifications();
+    };
+
+    const pollingId = window.setInterval(refreshAllSignals, 30000);
+    window.addEventListener('focus', refreshAllSignals);
+    window.addEventListener('carbon-log-updated', refreshAllSignals);
+
+    return () => {
+      window.clearInterval(pollingId);
+      window.removeEventListener('focus', refreshAllSignals);
+      window.removeEventListener('carbon-log-updated', refreshAllSignals);
+    };
+  }, [refreshBadgesAndNotifications, userId]);
 
   // ── Handlers ──────────────────────────────────────────────────────────────
   const handleLogout = () => {

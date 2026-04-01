@@ -13,6 +13,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
@@ -69,24 +70,54 @@ public class MarketplaceService {
      * @param items Map of product IDs to quantities
      * @param shippingAddress Delivery address
      * @param contactPhone Contact number
-     * @param useEcoPoints Whether to use eco points for payment
+     * @param paymentMethod Payment mode (UPI, CARD, CASH_ON_DELIVERY)
+     * @param ecoPointsUsed Eco points redeemed for discount
+     * @param paymentReference UPI ID / transaction reference
+     * @param notes Additional order notes
      */
     public Order createOrder(Long userId, Map<Long, Integer> items, String shippingAddress, 
-                            String contactPhone, boolean useEcoPoints) {
+                            String contactPhone, String paymentMethod, BigDecimal ecoPointsUsed,
+                            String paymentReference, String notes) {
         Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        if (items == null || items.isEmpty()) {
+            throw new IllegalArgumentException("At least one item is required");
+        }
+        if (isBlank(shippingAddress)) {
+            throw new IllegalArgumentException("Shipping address is required");
+        }
+        if (isBlank(contactPhone)) {
+            throw new IllegalArgumentException("Contact phone is required");
+        }
+        if (!contactPhone.trim().matches("^\\+?[0-9]{10,15}$")) {
+            throw new IllegalArgumentException("Contact phone must be 10 to 15 digits");
+        }
+
+        String normalizedPaymentMethod = isBlank(paymentMethod) ? "UPI" : paymentMethod.trim().toUpperCase();
+        if ("UPI".equals(normalizedPaymentMethod)) {
+            if (isBlank(paymentReference) || !paymentReference.contains("@")) {
+                throw new IllegalArgumentException("Valid UPI ID is required for UPI payment");
+            }
+        }
+
+        BigDecimal requestedEcoPoints = ecoPointsUsed == null ? BigDecimal.ZERO : ecoPointsUsed.max(BigDecimal.ZERO);
+
         User user = userRepository.findById(safeUserId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
         Order order = new Order();
         order.setUser(user);
-        order.setShippingAddress(shippingAddress);
-        order.setContactPhone(contactPhone);
+        order.setShippingAddress(shippingAddress.trim());
+        order.setContactPhone(contactPhone.trim());
         order.setStatus("PENDING");
 
         // Add items to order
         for (Map.Entry<Long, Integer> entry : items.entrySet()) {
             Long productId = entry.getKey();
             Integer quantity = entry.getValue();
+
+            if (quantity == null || quantity <= 0) {
+                throw new IllegalArgumentException("Quantity must be greater than 0 for product: " + productId);
+            }
 
                 Long safeProductId = Objects.requireNonNull(productId, "productId is required");
 
@@ -102,11 +133,8 @@ public class MarketplaceService {
             OrderItem orderItem = new OrderItem();
             orderItem.setProduct(product);
             orderItem.setQuantity(quantity);
-            
-            BigDecimal unitPrice = useEcoPoints && product.getEcoPointsPrice() != null 
-                    ? product.getEcoPointsPrice() 
-                    : product.getPrice();
-            
+                BigDecimal unitPrice = product.getPrice();
+
             orderItem.setUnitPrice(unitPrice);
             orderItem.calculateSubtotal();
             
@@ -121,14 +149,33 @@ public class MarketplaceService {
         order.calculateTotal();
         order.calculateCarbonSaving();
 
-        if (useEcoPoints) {
-            order.setEcoPointsUsed(order.getTotalAmount());
-            order.setPaymentMethod("ECO_POINTS");
-        } else {
-            order.setPaymentMethod("CREDIT_CARD");
-        }
+    BigDecimal rawTotal = order.getTotalAmount() == null ? BigDecimal.ZERO : order.getTotalAmount();
+    BigDecimal discountFromPoints = requestedEcoPoints
+        .divide(new BigDecimal("10"), 2, RoundingMode.DOWN);
+    BigDecimal maxAllowedDiscount = rawTotal.multiply(new BigDecimal("0.50"))
+        .setScale(2, RoundingMode.HALF_UP);
+    BigDecimal appliedDiscount = discountFromPoints.min(maxAllowedDiscount);
+    BigDecimal payableAmount = rawTotal.subtract(appliedDiscount)
+        .max(BigDecimal.ZERO)
+        .setScale(2, RoundingMode.HALF_UP);
+    BigDecimal actualEcoPointsUsed = appliedDiscount
+        .multiply(new BigDecimal("10"))
+        .setScale(2, RoundingMode.HALF_UP);
+
+    order.setTotalAmount(payableAmount);
+    order.setEcoPointsUsed(actualEcoPointsUsed);
+    order.setPaymentMethod(normalizedPaymentMethod);
+    order.setStatus("CONFIRMED");
+    order.setConfirmedAt(LocalDateTime.now());
+    order.setNotes(buildOrderNotes(notes, paymentReference, rawTotal, appliedDiscount, requestedEcoPoints));
 
         order = orderRepository.save(order);
+
+        notificationService.notifyOrderConfirmed(
+            user.getId(),
+            order.getOrderNumber(),
+            order.getId()
+        );
         
         log.info("✅ Created order {} for user {}", order.getOrderNumber(), userId);
         return order;
@@ -156,17 +203,21 @@ public class MarketplaceService {
         Long safeOrderId = Objects.requireNonNull(orderId, "orderId is required");
         Order order = orderRepository.findById(safeOrderId)
                 .orElseThrow(() -> new RuntimeException("Order not found"));
+
+        boolean alreadyConfirmed = "CONFIRMED".equalsIgnoreCase(order.getStatus());
         
         order.setStatus("CONFIRMED");
         order.setConfirmedAt(LocalDateTime.now());
         orderRepository.save(order);
 
         // Notify user
-        notificationService.notifyOrderConfirmed(
+        if (!alreadyConfirmed) {
+            notificationService.notifyOrderConfirmed(
                 order.getUser().getId(),
                 order.getOrderNumber(),
                 order.getId()
-        );
+            );
+        }
         
         log.info("✅ Confirmed order {}", order.getOrderNumber());
     }
@@ -226,5 +277,36 @@ public class MarketplaceService {
         orderRepository.save(order);
         
         log.info("❌ Cancelled order {}", order.getOrderNumber());
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.trim().isEmpty();
+    }
+
+    private String buildOrderNotes(String userNotes,
+                                   String paymentReference,
+                                   BigDecimal rawTotal,
+                                   BigDecimal appliedDiscount,
+                                   BigDecimal requestedEcoPoints) {
+        StringBuilder notesBuilder = new StringBuilder();
+        if (!isBlank(userNotes)) {
+            notesBuilder.append(userNotes.trim());
+        }
+        if (!isBlank(paymentReference)) {
+            if (notesBuilder.length() > 0) {
+                notesBuilder.append(" | ");
+            }
+            notesBuilder.append("PaymentRef=").append(paymentReference.trim());
+        }
+        if (notesBuilder.length() > 0) {
+            notesBuilder.append(" | ");
+        }
+        notesBuilder.append("RawTotal=")
+                .append(rawTotal == null ? BigDecimal.ZERO : rawTotal)
+                .append(", Discount=")
+                .append(appliedDiscount == null ? BigDecimal.ZERO : appliedDiscount)
+                .append(", RequestedEcoPoints=")
+                .append(requestedEcoPoints == null ? BigDecimal.ZERO : requestedEcoPoints);
+        return notesBuilder.toString();
     }
 }

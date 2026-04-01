@@ -1,6 +1,9 @@
 package com.sustainability.tracker.controller;
 
+import com.sustainability.tracker.dto.marketplace.OrderBillDTO;
+import com.sustainability.tracker.dto.marketplace.OrderItemBillDTO;
 import com.sustainability.tracker.entity.Order;
+import com.sustainability.tracker.entity.OrderItem;
 import com.sustainability.tracker.entity.Product;
 import com.sustainability.tracker.service.MarketplaceService;
 import lombok.RequiredArgsConstructor;
@@ -8,6 +11,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -24,94 +29,70 @@ public class MarketplaceController {
 
     private final MarketplaceService marketplaceService;
 
-    /**
-     * Get all active products
-     * GET /api/marketplace/products
-     */
     @GetMapping("/products")
     public ResponseEntity<List<Product>> getAllProducts() {
-        List<Product> products = marketplaceService.getAllProducts();
-        return ResponseEntity.ok(products);
+        return ResponseEntity.ok(marketplaceService.getAllProducts());
     }
 
-    /**
-     * Get products by category
-     * GET /api/marketplace/products/category/{category}
-     */
     @GetMapping("/products/category/{category}")
     public ResponseEntity<List<Product>> getProductsByCategory(@PathVariable String category) {
-        List<Product> products = marketplaceService.getProductsByCategory(category);
-        return ResponseEntity.ok(products);
+        return ResponseEntity.ok(marketplaceService.getProductsByCategory(category));
     }
 
-    /**
-     * Get products in stock
-     * GET /api/marketplace/products/in-stock
-     */
     @GetMapping("/products/in-stock")
     public ResponseEntity<List<Product>> getProductsInStock() {
-        List<Product> products = marketplaceService.getProductsInStock();
-        return ResponseEntity.ok(products);
+        return ResponseEntity.ok(marketplaceService.getProductsInStock());
     }
 
-    /**
-     * Get product by ID
-     * GET /api/marketplace/products/{id}
-     */
     @GetMapping("/products/{id}")
     public ResponseEntity<Product> getProductById(@PathVariable Long id) {
-        Product product = marketplaceService.getProductById(id);
-        return ResponseEntity.ok(product);
+        return ResponseEntity.ok(marketplaceService.getProductById(id));
     }
 
     /**
-     * Create an order
-     * POST /api/marketplace/orders
-     * Request body: { userId, items: { productId: quantity }, shippingAddress, contactPhone, useEcoPoints }
+     * Create an order.
+     * Supports both formats for items:
+     * 1) items: { "1": 2, "3": 1 }
+     * 2) items: [{ "productId": 1, "quantity": 2 }]
      */
     @PostMapping("/orders")
-    public ResponseEntity<Order> createOrder(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<OrderBillDTO> createOrder(@RequestBody Map<String, Object> request) {
         Long userId = Long.valueOf(request.get("userId").toString());
-        
-        @SuppressWarnings("unchecked")
-        Map<String, Integer> itemsRaw = (Map<String, Integer>) request.get("items");
-        Map<Long, Integer> items = new HashMap<>();
-        itemsRaw.forEach((key, value) -> items.put(Long.valueOf(key), value));
-        
-        String shippingAddress = (String) request.get("shippingAddress");
-        String contactPhone = (String) request.get("contactPhone");
-        boolean useEcoPoints = request.containsKey("useEcoPoints") 
-                ? (Boolean) request.get("useEcoPoints") 
-                : false;
+        Map<Long, Integer> items = parseItems(request.get("items"));
 
-        Order order = marketplaceService.createOrder(userId, items, shippingAddress, contactPhone, useEcoPoints);
-        return ResponseEntity.status(HttpStatus.CREATED).body(order);
+        String shippingAddress = asString(request.get("shippingAddress"));
+        String contactPhone = asString(request.get("contactPhone"));
+        String paymentMethod = asString(request.get("paymentMethod"));
+        BigDecimal ecoPointsUsed = asBigDecimal(request.get("ecoPointsUsed"), BigDecimal.ZERO);
+        String paymentReference = asString(request.get("paymentReference"));
+        String notes = asString(request.get("notes"));
+
+        Order order = marketplaceService.createOrder(
+                userId,
+                items,
+                shippingAddress,
+                contactPhone,
+                paymentMethod,
+                ecoPointsUsed,
+                paymentReference,
+                notes
+        );
+
+        return ResponseEntity.status(HttpStatus.CREATED).body(toOrderBillDTO(order));
     }
 
-    /**
-     * Get user orders
-     * GET /api/marketplace/orders/user/{userId}
-     */
     @GetMapping("/orders/user/{userId}")
-    public ResponseEntity<List<Order>> getUserOrders(@PathVariable Long userId) {
+    public ResponseEntity<List<OrderBillDTO>> getUserOrders(@PathVariable Long userId) {
         List<Order> orders = marketplaceService.getUserOrders(userId);
-        return ResponseEntity.ok(orders);
+        List<OrderBillDTO> response = orders.stream().map(this::toOrderBillDTO).toList();
+        return ResponseEntity.ok(response);
     }
 
-    /**
-     * Get order by order number
-     * GET /api/marketplace/orders/{orderNumber}
-     */
     @GetMapping("/orders/{orderNumber}")
-    public ResponseEntity<Order> getOrderByNumber(@PathVariable String orderNumber) {
-        Order order = marketplaceService.getOrderByNumber(orderNumber);
-        return ResponseEntity.ok(order);
+    public ResponseEntity<OrderBillDTO> getOrderByNumber(@PathVariable String orderNumber) {
+        return ResponseEntity.ok(toOrderBillDTO(marketplaceService.getOrderByNumber(orderNumber)));
     }
 
-    /**
-     * Confirm order
-     * PUT /api/marketplace/orders/{id}/confirm
-     */
     @PutMapping("/orders/{id}/confirm")
     public ResponseEntity<Map<String, String>> confirmOrder(@PathVariable Long id) {
         marketplaceService.confirmOrder(id);
@@ -120,10 +101,6 @@ public class MarketplaceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Ship order
-     * PUT /api/marketplace/orders/{id}/ship
-     */
     @PutMapping("/orders/{id}/ship")
     public ResponseEntity<Map<String, String>> shipOrder(@PathVariable Long id) {
         marketplaceService.shipOrder(id);
@@ -132,10 +109,6 @@ public class MarketplaceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Deliver order
-     * PUT /api/marketplace/orders/{id}/deliver
-     */
     @PutMapping("/orders/{id}/deliver")
     public ResponseEntity<Map<String, String>> deliverOrder(@PathVariable Long id) {
         marketplaceService.deliverOrder(id);
@@ -144,15 +117,92 @@ public class MarketplaceController {
         return ResponseEntity.ok(response);
     }
 
-    /**
-     * Cancel order
-     * PUT /api/marketplace/orders/{id}/cancel
-     */
     @PutMapping("/orders/{id}/cancel")
     public ResponseEntity<Map<String, String>> cancelOrder(@PathVariable Long id) {
         marketplaceService.cancelOrder(id);
         Map<String, String> response = new HashMap<>();
         response.put("message", "Order cancelled successfully");
         return ResponseEntity.ok(response);
+    }
+
+    private Map<Long, Integer> parseItems(Object itemsObj) {
+        if (itemsObj == null) {
+            throw new IllegalArgumentException("items are required");
+        }
+
+        Map<Long, Integer> items = new HashMap<>();
+
+        if (itemsObj instanceof Map<?, ?> itemsRaw) {
+            itemsRaw.forEach((key, value) -> {
+                Long productId = Long.valueOf(String.valueOf(key));
+                Integer quantity = Integer.valueOf(String.valueOf(value));
+                items.put(productId, quantity);
+            });
+            return items;
+        }
+
+        if (itemsObj instanceof List<?> itemList) {
+            for (Object itemObj : itemList) {
+                if (!(itemObj instanceof Map<?, ?> itemMap)) {
+                    throw new IllegalArgumentException("invalid item format in items list");
+                }
+                Object productIdObj = itemMap.get("productId");
+                Object quantityObj = itemMap.get("quantity");
+                if (productIdObj == null || quantityObj == null) {
+                    throw new IllegalArgumentException("each item must include productId and quantity");
+                }
+                Long productId = Long.valueOf(String.valueOf(productIdObj));
+                Integer quantity = Integer.valueOf(String.valueOf(quantityObj));
+                items.put(productId, quantity);
+            }
+            return items;
+        }
+
+        throw new IllegalArgumentException("items must be a map or list");
+    }
+
+    private String asString(Object value) {
+        return value == null ? null : String.valueOf(value).trim();
+    }
+
+    private BigDecimal asBigDecimal(Object value, BigDecimal fallback) {
+        if (value == null) {
+            return fallback;
+        }
+        try {
+            return new BigDecimal(String.valueOf(value));
+        } catch (NumberFormatException ex) {
+            return fallback;
+        }
+    }
+
+    private OrderBillDTO toOrderBillDTO(Order order) {
+        List<OrderItemBillDTO> itemDTOs = new ArrayList<>();
+        for (OrderItem item : order.getItems()) {
+            itemDTOs.add(new OrderItemBillDTO(
+                    item.getId(),
+                    item.getProduct().getId(),
+                    item.getProduct().getName(),
+                    item.getQuantity(),
+                    item.getUnitPrice(),
+                    item.getSubtotal()
+            ));
+        }
+
+        return new OrderBillDTO(
+                order.getId(),
+                order.getOrderNumber(),
+                order.getTotalAmount(),
+                order.getEcoPointsUsed(),
+                order.getStatus(),
+                order.getPaymentMethod(),
+                order.getShippingAddress(),
+                order.getContactPhone(),
+                order.getNotes(),
+                order.getCreatedAt(),
+                order.getConfirmedAt(),
+                order.getCancelledAt(),
+                itemDTOs
+        );
     }
 }

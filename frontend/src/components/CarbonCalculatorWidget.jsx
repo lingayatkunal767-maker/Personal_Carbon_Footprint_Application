@@ -1,6 +1,9 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { carbonLogAPI } from '../services/api';
+
+const LATEST_CALCULATION_KEY = 'latest_carbon_calculation';
+const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
 
 function parseLog(log) {
   return {
@@ -9,7 +12,87 @@ function parseLog(log) {
     foodEmission: Number(log.foodEmission || 0),
     energyEmission: Number(log.energyEmission || 0),
     totalEmission: Number(log.totalEmission || 0),
+    updatedAt: log.updatedAt || null,
   };
+}
+
+function parseDateForSort(dateStr) {
+  if (!dateStr) return Number.NEGATIVE_INFINITY;
+  const parsed = new Date(dateStr).getTime();
+  return Number.isNaN(parsed) ? Number.NEGATIVE_INFINITY : parsed;
+}
+
+function readLatestCalculationSnapshot(resolvedUserId) {
+  const raw = localStorage.getItem(LATEST_CALCULATION_KEY);
+  if (!raw) return null;
+
+  try {
+    const parsed = JSON.parse(raw);
+    if (!parsed || Number(parsed.userId) !== Number(resolvedUserId) || !parsed.logDate) {
+      return null;
+    }
+
+    return {
+      logDate: parsed.logDate,
+      transportEmission: Number(parsed.transportEmission || 0),
+      foodEmission: Number(parsed.foodEmission || 0),
+      energyEmission: Number(parsed.energyEmission || 0),
+      totalEmission: Number(parsed.totalEmission || 0),
+      updatedAt: parsed.updatedAt || null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+function withLatestSnapshot(logs, snapshot) {
+  if (!snapshot) return logs;
+
+  const snapshotDate = snapshot.logDate;
+  let merged = logs;
+  const existingIdx = logs.findIndex((item) => item.logDate === snapshotDate);
+
+  if (existingIdx >= 0) {
+    merged = logs.map((item, idx) => (idx === existingIdx ? { ...item, ...snapshot } : item));
+  } else {
+    merged = [snapshot, ...logs];
+  }
+
+  return [...merged].sort((a, b) => {
+    const dateDiff = parseDateForSort(b.logDate) - parseDateForSort(a.logDate);
+    if (dateDiff !== 0) return dateDiff;
+    return parseDateForSort(b.updatedAt) - parseDateForSort(a.updatedAt);
+  });
+}
+
+async function resolveUserId(initialUserId) {
+  if (initialUserId) return Number(initialUserId);
+
+  const stored = localStorage.getItem('current_user');
+  if (!stored) return null;
+
+  try {
+    const session = JSON.parse(stored);
+    if (session?.id) {
+      return Number(session.id);
+    }
+
+    if (session?.email) {
+      const response = await fetch(`${API_BASE}/users/email/${encodeURIComponent(session.email)}`);
+      if (!response.ok) return null;
+
+      const user = await response.json();
+      if (!user?.id) return null;
+
+      const merged = { ...session, id: user.id };
+      localStorage.setItem('current_user', JSON.stringify(merged));
+      return Number(user.id);
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 function formatKg(value) {
@@ -37,18 +120,8 @@ const CarbonCalculatorWidget = ({ userId }) => {
   const [rowActionBusy, setRowActionBusy] = useState(false);
   const [showAllHistory, setShowAllHistory] = useState(false);
 
-  const loadLogs = async () => {
-    const stored = localStorage.getItem('current_user');
-    let resolvedUserId = userId;
-
-    if (!resolvedUserId && stored) {
-      try {
-        const session = JSON.parse(stored);
-        resolvedUserId = session?.id || null;
-      } catch {
-        resolvedUserId = null;
-      }
-    }
+  const loadLogs = useCallback(async () => {
+    const resolvedUserId = await resolveUserId(userId);
 
     if (!resolvedUserId) {
       setActiveUserId(null);
@@ -63,18 +136,51 @@ const CarbonCalculatorWidget = ({ userId }) => {
     try {
       const response = await carbonLogAPI.getCarbonLogs(resolvedUserId);
       const mapped = Array.isArray(response) ? response.map(parseLog) : [];
-      mapped.sort((a, b) => b.logDate.localeCompare(a.logDate));
-      setLogs(mapped);
+      const snapshot = readLatestCalculationSnapshot(resolvedUserId);
+      setLogs(withLatestSnapshot(mapped, snapshot));
     } catch (err) {
       setError(err.message || 'Unable to load saved footprint history.');
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
 
   useEffect(() => {
     loadLogs();
-  }, [userId]);
+  }, [loadLogs]);
+
+  useEffect(() => {
+    const handleFocusRefresh = () => {
+      loadLogs();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        loadLogs();
+      }
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === 'current_user' || event.key === LATEST_CALCULATION_KEY) {
+        loadLogs();
+      }
+    };
+
+    window.addEventListener('focus', handleFocusRefresh);
+    window.addEventListener('storage', handleStorage);
+    window.addEventListener('carbon-log-updated', handleFocusRefresh);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    const refreshTimer = window.setInterval(loadLogs, 30000);
+
+    return () => {
+      window.removeEventListener('focus', handleFocusRefresh);
+      window.removeEventListener('storage', handleStorage);
+      window.removeEventListener('carbon-log-updated', handleFocusRefresh);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.clearInterval(refreshTimer);
+    };
+  }, [loadLogs]);
 
   const handleStartEdit = (log) => {
     setEditingDate(log.logDate);

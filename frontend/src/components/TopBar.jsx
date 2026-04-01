@@ -18,6 +18,9 @@ const TopBar = ({ onLogout, onOpenModal, onOpenNotifications, unreadCount }) => 
         <button className="btn-icon" onClick={onOpenNotifications} title="Notifications">
           🔔{unreadCount > 0 && <span className="notif-dot"></span>}
         </button>
+        <button className="btn-history" onClick={() => navigate('/marketplace')} title="Eco Marketplace" style={{ marginLeft: '10px' }}>
+          🛒 Marketplace
+        </button>
         <button className="btn-history" onClick={() => navigate('/history')} title="Open Carbon History">
           📜 Carbon History
         </button>

@@ -84,6 +84,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
   display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;
   padding:1.4rem 2rem 2rem;max-width:1200px;margin:0 auto;
 }
+.grid > *{align-self:start}
 .dashboard-page{position:relative;min-height:100vh}
 .dashboard-stack{display:flex;flex-direction:column;gap:1.2rem}
 .dashboard-loading{display:flex;align-items:center;justify-content:center;height:100vh;flex-direction:column;gap:1rem}
@@ -100,6 +101,27 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .card-empty span{font-size:1.15rem}
 .card-empty p{font-weight:700;color:var(--g-dark);font-size:.82rem}
 .card-empty small{font-size:.7rem;color:var(--muted);line-height:1.4}
+
+@media(min-width:1024px){
+  .grid > .breakdown-card,
+  .grid > .recent-activity-card{align-self:stretch;height:340px}
+
+  .grid > .monthly-card,
+  .grid > .tips-card{align-self:stretch;height:430px}
+
+  .breakdown-card,
+  .recent-activity-card,
+  .monthly-card,
+  .tips-card{display:flex;flex-direction:column}
+
+  .breakdown-card .donut-wrap,
+  .monthly-card .compare-wrap,
+  .recent-activity-card .activity-list,
+  .tips-card .tips-list{flex:1;min-height:0}
+
+  .recent-activity-card .activity-list,
+  .tips-card .tips-list{overflow-y:auto;padding-right:.2rem}
+}
 
 /* ── PROFILE ── */
 .profile{display:flex;align-items:center;gap:1rem}
@@ -202,7 +224,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .l-val{font-size:.78rem;font-weight:700;color:var(--muted)}
 
 /* ── MONTHLY COMPARE ── */
-.compare-wrap{position:relative;height:185px}
+.compare-wrap{position:relative;height:220px}
 
 /* ── CARBON CALCULATOR ── */
 .carbon-calc-card{background:linear-gradient(140deg,#f1fbf2 0%,#e4f3e7 100%);border:1.5px solid #cae6d0}
@@ -312,6 +334,40 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .notif-item.read{opacity:.72;filter:saturate(.85)}
 .notif-item p{font-size:.82rem;font-weight:500}
 .notif-item small{font-size:.7rem;color:var(--muted)}
+
+@media(min-width:1600px){
+  .topbar{height:72px;padding:0 2.5rem}
+  .logo-text{font-size:1.34rem}
+  .btn-primary,.btn-history,.btn-survey{font-size:.92rem;padding:.58rem 1.2rem}
+
+  .hero{padding:2.4rem 2.6rem 5rem}
+  .hero h1{font-size:2.55rem}
+  .hero p{font-size:1.04rem;margin-top:.35rem}
+
+  .stat-row{max-width:1560px;margin-left:auto;margin-right:auto;padding:0 2.6rem;margin-top:-2.55rem;gap:1.2rem}
+  .stat-card{padding:1.3rem 1.4rem}
+  .stat-val{font-size:1.5rem}
+  .stat-lbl,.stat-change{font-size:.8rem}
+
+  .grid{max-width:1560px;gap:1.55rem;padding:2rem 2.6rem 2.7rem}
+  .card{padding:1.6rem 1.75rem;border-radius:16px}
+  .card-title{font-size:1.05rem;margin-bottom:1.2rem}
+
+  .grid > .breakdown-card,
+  .grid > .recent-activity-card{height:380px}
+
+  .grid > .monthly-card,
+  .grid > .tips-card{height:500px}
+
+  .chart-wrap{height:205px}
+  .donut-canvas-wrap{width:160px;height:160px}
+  .dc-val{font-size:1.42rem}
+  .dc-lbl{font-size:.72rem}
+  .legend-row{gap:.7rem}
+  .l-label,.l-val{font-size:.86rem}
+
+  .compare-wrap{height:280px}
+}
 
 /* ── SCROLLBAR ── */
 ::-webkit-scrollbar{width:5px}

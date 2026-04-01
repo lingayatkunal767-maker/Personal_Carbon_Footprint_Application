@@ -276,12 +276,30 @@
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 10px;
+  min-height: 390px;
 }
 
 .admin-chart-box h3 {
   margin: 0 0 8px;
   font-size: 0.84rem;
   color: var(--g-dark);
+}
+
+.admin-chart-canvas {
+  position: relative;
+  width: 100%;
+}
+
+.admin-chart-canvas-pie {
+  height: 320px;
+}
+
+.admin-chart-canvas-line {
+  height: 320px;
+}
+
+.admin-chart-canvas-bar {
+  height: 290px;
 }
 
 .admin-empty {
@@ -331,6 +349,98 @@
   z-index: 999;
 }
 
+@media (min-width: 1600px) {
+  .admin-topbar {
+    height: 72px;
+    padding: 0 34px;
+  }
+
+  .admin-logo {
+    font-size: 1.08rem;
+  }
+
+  .admin-layout {
+    max-width: 1600px;
+    padding: 26px 36px 44px;
+  }
+
+  .admin-hero {
+    border-radius: 22px;
+    padding: 30px;
+  }
+
+  .admin-hero h1 {
+    font-size: 1.82rem;
+  }
+
+  .admin-hero p {
+    font-size: 1rem;
+    margin-top: 10px;
+  }
+
+  .admin-kpis {
+    gap: 14px;
+    margin-top: 18px;
+  }
+
+  .admin-kpi {
+    padding: 14px 16px;
+  }
+
+  .admin-kpi strong {
+    font-size: 1.32rem;
+  }
+
+  .admin-kpi span {
+    font-size: 0.86rem;
+  }
+
+  .admin-card {
+    margin-top: 16px;
+    border-radius: 16px;
+    padding: 20px;
+  }
+
+  .admin-card h2 {
+    font-size: 1.22rem;
+    margin-bottom: 10px;
+  }
+
+  .admin-card-desc {
+    font-size: 0.94rem;
+    margin-bottom: 14px;
+  }
+
+  .admin-chart-grid {
+    gap: 18px;
+  }
+
+  .admin-chart-box {
+    border-radius: 14px;
+    padding: 16px;
+    min-height: 500px;
+  }
+
+  .admin-chart-box h3 {
+    font-size: 1.02rem;
+    margin-bottom: 12px;
+  }
+
+  .admin-chart-canvas-pie,
+  .admin-chart-canvas-line {
+    height: 420px;
+  }
+
+  .admin-chart-canvas-bar {
+    height: 360px;
+  }
+
+  .admin-empty {
+    font-size: 0.94rem;
+    padding: 24px;
+  }
+}
+
 @media (max-width: 960px) {
   .admin-kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -348,5 +458,15 @@
 
   .admin-topbar {
     padding: 0 14px;
+  }
+
+  .admin-chart-box {
+    min-height: auto;
+  }
+
+  .admin-chart-canvas-pie,
+  .admin-chart-canvas-line,
+  .admin-chart-canvas-bar {
+    height: 260px;
   }
 }

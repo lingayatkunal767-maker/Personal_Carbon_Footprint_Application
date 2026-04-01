@@ -282,6 +282,20 @@ export const adminAPI = {
   }),
 };
 
+
+// Marketplace APIs
+export const marketplaceAPI = {
+  getProducts: async () => fetchAPI('/marketplace/products'),
+  getProductsByCategory: async (category) => fetchAPI(`/marketplace/products/category/${category}`),
+  createOrder: async (orderData) => fetchAPI('/marketplace/orders', {
+    method: 'POST',
+    body: JSON.stringify(orderData),
+  }),
+  getUserOrders: async (userId) => fetchAPI(`/marketplace/orders/user/${userId}`),
+  cancelOrder: async (orderId) => fetchAPI(`/marketplace/orders/${orderId}/cancel`, { method: 'PUT' }),
+};
+
+
 // Export all as a single object (alternative usage)
 export const api = {
   user: userAPI,
@@ -295,7 +309,11 @@ export const api = {
   dashboard: dashboardAPI,
   auth: authAPI,
   admin: adminAPI,
+  marketplace: marketplaceAPI,
 };
 
 // Default export
 export default api;
+
+
+

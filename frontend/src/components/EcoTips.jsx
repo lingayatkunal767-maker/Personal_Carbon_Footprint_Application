@@ -4,7 +4,7 @@ const EcoTips = ({ tips = [], onRefresh, meta }) => {
   const safeTips = Array.isArray(tips) ? tips : [];
 
   return (
-    <div className="card">
+    <div className="card tips-card">
       <div className="card-title">
         💡 Eco Tips For You
         <button className="card-action" onClick={onRefresh}>Refresh ↻</button>

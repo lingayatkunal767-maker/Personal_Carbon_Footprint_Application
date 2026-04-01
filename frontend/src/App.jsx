@@ -6,6 +6,8 @@ import HomePage from './pages/HomePage';
 import SurveyPage from './pages/SurveyPage';
 import AuthCallback from './pages/AuthCallback';
 import CarbonHistoryPage from './pages/CarbonHistoryPage';
+import MarketplacePage from './pages/MarketplacePage';
+import PurchaseHistoryPage from './pages/PurchaseHistoryPage';
 import AdminLoginPage from './pages/AdminLoginPage';
 import AdminSignUpPage from './pages/AdminSignUpPage';
 import AdminHomePage from './pages/AdminHomePage';
@@ -109,7 +111,27 @@ function App() {
         
         {/* Lifestyle Survey page */}
         <Route path="/survey" element={<SurveyPage />} />
-        
+
+        {/* Marketplace page */}
+        <Route
+          path="/marketplace"
+          element={
+            <ProtectedRoute requiredRole={USER_ROLE}>
+              <MarketplacePage />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* Purchase History page */}
+        <Route
+          path="/purchase-history"
+          element={
+            <ProtectedRoute requiredRole={USER_ROLE}>
+              <PurchaseHistoryPage />
+            </ProtectedRoute>
+          }
+        />
+
         {/* OAuth callback handler */}
         <Route path="/auth/callback" element={<AuthCallback />} />
         

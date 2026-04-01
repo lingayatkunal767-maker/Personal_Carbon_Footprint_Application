@@ -192,6 +192,9 @@ export default function AdminHomePage() {
     };
   }, [analytics]);
 
+  const isLargeViewport = typeof window !== 'undefined'
+    && window.matchMedia('(min-width: 1600px)').matches;
+
   const handleUserStatus = async (userId, active) => {
     try {
       const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
@@ -683,7 +686,27 @@ export default function AdminHomePage() {
         <div className="admin-chart-box">
           <h3>Category-wise Breakdown</h3>
           {(analytics?.categoryBreakdown || []).length ? (
-            <Pie data={chartBreakdown} />
+            <div className="admin-chart-canvas admin-chart-canvas-pie">
+              <Pie
+                data={chartBreakdown}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: {
+                    legend: {
+                      position: 'top',
+                      labels: {
+                        boxWidth: isLargeViewport ? 18 : 14,
+                        padding: isLargeViewport ? 18 : 14,
+                        font: {
+                          size: isLargeViewport ? 14 : 11,
+                        },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
           ) : (
             <div className="admin-empty">No breakdown data</div>
           )}
@@ -692,14 +715,37 @@ export default function AdminHomePage() {
         <div className="admin-chart-box">
           <h3>Monthly Carbon Trend</h3>
           {(analytics?.monthlyTrend || []).length ? (
-            <Line
-              data={chartTrend}
-              options={{
-                responsive: true,
-                plugins: { legend: { display: false } },
-                scales: { y: { beginAtZero: true } },
-              }}
-            />
+            <div className="admin-chart-canvas admin-chart-canvas-line">
+              <Line
+                data={chartTrend}
+                options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  elements: {
+                    line: { tension: 0.35, borderWidth: 3 },
+                    point: {
+                      radius: isLargeViewport ? 4 : 3,
+                      hoverRadius: isLargeViewport ? 6 : 5,
+                    },
+                  },
+                  scales: {
+                    x: {
+                      grid: { display: false },
+                      ticks: {
+                        font: { size: isLargeViewport ? 13 : 11 },
+                      },
+                    },
+                    y: {
+                      beginAtZero: true,
+                      ticks: {
+                        font: { size: isLargeViewport ? 13 : 11 },
+                      },
+                    },
+                  },
+                }}
+              />
+            </div>
           ) : (
             <div className="admin-empty">No trend data</div>
           )}
@@ -708,24 +754,45 @@ export default function AdminHomePage() {
 
       <div className="admin-card" style={{ marginTop: 10 }}>
         <h2>Platform Metrics</h2>
-        <Bar
-          data={{
-            labels: ['Users', 'Active Users', 'Surveys', 'Carbon Logs'],
-            datasets: [
-              {
-                label: 'Count',
-                data: [
-                  Number(analytics?.totalUsers || 0),
-                  Number(analytics?.activeUsers || 0),
-                  Number(analytics?.totalSurveys || 0),
-                  Number(analytics?.totalCarbonLogs || 0),
-                ],
-                backgroundColor: ['#2d7a4f', '#5aaa72', '#e8a624', '#4a90d9'],
+        <div className="admin-chart-canvas admin-chart-canvas-bar">
+          <Bar
+            data={{
+              labels: ['Users', 'Active Users', 'Surveys', 'Carbon Logs'],
+              datasets: [
+                {
+                  label: 'Count',
+                  data: [
+                    Number(analytics?.totalUsers || 0),
+                    Number(analytics?.activeUsers || 0),
+                    Number(analytics?.totalSurveys || 0),
+                    Number(analytics?.totalCarbonLogs || 0),
+                  ],
+                  backgroundColor: ['#2d7a4f', '#5aaa72', '#e8a624', '#4a90d9'],
+                  borderRadius: 8,
+                  maxBarThickness: isLargeViewport ? 72 : 58,
+                },
+              ],
+            }}
+            options={{
+              responsive: true,
+              maintainAspectRatio: false,
+              plugins: { legend: { display: false } },
+              scales: {
+                x: {
+                  grid: { display: false },
+                  ticks: { font: { size: isLargeViewport ? 13 : 11 } },
+                },
+                y: {
+                  beginAtZero: true,
+                  ticks: {
+                    precision: 0,
+                    font: { size: isLargeViewport ? 13 : 11 },
+                  },
+                },
               },
-            ],
-          }}
-          options={{ responsive: true, plugins: { legend: { display: false } } }}
-        />
+            }}
+          />
+        </div>
       </div>
     </section>
   );

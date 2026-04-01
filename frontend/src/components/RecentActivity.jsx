@@ -5,7 +5,7 @@ const RecentActivity = ({ activities, onRemove }) => {
   const visibleActivities = showAll ? activities : activities.slice(0, 5);
 
   return (
-    <div className="card">
+    <div className="card recent-activity-card">
       <div className="card-title">
         Recent Activity
         <button className="card-action" onClick={() => setShowAll((prev) => !prev)}>
