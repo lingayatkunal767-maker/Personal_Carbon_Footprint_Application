@@ -13,6 +13,8 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.model.MarketplaceItem;
+import java.math.BigDecimal;
+
 @Service
 @RequiredArgsConstructor
 public class TransactionService {
@@ -24,26 +26,33 @@ public class TransactionService {
 
     // USER: Purchase item
     @Transactional
-    public Transaction purchaseItem(TransactionRequestDTO dto) {
-        User user = userRepository.findById(dto.getUserId())
-            .orElseThrow(() -> new RuntimeException("User not found"));
+public Transaction purchaseItem(TransactionRequestDTO dto) {
+    User user = userRepository.findById(dto.getUserId())
+        .orElseThrow(() -> new RuntimeException("User not found"));
 
-        MarketplaceItem item = marketplaceRepository.findById(dto.getMarketplaceItemId())
-            .orElseThrow(() -> new RuntimeException("Item not found"));
+    MarketplaceItem item = marketplaceRepository.findById(dto.getMarketplaceItemId())
+        .orElseThrow(() -> new RuntimeException("Item not found"));
 
-        Transaction transaction = new Transaction();
-        transaction.setUser(user);
-        transaction.setMarketplaceItem(item);
-        transaction.setAmount(item.getPrice());
-        transaction.setStatus("SUCCESS");
+    Transaction transaction = new Transaction();
+    transaction.setUser(user);
+    transaction.setMarketplaceItem(item);
 
-        Transaction saved = transactionRepository.save(transaction);
+    // ✅ FIX STARTS HERE
+    transaction.setAmount(item.getPrice());
+if (item.getCarbonOffsetValue() == null) {
+    throw new RuntimeException("Carbon offset value is null in DB");
+}
+transaction.setCarbonOffset(item.getCarbonOffsetValue());    // ✅ FIX ENDS HERE
 
-        // Trigger purchase notification automatically
-        notificationService.createPurchaseNotification(user, item);
+    transaction.setStatus("SUCCESS");
 
-        return saved;
-    }
+    Transaction saved = transactionRepository.save(transaction);
+
+    // Trigger purchase notification
+    notificationService.createPurchaseNotification(user, item);
+
+    return saved;
+}
 
     // USER: Get transaction history
     public List<TransactionResponseDTO> getUserTransactions(Long userId) {
