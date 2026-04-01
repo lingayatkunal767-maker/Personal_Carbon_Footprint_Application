@@ -9,6 +9,22 @@ function OAuth2RedirectHandler() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const token = params.get("token");
+    const error = params.get("error");
+    const maintenanceStart = params.get("maintenanceStart");
+    const maintenanceEnd = params.get("maintenanceEnd");
+
+    if (error === "maintenance") {
+      const qp = new URLSearchParams({ maintenance: "1" });
+      if (maintenanceStart) qp.set("maintenanceStart", maintenanceStart);
+      if (maintenanceEnd) qp.set("maintenanceEnd", maintenanceEnd);
+      navigate(`/login?${qp.toString()}`);
+      return;
+    }
+
+    if (error === "blocked") {
+      navigate("/login?blocked=1");
+      return;
+    }
 
     if (token) {
       localStorage.setItem("token", token);

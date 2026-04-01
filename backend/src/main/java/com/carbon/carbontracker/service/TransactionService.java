@@ -51,7 +51,10 @@ public class TransactionService {
             .map(t -> new TransactionResponseDTO(
                 t.getId(),
                 t.getMarketplaceItem().getItemName(),
+                t.getMarketplaceItem().getItemType(),
+                1,
                 t.getAmount(),
+                t.getMarketplaceItem().getCarbonOffsetValue(),
                 t.getStatus(),
                 t.getCreatedAt()
             )).collect(Collectors.toList());

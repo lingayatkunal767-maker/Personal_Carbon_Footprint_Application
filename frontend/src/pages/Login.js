@@ -1,18 +1,34 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { useNavigate, Link, useLocation } from "react-router-dom";
 import axios from "axios";
 import MarketingHeader from "../components/MarketingHeader";
 import "./Auth.css";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
+function buildMaintenanceMessage(start, end) {
+  const s = (start || "").trim();
+  const e = (end || "").trim();
+  if (!s && !e) {
+    return "The application is currently in maintenance mode. Please try again later.";
+  }
+  return `The application is currently in maintenance mode (${s || "now"} to ${
+    e || "until further notice"
+  }). Please try again later.`;
+}
+
 function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({ email: "", password: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [oauthEnabled, setOauthEnabled] = useState({ google: true, github: true });
   const [notification, setNotification] = useState({ type: "", message: "" });
   const navigate = useNavigate();
+  const location = useLocation();
+  const isMaintenanceNotification =
+    notification.message &&
+    notification.message.toLowerCase().includes("maintenance mode");
 
   useEffect(() => {
     axios
@@ -26,6 +42,26 @@ function Login() {
         setOauthEnabled({ google: true, github: true });
       });
   }, []);
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get("maintenance") === "1") {
+      const start = params.get("maintenanceStart") || "";
+      const end = params.get("maintenanceEnd") || "";
+      setNotification({
+        type: "error",
+        message: buildMaintenanceMessage(start, end),
+      });
+      return;
+    }
+
+    if (params.get("blocked") === "1") {
+      setNotification({
+        type: "error",
+        message: "Your account has been blocked. Please contact support.",
+      });
+    }
+  }, [location.search]);
 
   const handleGoogleLogin = () => {
     localStorage.removeItem("token");
@@ -42,25 +78,60 @@ function Login() {
     // Always hide the password again when submitting the form
     setShowPassword(false);
     setNotification({ type: "", message: "" });
+    setErrors({ email: "", password: "" });
+
+    const trimmedEmail = (email || "").trim();
+    if (!trimmedEmail) {
+      setErrors((prev) => ({ ...prev, email: "Please enter your email address." }));
+      return;
+    }
+    if (!password) {
+      setErrors((prev) => ({ ...prev, password: "Please enter your password." }));
+      return;
+    }
+
     try {
       const response = await axios.post(`${API_BASE}/api/auth/login`, {
-        email,
+        email: trimmedEmail,
         password,
       });
       const token = response.data.token;
-const role = response.data.role;
+      const role = response.data.role;
 
-localStorage.setItem("token", token);
+      localStorage.setItem("token", token);
 
-setNotification({ type: "success", message: "Login successful. Redirecting..." });
+      // Extra guard: during maintenance, block non-admin even after successful auth.
+      if (role !== "ADMIN") {
+        try {
+          const settingsRes = await axios.get(`${API_BASE}/api/admin/settings`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          const maintenanceMode = Boolean(settingsRes?.data?.maintenanceMode);
+          if (maintenanceMode) {
+            localStorage.removeItem("token");
+            setNotification({
+              type: "error",
+              message: buildMaintenanceMessage(
+                settingsRes?.data?.maintenanceStart,
+                settingsRes?.data?.maintenanceEnd
+              ),
+            });
+            return;
+          }
+        } catch {
+          // If settings check fails, continue with normal login flow.
+        }
+      }
 
-setTimeout(() => {
-  if (role === "ADMIN") {
-    navigate("/admindashboard");
-  } else {
-    navigate("/dashboard");
-  }
-}, 800);
+      setNotification({ type: "success", message: "Login successful. Redirecting..." });
+
+      setTimeout(() => {
+        if (role === "ADMIN") {
+          navigate("/admindashboard");
+        } else {
+          navigate("/dashboard");
+        }
+      }, 800);
     } catch (err) {
       setNotification({ type: "error", message: err.response?.data || "Invalid email or password." });
     }
@@ -94,27 +165,41 @@ setTimeout(() => {
         <h2>Login to Your Account</h2>
 
         {notification.message && (
-          <div className={`notification ${notification.type}`}>{notification.message}</div>
+          <div className={`notification ${isMaintenanceNotification ? "maintenance" : notification.type}`}>
+            {notification.message}
+          </div>
         )}
 
         <form onSubmit={handleLogin}>
           <label>Email Address</label>
           <input
             type="email"
+            className={errors.email ? "input-error" : ""}
             placeholder="Enter email"
             value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
+            onChange={(e) => {
+              setEmail(e.target.value);
+              if (errors.email) setErrors((prev) => ({ ...prev, email: "" }));
+            }}
           />
+          {errors.email && (
+            <p className="form-error form-error--friendly" role="alert">
+              <span className="form-error-icon" aria-hidden>!</span>
+              <span>{errors.email}</span>
+            </p>
+          )}
 
           <label>Password</label>
           <div className="password-field">
             <input
               type={showPassword ? "text" : "password"}
+              className={errors.password ? "input-error" : ""}
               placeholder="Password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              onChange={(e) => {
+                setPassword(e.target.value);
+                if (errors.password) setErrors((prev) => ({ ...prev, password: "" }));
+              }}
             />
             <button
               type="button"
@@ -135,6 +220,12 @@ setTimeout(() => {
               )}
             </button>
           </div>
+          {errors.password && (
+            <p className="form-error form-error--friendly" role="alert">
+              <span className="form-error-icon" aria-hidden>!</span>
+              <span>{errors.password}</span>
+            </p>
+          )}
 
           <div className="forgot">
             <Link to="/forgot-password">Forgot Password?</Link>
@@ -197,9 +288,6 @@ setTimeout(() => {
         </div>
       </div>
       <footer className="auth-footer" style={{ textAlign: "center", padding: "1.5rem", color: "#666", fontSize: "0.875rem", marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-        <p style={{ fontWeight: 600, color: "#2e7d32", margin: 0, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-          <span aria-hidden>🌿</span> CarbonCalc
-        </p>
         <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} CarbonCalc. All rights reserved.</p>
       </footer>
     </div>

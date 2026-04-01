@@ -4,7 +4,9 @@ import com.carbon.carbontracker.model.Notification;
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.model.MarketplaceItem;
 import com.carbon.carbontracker.repository.NotificationRepository;
+import com.carbon.carbontracker.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import java.util.List;
 @Service
@@ -12,10 +14,27 @@ import java.util.List;
 public class NotificationService {
 
     private final NotificationRepository notificationRepository;
+    private final UserRepository userRepository;
+
+    private String getCurrentActor() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                return email;
+            }
+            return user.getName() != null && !user.getName().isBlank() ? user.getName() : user.getEmail();
+        } catch (Exception ex) {
+            return "System";
+        }
+    }
 
     // USER: Get user notifications
     public List<Notification> getUserNotifications(Long userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return notificationRepository.findByUserIdOrUserIsNullOrderByCreatedAtDesc(userId)
+                .stream()
+                .filter(n -> n.getHiddenForUser() == null || !n.getHiddenForUser())
+                .toList();
     }
 
     // USER: Mark as read
@@ -26,8 +45,18 @@ public class NotificationService {
         return notificationRepository.save(notification);
     }
 
-    // ADMIN: Create notification (targeted or broadcast)
-    public Notification createNotification(Long userId, String title, String message, String type) {
+    // USER: Dismiss/hide in UI without deleting (admin still sees it)
+    public Notification hideForUser(Long notificationId) {
+        Notification notification = notificationRepository.findById(notificationId)
+            .orElseThrow(() -> new RuntimeException("Notification not found"));
+        notification.setHiddenForUser(true);
+        return notificationRepository.save(notification);
+    }
+
+    // ADMIN: Create notification (targeted or broadcast).
+    // If userId is null, a single global/broadcast notification is created (user field null),
+    // which is then visible to all users via getUserNotifications (includes userId OR null).
+    public Notification createNotification(Long userId, String title, String message, String type, String clientIp) {
         Notification notification = new Notification();
         if (userId != null) {
             User user = new User();
@@ -37,16 +66,30 @@ public class NotificationService {
         notification.setTitle(title);
         notification.setMessage(message);
         notification.setType(type);
+        notification.setAdminName(getCurrentActor());
+        notification.setIpAddress(clientIp != null ? clientIp : "N/A");
         return notificationRepository.save(notification);
     }
 
+    /** System/user-triggered notifications (no HTTP client IP). */
+    public Notification createNotification(Long userId, String title, String message, String type) {
+        return createNotification(userId, title, message, type, null);
+    }
+
     // ADMIN: Edit notification
-    public Notification updateNotification(Long id, String title, String message) {
+    public Notification updateNotification(Long id, String title, String message, String clientIp) {
         Notification notification = notificationRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Notification not found"));
         notification.setTitle(title);
         notification.setMessage(message);
+        notification.setAdminName(getCurrentActor());
+        notification.setIpAddress(clientIp != null ? clientIp : "N/A");
         return notificationRepository.save(notification);
+    }
+
+    public Notification getNotificationById(Long id) {
+        return notificationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Notification not found"));
     }
 
     // ADMIN: Delete notification
@@ -62,10 +105,9 @@ public class NotificationService {
     // --- Integration / Auto-trigger Methods ---
 
     public void createPurchaseNotification(User user, MarketplaceItem item) {
-        createNotification(user.getId(),
-            "Purchase Successful 🛒",
-            "You purchased " + item.getItemName() + " for ₹" + item.getPrice() + ". Thank you for supporting sustainability!",
-            "PURCHASE");
+        String title = "Marketplace purchase completed 🛒";
+        String message = "You purchased \"" + item.getItemName() + "\" for ₹" + item.getPrice() + ".";
+        createNotification(user.getId(), title, message, "PURCHASE");
     }
 
     public void createGoalCompletionNotification(User user, String goalName) {

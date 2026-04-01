@@ -8,6 +8,14 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
 const RANK_ICONS = ["🥇", "🥈", "🥉"];
 
+function getWeekStartOffset(offsetWeeks = 0) {
+  const d = new Date();
+  const day = d.getDay(); // 0=Sun..6=Sat
+  const diffToMonday = (day + 6) % 7;
+  d.setDate(d.getDate() - diffToMonday + offsetWeeks * 7);
+  return d.toISOString().slice(0, 10);
+}
+
 function Leaderboard() {
   const navigate = useNavigate();
   const [entries, setEntries]           = useState([]);
@@ -16,6 +24,7 @@ function Leaderboard() {
 
   const [currentUserId, setCurrentUserId] = useState(null);
   const [search, setSearch]             = useState("");
+  const [boardFilter, setBoardFilter] = useState("live"); // live | last-week
 
   const fetchData = useCallback((isRefresh = false) => {
     const token = localStorage.getItem("token");
@@ -30,11 +39,29 @@ function Leaderboard() {
       .then((res) => setCurrentUserId(res.data?.id || null))
       .catch(() => {});
 
-    // Fetch leaderboard
+    // Fetch leaderboard (live or weekly snapshot)
+    const leaderboardUrl =
+      boardFilter === "live"
+        ? `${API_BASE}/api/leaderboard`
+        : `${API_BASE}/api/leaderboard/weekly?weekStart=${encodeURIComponent(
+            getWeekStartOffset(-1)
+          )}`;
     axios
-      .get(`${API_BASE}/api/leaderboard`, { headers: { Authorization: `Bearer ${token}` } })
+      .get(leaderboardUrl, { headers: { Authorization: `Bearer ${token}` } })
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
+        // Live fallback: if live is empty, show current weekly leaderboard.
+        if (boardFilter === "live" && data.length === 0) {
+          return axios
+            .get(`${API_BASE}/api/leaderboard/weekly?weekStart=${encodeURIComponent(getWeekStartOffset(0))}`, {
+              headers: { Authorization: `Bearer ${token}` },
+            })
+            .then((wRes) => (Array.isArray(wRes.data) ? wRes.data : []));
+        }
+        return data;
+      })
+      .then((finalData) => {
+        const data = Array.isArray(finalData) ? finalData : [];
         const mapped = data.map((e, idx) => ({
           id:       e.userId   || e.user?.id   || idx,
           // backend sends `userName` (capital N) — support all variants
@@ -51,7 +78,7 @@ function Leaderboard() {
         setLoading(false);
         setRefreshing(false);
       });
-  }, [navigate]);
+  }, [navigate, boardFilter]);
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
@@ -94,6 +121,9 @@ function Leaderboard() {
             <p className="lb-subtitle">
               See how you rank against other eco-conscious users.
             </p>
+            <p style={{ marginTop: 6, fontSize: 12, color: "var(--color-text-muted)" }}>
+              View: {boardFilter === "live" ? "Live Leaderboard" : "Last Week Leaderboard"}
+            </p>
             {myRank > 0 && (
               <p style={{ marginTop: 6, fontSize: 13, color: "var(--color-primary)", fontWeight: 700 }}>
                 🎯 Your rank: #{myRank}
@@ -113,6 +143,15 @@ function Leaderboard() {
             >
               {refreshing ? "⟳ Refreshing…" : "⟳ Refresh"}
             </button>
+            <select
+              className="lb-search-input"
+              style={{ minWidth: 170 }}
+              value={boardFilter}
+              onChange={(e) => setBoardFilter(e.target.value)}
+            >
+              <option value="live">Live leaderboard</option>
+              <option value="last-week">Last week</option>
+            </select>
           </div>
         </div>
 

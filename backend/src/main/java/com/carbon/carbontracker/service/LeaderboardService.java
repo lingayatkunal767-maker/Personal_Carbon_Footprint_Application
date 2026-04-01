@@ -4,16 +4,20 @@ import com.carbon.carbontracker.dto.LeaderboardEntryResponse;
 import com.carbon.carbontracker.model.Goal;
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.model.CarbonLog;
+import com.carbon.carbontracker.model.WeeklyLeaderboard;
 import com.carbon.carbontracker.repository.BadgeRepository;
 import com.carbon.carbontracker.repository.GoalRepository;
 import com.carbon.carbontracker.repository.UserRepository;
 import com.carbon.carbontracker.repository.CarbonLogRepository;
+import com.carbon.carbontracker.repository.WeeklyLeaderboardRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.util.Comparator;
 import java.util.List;
+import java.util.ArrayList;
 import java.util.stream.Collectors;
 
 @Service
@@ -33,6 +37,9 @@ public class LeaderboardService {
 
     @Autowired
     private CarbonLogRepository carbonLogRepository;
+
+    @Autowired
+    private WeeklyLeaderboardRepository weeklyLeaderboardRepository;
 
     /**
      * Build a simple global leaderboard from existing data.
@@ -90,7 +97,78 @@ public class LeaderboardService {
             badgeRuleService.onLeaderboardPosition(e.getUserId(), rank, total);
         }
 
+        // Do not break live leaderboard if weekly snapshot persistence fails
+        // (for example during first run before schema is migrated).
+        try {
+            saveWeeklySnapshot(entries);
+        } catch (Exception ignored) {
+            // Keep API response successful with computed live entries
+        }
+
         return entries;
+    }
+
+    private void saveWeeklySnapshot(List<LeaderboardEntryResponse> entries) {
+        LocalDate today = LocalDate.now();
+        LocalDate weekStart = today.with(DayOfWeek.MONDAY);
+        LocalDate weekEnd = weekStart.plusDays(6);
+
+        // Keep one latest snapshot per week: rebuild current week rows
+        weeklyLeaderboardRepository.deleteByWeekStart(weekStart);
+
+        List<WeeklyLeaderboard> rows = new ArrayList<>();
+        for (int i = 0; i < entries.size(); i++) {
+            LeaderboardEntryResponse e = entries.get(i);
+            rows.add(WeeklyLeaderboard.builder()
+                    .weekStart(weekStart)
+                    .weekEnd(weekEnd)
+                    .userId(e.getUserId())
+                    .userName(e.getUserName())
+                    .rankPosition(i + 1)
+                    .emissionReduction(e.getEmissionReduction())
+                    .goalsCompleted(e.getGoalsCompleted())
+                    .badgesEarned(e.getBadgesEarned())
+                    .score(e.getScore())
+                    .build());
+        }
+        weeklyLeaderboardRepository.saveAll(rows);
+    }
+
+    public List<LeaderboardEntryResponse> getCurrentWeekLeaderboard() {
+        LocalDate weekStart = LocalDate.now().with(DayOfWeek.MONDAY);
+        return getWeeklyLeaderboardByWeekStart(weekStart);
+    }
+
+    public List<LeaderboardEntryResponse> getWeeklyLeaderboardByWeekStart(LocalDate weekStart) {
+        if (weekStart == null) {
+            weekStart = LocalDate.now().with(DayOfWeek.MONDAY);
+        }
+        List<WeeklyLeaderboard> rows = weeklyLeaderboardRepository.findByWeekStartOrderByRankPositionAsc(weekStart);
+
+        // If exact week snapshot does not exist yet, fall back to latest available snapshot
+        // so UI filters like "Last week" do not show an empty board unexpectedly.
+        if (rows.isEmpty()) {
+            List<LocalDate> availableWeeks = weeklyLeaderboardRepository.findDistinctWeekStartsDesc();
+            if (!availableWeeks.isEmpty()) {
+                rows = weeklyLeaderboardRepository.findByWeekStartOrderByRankPositionAsc(availableWeeks.get(0));
+            }
+        }
+
+        return rows
+                .stream()
+                .map(r -> LeaderboardEntryResponse.builder()
+                        .userId(r.getUserId())
+                        .userName(r.getUserName())
+                        .emissionReduction(r.getEmissionReduction() != null ? r.getEmissionReduction() : 0.0)
+                        .goalsCompleted(r.getGoalsCompleted() != null ? r.getGoalsCompleted() : 0)
+                        .badgesEarned(r.getBadgesEarned() != null ? r.getBadgesEarned() : 0)
+                        .score(r.getScore() != null ? r.getScore() : 0.0)
+                        .build())
+                .collect(Collectors.toList());
+    }
+
+    public List<LocalDate> getAvailableWeeklySnapshotStarts() {
+        return weeklyLeaderboardRepository.findDistinctWeekStartsDesc();
     }
 
     /**

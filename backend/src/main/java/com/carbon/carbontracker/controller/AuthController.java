@@ -1,8 +1,12 @@
 package com.carbon.carbontracker.controller;
 
 import com.carbon.carbontracker.dto.RegisterRequest;
+import com.carbon.carbontracker.model.User;
+import com.carbon.carbontracker.service.AdminAuditLogService;
+import com.carbon.carbontracker.service.AdminSettingsStoreService;
 import com.carbon.carbontracker.service.UserService;
 import com.carbon.carbontracker.util.PasswordValidator;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.*;
@@ -55,8 +59,24 @@ public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
 @Autowired
 private JwtUtil jwtUtil;
 
+@Autowired
+private AdminAuditLogService adminAuditLogService;
+
+@Autowired
+private AdminSettingsStoreService adminSettingsStoreService;
+
+private String maintenanceMessage() {
+    String start = adminSettingsStoreService.getString("maintenanceStart", "");
+    String end = adminSettingsStoreService.getString("maintenanceEnd", "");
+    if (!start.isBlank() || !end.isBlank()) {
+        String window = (start.isBlank() ? "now" : start) + " to " + (end.isBlank() ? "until further notice" : end);
+        return "The application is currently in maintenance mode (" + window + "). Please try again later.";
+    }
+    return "The application is currently in maintenance mode. Please try again later.";
+}
+
 @PostMapping("/login")
-public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
+public ResponseEntity<?> login(@RequestBody RegisterRequest request, HttpServletRequest httpRequest) {
 
     Optional<?> userOpt = userService.getUserByEmail(request.getEmail());
 
@@ -64,8 +84,13 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
         return ResponseEntity.badRequest().body("Invalid credentials");
     }
 
-    com.carbon.carbontracker.model.User user =
-            (com.carbon.carbontracker.model.User) userOpt.get();
+    User user = (User) userOpt.get();
+    boolean isAdmin = AdminAuditLogService.isAdminRole(user.getRole());
+
+    // During maintenance, allow only admins to log in.
+    if (adminSettingsStoreService.getBoolean("maintenanceMode", false) && !isAdmin) {
+        return ResponseEntity.status(403).body(maintenanceMessage());
+    }
 
     // Blocked users cannot log in
     if (!user.isActive()) {
@@ -80,11 +105,45 @@ public ResponseEntity<?> login(@RequestBody RegisterRequest request) {
 
     String token = jwtUtil.generateToken(request.getEmail());
 
+    if (isAdmin) {
+        adminAuditLogService.logForUser(user, "Admin Login", "Signed in with password", httpRequest);
+    }
+
     return ResponseEntity.ok(Map.of(
             "token", token,
             "role", user.getRole()
     ));
 }
+
+    /**
+     * Records admin logout in audit (JWT-only). Safe to call without a body; ignores invalid/missing tokens.
+     */
+    @PostMapping("/logout")
+    public ResponseEntity<Void> logout(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                       HttpServletRequest httpRequest) {
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            return ResponseEntity.noContent().build();
+        }
+        String token = authHeader.substring(7);
+        String email;
+        try {
+            email = jwtUtil.extractEmail(token);
+        } catch (Exception e) {
+            return ResponseEntity.noContent().build();
+        }
+        if (email == null || email.isBlank()) {
+            return ResponseEntity.noContent().build();
+        }
+        Optional<?> userOpt = userService.getUserByEmail(email);
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.noContent().build();
+        }
+        User user = (User) userOpt.get();
+        if (AdminAuditLogService.isAdminRole(user.getRole())) {
+            adminAuditLogService.logForUser(user, "Admin Logout", "Session ended", httpRequest);
+        }
+        return ResponseEntity.noContent().build();
+    }
 
     @PostMapping("/forgot-password")
     public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {

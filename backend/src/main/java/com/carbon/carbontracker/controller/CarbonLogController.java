@@ -24,6 +24,9 @@ public class CarbonLogController {
     @Autowired
     private UserRepository userRepository;
 
+    // ------------------------------------------------------------------
+    // User-scoped logs (existing behaviour, used by user-facing pages)
+    // ------------------------------------------------------------------
     @GetMapping("/logs")
     public ResponseEntity<?> getLogs(
             Authentication authentication,
@@ -46,6 +49,25 @@ public class CarbonLogController {
 
         return ResponseEntity.ok(
                 carbonLogRepository.findByUser(user)
+        );
+    }
+
+    // ------------------------------------------------------------------
+    // Admin view: logs for all non-admin users (used in Analytics tab)
+    // ------------------------------------------------------------------
+    @GetMapping("/logs/admin/all")
+    public ResponseEntity<?> getAllLogsForAdmin() {
+
+        return ResponseEntity.ok(
+                carbonLogRepository.findAll()
+                        .stream()
+                        .filter(log -> {
+                            User u = log.getUser();
+                            if (u == null || u.getRole() == null) return true;
+                            String r = u.getRole().trim().toLowerCase();
+                            return !r.contains("admin");
+                        })
+                        .toList()
         );
     }
 

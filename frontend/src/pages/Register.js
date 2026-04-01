@@ -97,7 +97,13 @@ function Register() {
       setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
       const msg = err.response?.data?.message || err.response?.data;
-      setErrors((e) => ({ ...e, form: msg && typeof msg === "string" ? msg : "Registration failed. Please try again." }));
+      const normalizedMsg = typeof msg === "string" ? msg.toLowerCase() : "";
+      const friendlyMsg = normalizedMsg.includes("email already exists")
+        ? "Account with this email already exists."
+        : msg && typeof msg === "string"
+          ? msg
+          : "Registration failed. Please try again.";
+      setErrors((e) => ({ ...e, form: friendlyMsg }));
     }
   };
 
@@ -179,25 +185,38 @@ function Register() {
                   <label>Full Name</label>
                   <input
                     type="text"
+                    className={errors.name ? "input-error" : ""}
                     placeholder="Enter name"
                     value={name}
                     onChange={(ev) => { setName(ev.target.value); if (errors.name) setErrors((prev) => ({ ...prev, name: "" })); }}
                   />
-                  {errors.name && <p className="form-error">{errors.name}</p>}
+                  {errors.name && (
+                    <p className="form-error form-error--friendly" role="alert">
+                      <span className="form-error-icon" aria-hidden>!</span>
+                      <span>{errors.name}</span>
+                    </p>
+                  )}
 
                   <label>Email Address</label>
                   <input
                     type="email"
+                    className={errors.email ? "input-error" : ""}
                     placeholder="Enter email"
                     value={email}
                     onChange={(ev) => { setEmail(ev.target.value); if (errors.email) setErrors((prev) => ({ ...prev, email: "" })); }}
                   />
-                  {errors.email && <p className="form-error">{errors.email}</p>}
+                  {errors.email && (
+                    <p className="form-error form-error--friendly" role="alert">
+                      <span className="form-error-icon" aria-hidden>!</span>
+                      <span>{errors.email}</span>
+                    </p>
+                  )}
 
                   <label>Password</label>
                   <div className="password-field">
                     <input
                       type={showPassword ? "text" : "password"}
+                      className={errors.password ? "input-error" : ""}
                       placeholder="P@ss123!"
                       value={password}
                       onChange={(ev) => { setPassword(ev.target.value); if (errors.password) setErrors((prev) => ({ ...prev, password: "" })); }}
@@ -221,12 +240,18 @@ function Register() {
                       )}
                     </button>
                   </div>
-                  {errors.password && <p className="form-error">{errors.password}</p>}
+                  {errors.password && (
+                    <p className="form-error form-error--friendly" role="alert">
+                      <span className="form-error-icon" aria-hidden>!</span>
+                      <span>{errors.password}</span>
+                    </p>
+                  )}
 
                   <label>Confirm Password</label>
                   <div className="password-field">
                     <input
                       type={showConfirmPassword ? "text" : "password"}
+                      className={errors.confirmPassword ? "input-error" : ""}
                       placeholder="Re-type Password"
                       value={confirmPassword}
                       onChange={(ev) => { setConfirmPassword(ev.target.value); if (errors.confirmPassword) setErrors((prev) => ({ ...prev, confirmPassword: "" })); }}
@@ -250,7 +275,12 @@ function Register() {
                       )}
                     </button>
                   </div>
-                  {errors.confirmPassword && <p className="form-error">{errors.confirmPassword}</p>}
+                  {errors.confirmPassword && (
+                    <p className="form-error form-error--friendly" role="alert">
+                      <span className="form-error-icon" aria-hidden>!</span>
+                      <span>{errors.confirmPassword}</span>
+                    </p>
+                  )}
 
                   <div className="terms-section">
                     <label className="terms-checkbox">
@@ -268,10 +298,20 @@ function Register() {
                         </span>.
                       </span>
                     </label>
-                    {errors.terms && <p className="form-error">{errors.terms}</p>}
+                    {errors.terms && (
+                      <p className="form-error form-error--friendly" role="alert">
+                        <span className="form-error-icon" aria-hidden>!</span>
+                        <span>{errors.terms}</span>
+                      </p>
+                    )}
                   </div>
 
-                  {errors.form && <p className="form-error">{errors.form}</p>}
+                  {errors.form && (
+                    <p className="form-error form-error--friendly" role="alert">
+                      <span className="form-error-icon" aria-hidden>!</span>
+                      <span>{errors.form}</span>
+                    </p>
+                  )}
 
                   <button type="submit">
                     Sign Up
@@ -333,9 +373,6 @@ function Register() {
         </div>
       </div>
       <footer className="auth-footer" style={{ textAlign: "center", padding: "1.5rem", color: "#666", fontSize: "0.875rem", marginTop: "auto", display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
-        <p style={{ fontWeight: 600, color: "#2e7d32", margin: 0, fontSize: "14px", display: "flex", alignItems: "center", gap: "6px" }}>
-          <span aria-hidden>🌿</span> CarbonCalc
-        </p>
         <p style={{ margin: 0 }}>&copy; {new Date().getFullYear()} CarbonCalc. All rights reserved.</p>
       </footer>
     </div>

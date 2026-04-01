@@ -6,4 +6,5 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 public interface MarketplaceRepository extends JpaRepository<MarketplaceItem, Long> {
+    long countByItemType(String itemType);
 }

@@ -1,8 +1,11 @@
 package com.carbon.carbontracker.service;
 
 import com.carbon.carbontracker.model.BadgeTemplate;
+import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.repository.BadgeTemplateRepository;
+import com.carbon.carbontracker.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -12,6 +15,21 @@ public class BadgeTemplateService {
 
     @Autowired
     private BadgeTemplateRepository badgeTemplateRepository;
+    @Autowired
+    private UserRepository userRepository;
+
+    private String getCurrentActor() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                return email;
+            }
+            return user.getName() != null && !user.getName().isBlank() ? user.getName() : user.getEmail();
+        } catch (Exception ex) {
+            return "System";
+        }
+    }
 
     private String generateCodeFromName(String name) {
         if (name == null) {
@@ -35,15 +53,19 @@ public class BadgeTemplateService {
                 .orElseThrow(() -> new RuntimeException("Badge template not found: " + id));
     }
 
-    public BadgeTemplate create(BadgeTemplate template) {
+    public BadgeTemplate create(BadgeTemplate template, String clientIp) {
         template.setId(null);
         if (template.getCode() == null || template.getCode().trim().isEmpty()) {
             template.setCode(generateCodeFromName(template.getName()));
         }
+        String actor = getCurrentActor();
+        template.setCreatedBy(actor);
+        template.setUpdatedBy(actor);
+        template.setIpAddress(clientIp != null ? clientIp : "N/A");
         return badgeTemplateRepository.save(template);
     }
 
-    public BadgeTemplate update(Long id, BadgeTemplate updated) {
+    public BadgeTemplate update(Long id, BadgeTemplate updated, String clientIp) {
         BadgeTemplate existing = getById(id);
         existing.setName(updated.getName());
         String code = updated.getCode();
@@ -55,6 +77,8 @@ public class BadgeTemplateService {
         existing.setConditionText(updated.getConditionText());
         existing.setIcon(updated.getIcon());
         existing.setActive(updated.isActive());
+        existing.setUpdatedBy(getCurrentActor());
+        existing.setIpAddress(clientIp != null ? clientIp : "N/A");
         return badgeTemplateRepository.save(existing);
     }
 }

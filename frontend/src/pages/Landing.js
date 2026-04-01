@@ -246,6 +246,22 @@ function Landing() {
           </div>
         </section>
 
+        <section className="landing-section landing-contact" aria-labelledby="support-contact-title">
+          <div className="landing-section-inner">
+            <h2 id="support-contact-title" className="landing-section-title">
+              Need help?
+            </h2>
+            <p className="landing-section-sub landing-contact-text">
+              Reach our support team for account, login, or platform assistance.
+            </p>
+            <p className="landing-contact-email">
+              <a className="landing-contact-link" href="">
+                support@carboncalc.com
+              </a>
+            </p>
+          </div>
+        </section>
+
       </main>
 
       <MarketingFooter />

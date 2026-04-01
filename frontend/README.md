@@ -1,147 +1,105 @@
-# CarbonCalc (Frontend)
+# CarbonCalc - Frontend
 
-React frontend for the **Personal Carbon Footprint** application.
+## Overview
 
-Users log in via Google/GitHub, track their carbon emissions, set goals, earn badges, and view a global leaderboard.  
-Admins can manage users and badges from an admin dashboard.
+React frontend for the Personal Carbon Footprint application.
+
+Users can track emissions, manage goals, browse marketplace items, buy offsets, view notifications, and check leaderboard rankings.  
+Admins can manage the full system from the Admin Dashboard.
 
 ---
 
-## Quick start (for developers)
+## Setup and Run
 
-### 1. Start the backend
+### 1) Start backend
 
 From `backend/`:
 
 ```bash
-cd backend
 mvn spring-boot:run
 ```
 
-Backend runs on **http://localhost:8080**.  
-See `backend/README.md` and `db_scripts/schema.sql` for PostgreSQL setup.
-
-### 2. Start the frontend
+### 2) Start frontend
 
 From `frontend/`:
 
 ```bash
-cd frontend
-npm install        # first time only
+npm install
 npm start
 ```
 
-Frontend runs on **http://localhost:3000**.
-
-The frontend uses `REACT_APP_API_URL` as API base (default `http://localhost:8080`).
-
----
-
-## Main features
-
-### Layout & auth
-
-- Uses OAuth2 login (Google / GitHub) → backend redirects back with `?token=...`.
-- JWT is stored in `localStorage` and attached as `Authorization: Bearer <token>` for all API calls.
-- `AppLayout` component:
-  - Sidebar navigation (Dashboard, My Badges, Leaderboard, etc.)
-  - Header with welcome message and profile dropdown (Profile, Logout)
-  - Mobile‑friendly responsive layout.
-
-### User dashboard (`/dashboard`)
-
-- Time filter (Daily / Weekly / Monthly).
-- Calls:
-  - `GET /api/carbon/logs?from=YYYY-MM-DD&to=YYYY-MM-DD`
-- Shows:
-  - Total emissions for the period
-  - Category‑wise breakdown (Transport, Food, Energy)
-  - Emission trend chart
-  - Recent logs table with “View details” links to `/carbon-history`.
-
-### My Badges (`/badges`)
-
-- Fetches:
-  - `GET /api/badge-templates` — active templates
-  - `GET /api/badges` — earned badges for current user
-- Features:
-  - Overall progress bar (earned vs total)
-  - Filter tabs: **All / Earned / Locked**
-  - Emoji icons for each badge (resolved even if DB icon is `??`)
-  - Click a badge to open a modal with description and earned date.
-
-### Leaderboard (`/leaderboard`)
-
-- Fetches:
-  - `GET /api/auth/me` — current user
-  - `GET /api/leaderboard` — full ranking for non‑admin users
-- UI:
-  - Top‑3 podium with medals
-  - “Top 10 Rankings” table (desktop) / card list (mobile)
-  - Ensures the current user is always shown and highlighted, even if they are outside the top 10.
-
-### Admin dashboard (`/AdminDashboard`)
-
-Admin‑only panel (role `ADMIN`) with multiple tabs:
-
-- **Users**
-  - Table of non‑admin users.
-  - Inline filters: **All / Active / Blocked**.
-  - Search by name/email/ID.
-  - Actions:
-    - **Block / Unblock** → `PUT /api/users/{id}/block` / `unblock`
-    - **Delete** → `DELETE /api/users/{id}` (soft delete: marks as inactive)
-
-- **Carbon Data**
-  - Shows carbon logs using `GET /api/carbon/logs`.
-
-- **Goals**
-  - Shows goals of all non‑admin users using `GET /api/goals/admin`.
-
-- **Badges**
-  - **Badge Templates**
-    - Card grid of templates with emoji icons.
-    - Header shows `Badge Templates (N)` and inline filters: **All badges / Active / Disabled**.
-    - “+ Create Badge” opens a modal:
-      - Fields: Name, Short Description, Condition, Icon (emoji), Active.
-      - Create: `POST /api/badge-templates`
-      - Edit existing: clicking **Edit** on a card opens the same modal pre‑filled and uses `PUT /api/badge-templates/{id}`.
-      - Validation and success messages are displayed inside the modal.
-  - **Award Badge**
-    - Opens a modal with:
-      - User select (non‑admin users only) + chips for multiple selected users.
-      - Badge template select.
-    - Awards badges by calling `POST /api/badges/award/{userId}` for each selected user.
-    - Shows inline messages inside the modal:
-      - Green for success (`Badge awarded to X user(s).`).
-      - Red if the badge was already awarded or another error occurred.
+Frontend: `http://localhost:3000`  
+Backend default: `http://localhost:8080`
 
 ---
 
-## Environment configuration
+## Configuration
 
-The frontend reads:
+Uses:
+- `REACT_APP_API_URL` (default `http://localhost:8080`)
 
-- `REACT_APP_API_URL` — backend base URL (default `http://localhost:8080`).
-
-Example `.env` in the repo root:
+Example `.env`:
 
 ```bash
 REACT_APP_API_URL=http://localhost:8080
 ```
 
-Restart `npm start` after changing environment variables.
+Restart frontend after updating env values.
 
 ---
 
-## Development notes
+## Features
 
-- Ensure CORS on the backend allows `http://localhost:3000`.
-- All protected routes redirect to login if the JWT is missing or invalid.
-- UI is responsive (desktop + mobile) for all main pages: Dashboard, Badges, Leaderboard, and Admin Dashboard.
+### Authentication
+- OAuth2 login (Google/GitHub) and normal login
+- JWT token handling in `localStorage`
+- Maintenance mode handling for non-admin users (shows maintenance message and blocks access)
 
-For backend and database details see:
+### User pages
+- Dashboard with real carbon data and trend views
+- Carbon history and editable logs
+- Goals with live progress percentage display
+- Badges with earned/locked states
+- Marketplace with real API data and purchase flow
+- Transactions with sorting and normalized item data
+- Notifications with user-side dismiss (soft hide)
+- Leaderboard filter: `Live` and `Last week`
 
-- `backend/README.md`
-- `db_scripts/schema.sql`
+### Admin dashboard
+- Analytics cards with real data (including badges and transaction totals)
+- User management (block/unblock/delete)
+- Goals and carbon data monitoring
+- Badge templates and badge awarding
+- Marketplace item management
+- Notification management (targeted and broadcast)
+- Transactions monitoring
+- Admin audit logs with action filter
+- Settings: maintenance mode control
+
+---
+
+## API Integration
+
+Frontend integrates with:
+- `/api/auth/*`
+- `/api/admin/settings`
+- `/api/carbon/logs`, `/api/carbon/logs/admin/all`
+- `/api/goals`, `/api/goals/admin`
+- `/api/badges`, `/api/badges/admin/stats`, `/api/badge-templates`
+- `/api/marketplace/items`
+- `/api/transactions`, `/api/transactions/user/{userId}`
+- `/api/notifications`, `/api/notifications/user/{userId}`, `/api/notifications/{id}/hide`
+- `/api/leaderboard`, `/api/leaderboard/weekly`
+
+---
+
+## Notes
+
+- The old marketing Contact nav link was removed.
+- Support email links are available on landing/about pages.
+- Admin and user leaderboards now share the same simple filter experience (`Live` / `Last week`).
+
+For backend and DB setup, see:
+- `../backend/README.md`
+- `../db_scripts/README.md`
 

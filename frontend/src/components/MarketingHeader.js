@@ -33,15 +33,6 @@ function MarketingHeader() {
               About
             </Link>
           )}
-          {pathname === "/contact" ? (
-            <span className="landing-nav-link landing-nav-link--current" aria-current="page">
-              Contact
-            </span>
-          ) : (
-            <Link to="/contact" className="landing-nav-link">
-              Contact
-            </Link>
-          )}
           {pathname === "/login" ? (
             <span className="landing-nav-link landing-nav-link--current" aria-current="page">
               Login

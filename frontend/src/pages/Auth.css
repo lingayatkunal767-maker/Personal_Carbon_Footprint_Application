@@ -529,6 +529,39 @@ input:focus {
   margin: -8px 0 12px 0;
 }
 
+.form-error--friendly {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  margin: -8px 0 12px 0;
+  padding: 8px 10px;
+  border-radius: 8px;
+  background: #fff4f4;
+  border: 1px solid #f2c2c2;
+  line-height: 1.4;
+}
+
+.form-error-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #c62828;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.input-error {
+  border-color: #d32f2f !important;
+  box-shadow: 0 0 0 3px rgba(211, 47, 47, 0.12);
+  background: #fffafa !important;
+}
+
 form button[type="submit"],
 form input[type="submit"] {
   width: 100%;
@@ -988,4 +1021,11 @@ form input[type="submit"]:hover {
   background: #ffebee;
   color: #c62828;
   border: 1px solid #ef9a9a;
+}
+
+.notification.maintenance {
+  background: #fff7e6;
+  color: #8a5a00;
+  border: 1px solid #f5c87a;
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.15);
 }

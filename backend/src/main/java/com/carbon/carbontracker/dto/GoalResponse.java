@@ -8,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 @Data
@@ -26,7 +27,8 @@ public class GoalResponse {
     private GoalStatus status;
     private LocalDateTime createdAt;
     private String category;
-private Integer reductionTarget;
-private String timeframe;
-private String description;
+    private Integer reductionTarget;
+    private String timeframe;
+    private String description;
+    private LocalDate endDate;
 }

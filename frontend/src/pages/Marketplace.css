@@ -168,31 +168,6 @@
   color: var(--color-primary);
 }
 
-/* ── Sort / View controls ──────────────────────────────── */
-.marketplace-sort-wrap {
-  margin-left: auto;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.marketplace-sort-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--color-text-muted);
-}
-
-.marketplace-sort-select {
-  padding: 8px 12px;
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-md);
-  font-size: 13px;
-  font-family: var(--font-sans);
-  background: var(--color-surface);
-  color: var(--color-text);
-  cursor: pointer;
-}
-
 /* ── Product Grid ──────────────────────────────────────── */
 .marketplace-grid {
   display: grid;
@@ -822,36 +797,6 @@
   to { transform: rotate(360deg); }
 }
 
-/* ── Impact bar (inside card) ───────────────────────────── */
-.marketplace-card-impact {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: var(--color-text-muted);
-}
-
-.marketplace-card-impact-bar-wrap {
-  flex: 1;
-  height: 6px;
-  background: var(--color-border);
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.marketplace-card-impact-bar {
-  height: 100%;
-  background: linear-gradient(90deg, var(--color-primary), var(--color-accent-green));
-  border-radius: 999px;
-  transition: width .4s ease;
-}
-
-.marketplace-card-impact-label {
-  font-weight: 600;
-  color: var(--color-primary);
-  white-space: nowrap;
-}
-
 /* ── Responsive ─────────────────────────────────────────── */
 @media (max-width: 900px) {
   .marketplace-header {
@@ -882,9 +827,6 @@
   }
   .marketplace-search-wrap {
     max-width: none;
-  }
-  .marketplace-sort-wrap {
-    margin-left: 0;
   }
   .marketplace-toast {
     left: 16px;

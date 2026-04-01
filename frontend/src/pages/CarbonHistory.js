@@ -17,6 +17,7 @@ const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
 const CATEGORIES = ["All Categories", "Transport", "Food", "Energy"];
 
+/*
 function getDefaultMonthRange() {
   const d = new Date();
   const y = d.getFullYear();
@@ -25,7 +26,23 @@ function getDefaultMonthRange() {
   const today = `${y}-${m}-${String(d.getDate()).padStart(2, "0")}`;
 
   return { start: first, end: today };
+} */
+
+function getDefaultMonthRange() {
+  const today = new Date();
+
+  // End date = today
+  const end = today.toISOString().split("T")[0];
+
+  // Start date = 8 days ago
+  const pastDate = new Date();
+  pastDate.setDate(today.getDate() - 8);
+
+  const start = pastDate.toISOString().split("T")[0];
+
+  return { start, end };
 }
+
 function getTodayStr() {
   const d = new Date();
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;

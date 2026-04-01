@@ -1,9 +1,17 @@
-import org.springframework.web.bind.annotation.*;
-import org.springframework.http.ResponseEntity;
+package com.carbon.carbontracker.controller;
+
+import com.carbon.carbontracker.model.User;
+import com.carbon.carbontracker.repository.UserRepository;
+import com.carbon.carbontracker.service.AdminAuditLogService;
+import com.carbon.carbontracker.service.AdminSettingsStoreService;
+import com.carbon.carbontracker.util.ClientIpUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.context.SecurityContextHolder;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
-import java.util.HashMap;
 
 @RestController
 @RequestMapping("/api/admin")
@@ -11,21 +19,41 @@ import java.util.HashMap;
 @CrossOrigin(origins = "*")
 public class AdminController {
 
+    private final UserRepository userRepository;
+    private final AdminAuditLogService adminAuditLogService;
+    private final AdminSettingsStoreService settingsStoreService;
+
+    private String getCurrentActor() {
+        try {
+            String email = SecurityContextHolder.getContext().getAuthentication().getName();
+            User user = userRepository.findByEmail(email).orElse(null);
+            if (user == null) {
+                return email;
+            }
+            return user.getName() != null && !user.getName().isBlank() ? user.getName() : user.getEmail();
+        } catch (Exception ex) {
+            return "System";
+        }
+    }
+
     // --- Settings Management ---
 
     @GetMapping("/settings")
     public ResponseEntity<Map<String, Object>> getSettings() {
-        // Return configurable settings (e.g., emission threshold, items per page)
-        Map<String, Object> settings = new HashMap<>();
-        settings.put("emissionThreshold", 15.0);
-        settings.put("appVersion", "4.0.0");
-        return ResponseEntity.ok(settings);
+        return ResponseEntity.ok(settingsStoreService.getSettingsWithDefaults());
     }
 
     @PutMapping("/settings")
-    public ResponseEntity<String> updateSettings(@RequestBody Map<String, Object> settings) {
-        // Persist settings to DB or config store
-        // settingsService.save(settings);
+    public ResponseEntity<String> updateSettings(@RequestBody Map<String, Object> settings,
+                                                 HttpServletRequest request) {
+        settingsStoreService.mergeSettings(settings);
+        settingsStoreService.getSettingsWithDefaults().put("lastUpdatedBy", getCurrentActor());
+        settingsStoreService.getSettingsWithDefaults().put("lastUpdatedAt", java.time.LocalDateTime.now().toString());
+        settingsStoreService.getSettingsWithDefaults().put("lastUpdatedIp", ClientIpUtil.resolve(request));
+        adminAuditLogService.log(
+                "Settings Updated",
+                settings != null ? settings.toString() : "",
+                request);
         return ResponseEntity.ok("Settings updated successfully");
     }
 

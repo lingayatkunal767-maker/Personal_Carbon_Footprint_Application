@@ -6,65 +6,13 @@ import "./Transactions.css";
 
 const API_BASE = process.env.REACT_APP_API_URL || "http://localhost:8080";
 
-const FALLBACK_TRANSACTIONS = [
-  {
-    id: "demo-1",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 4).toISOString(),
-    itemName: "Plant 10 Trees",
-    type: "Carbon Offset",
-    quantity: 1,
-    amount: 2099,
-    carbonOffset: 220,
-    status: "Completed",
-  },
-  {
-    id: "demo-2",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 20).toISOString(),
-    itemName: "Solar Panel Micro-Investment",
-    type: "Renewable Energy",
-    quantity: 1,
-    amount: 4199,
-    carbonOffset: 480,
-    status: "Confirmed",
-  },
-  {
-    id: "demo-3",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    itemName: "Carbon Credit - 1 Tonne",
-    type: "Environmental",
-    quantity: 2,
-    amount: 5798,
-    carbonOffset: 2000,
-    status: "Pending",
-  },
-  {
-    id: "demo-4",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 60).toISOString(),
-    itemName: "Wind Energy Certificate",
-    type: "Renewable Energy",
-    quantity: 1,
-    amount: 3299,
-    carbonOffset: 350,
-    status: "Pending",
-  },
-  {
-    id: "demo-5",
-    date: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-    itemName: "Mangrove Restoration",
-    type: "Carbon Offset",
-    quantity: 3,
-    amount: 7047,
-    carbonOffset: 780,
-    status: "Completed",
-  },
-];
-
 function Transactions() {
   const navigate = useNavigate();
   const [transactions, setTransactions] = useState([]);
   const [loading, setLoading] = useState(true);
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [sortBy, setSortBy] = useState("newest");
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -75,12 +23,32 @@ function Transactions() {
 
     const headers = { Authorization: `Bearer ${token}` };
     axios
-      .get(`${API_BASE}/api/marketplace/transactions`, { headers })
+      .get(`${API_BASE}/api/auth/me`, { headers })
+      .then((meRes) => meRes.data?.id)
+      .then((userId) => {
+        if (!userId) throw new Error("User ID not found.");
+        return axios.get(`${API_BASE}/api/transactions/user/${userId}`, { headers });
+      })
       .then((res) => {
         const data = Array.isArray(res.data) ? res.data : [];
-        return data.length ? data : FALLBACK_TRANSACTIONS;
+        return data.map((t) => ({
+          id: t.id,
+          itemName: t.itemName || t.marketplaceItemName || "",
+          // prefer DTO field, fall back to any legacy names
+          type: t.type || t.itemType || t.marketplaceItemType || "",
+          quantity: t.quantity ?? t.qty ?? 1,
+          amount: Number(t.amount || 0),
+          carbonOffset: Number(
+            t.carbonOffset ??
+            t.carbonOffsetValue ??
+            t.marketplaceItemCarbonOffset ??
+            0
+          ),
+          status: t.status,
+          date: t.createdAt || t.date || "",
+        }));
       })
-      .catch(() => FALLBACK_TRANSACTIONS)
+      .catch(() => [])
       .then((data) => setTransactions(data))
       .finally(() => setLoading(false));
   }, [navigate]);
@@ -135,7 +103,7 @@ function Transactions() {
 
   const filteredTransactions = useMemo(() => {
     const q = query.trim().toLowerCase();
-    return transactions.filter((t) => {
+    const base = transactions.filter((t) => {
       const normalized = normalizeStatus(t.status);
       const matchesStatus =
         statusFilter === "all"
@@ -150,7 +118,22 @@ function Transactions() {
         (t.status || "").toLowerCase().includes(q);
       return matchesStatus && matchesQuery;
     });
-  }, [transactions, query, statusFilter]);
+    const sorted = [...base];
+    switch (sortBy) {
+      case "oldest":
+        sorted.sort((a, b) => new Date(a.date) - new Date(b.date));
+        break;
+      case "amount-high":
+        sorted.sort((a, b) => (b.amount || 0) - (a.amount || 0));
+        break;
+      case "amount-low":
+        sorted.sort((a, b) => (a.amount || 0) - (b.amount || 0));
+        break;
+      default: // newest
+        sorted.sort((a, b) => new Date(b.date) - new Date(a.date));
+    }
+    return sorted;
+  }, [transactions, query, statusFilter, sortBy]);
 
   const totalSpent = filteredTransactions.reduce((s, t) => s + (t.amount || 0), 0);
   const totalOffset = filteredTransactions.reduce((s, t) => s + (t.carbonOffset || 0), 0);
@@ -199,6 +182,19 @@ function Transactions() {
                   value={query}
                   onChange={(e) => setQuery(e.target.value)}
                 />
+              </div>
+              <div className="tx-sort-wrap">
+                <span className="tx-sort-label">Sort:</span>
+                <select
+                  className="tx-sort-select"
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                >
+                  <option value="newest">Newest first</option>
+                  <option value="oldest">Oldest first</option>
+                  <option value="amount-high">Amount: High to Low</option>
+                  <option value="amount-low">Amount: Low to High</option>
+                </select>
               </div>
             </div>
 

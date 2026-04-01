@@ -9,7 +9,10 @@ import java.time.LocalDateTime;
 public class TransactionResponseDTO {
     private Long id;
     private String itemName;
+    private String type;
+    private Integer quantity;
     private BigDecimal amount;
+    private BigDecimal carbonOffset;
     private String status;
     private LocalDateTime createdAt;
 }

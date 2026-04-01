@@ -133,29 +133,137 @@ CREATE TABLE IF NOT EXISTS surveys (
 CREATE INDEX IF NOT EXISTS idx_surveys_user_id ON surveys(user_id);
 
 -- ============================================================
---  LEADERBOARD (runtime + history)
+--  MARKETPLACE ITEMS
 -- ============================================================
 
--- The live leaderboard is computed on the fly from goals, badges,
--- and carbon_logs by the backend.
-
--- This table stores WEEKLY snapshots so we can track progress over time.
-
-CREATE TABLE IF NOT EXISTS leaderboard_snapshots (
-  id                  BIGSERIAL PRIMARY KEY,
-  user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
-  week_start          DATE   NOT NULL,
-  week_end            DATE   NOT NULL,
-  rank                INTEGER,
-  score               DOUBLE PRECISION,
-  emission_reduction  DOUBLE PRECISION,
-  goals_completed     INTEGER,
-  badges_earned       INTEGER,
-  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+CREATE TABLE IF NOT EXISTS marketplace_items (
+  id                       BIGSERIAL PRIMARY KEY,
+  item_name                VARCHAR(255) NOT NULL,
+  item_type                VARCHAR(255),
+  price                    NUMERIC(38,2) NOT NULL,
+  description              VARCHAR(1000),
+  carbon_offset_value      NUMERIC(38,2),
+  rating                   NUMERIC(3,2),
+  badge                    VARCHAR(32),
+  impact_progress_percent  INTEGER,
+  price_unit               VARCHAR(64),
+  header_icon              VARCHAR(32),
+  banner_key               VARCHAR(64),
+  created_at               TIMESTAMP NOT NULL,
+  updated_at               TIMESTAMP,
+  created_by               VARCHAR(255),
+  updated_by               VARCHAR(255),
+  ip_address               VARCHAR(255)
 );
 
--- One row per user per week
-CREATE UNIQUE INDEX IF NOT EXISTS ux_leaderboard_snapshots_user_week
-  ON leaderboard_snapshots(user_id, week_start, week_end);
+CREATE INDEX IF NOT EXISTS idx_marketplace_items_type
+  ON marketplace_items(item_type);
+
+-- Optional legacy table name (kept because some deployments list `marketplace`).
+-- The application currently uses `marketplace_items`.
+CREATE TABLE IF NOT EXISTS marketplace (
+  id                  BIGSERIAL PRIMARY KEY,
+  item_name           VARCHAR(255) NOT NULL,
+  item_type           VARCHAR(255),
+  price               NUMERIC(38,2) NOT NULL,
+  description         VARCHAR(1000),
+  carbon_offset_value NUMERIC(38,2),
+  created_at          TIMESTAMP NOT NULL
+);
+
+-- ============================================================
+--  TRANSACTIONS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS transactions (
+  id                   BIGSERIAL PRIMARY KEY,
+  amount               NUMERIC(38,2) NOT NULL,
+  created_at           TIMESTAMP,
+  status               VARCHAR(20),
+  marketplace_item_id  BIGINT NOT NULL REFERENCES marketplace_items(id),
+  user_id              BIGINT NOT NULL REFERENCES users(id)
+);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_user_id
+  ON transactions(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_transactions_marketplace_item_id
+  ON transactions(marketplace_item_id);
+
+-- ============================================================
+--  NOTIFICATIONS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS notifications (
+  id               BIGSERIAL PRIMARY KEY,
+  created_at       TIMESTAMP,
+  is_read          BOOLEAN,
+  message          VARCHAR(255) NOT NULL,
+  title            VARCHAR(255) NOT NULL,
+  type             VARCHAR(255),
+  user_id          BIGINT REFERENCES users(id),
+  admin_name       VARCHAR(255),
+  ip_address       VARCHAR(255),
+  updated_at       TIMESTAMP,
+  hidden_for_user  BOOLEAN
+);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_user_id
+  ON notifications(user_id);
+
+CREATE INDEX IF NOT EXISTS idx_notifications_created_at
+  ON notifications(created_at);
+
+-- ============================================================
+--  ADMIN AUDIT LOGS
+-- ============================================================
+
+CREATE TABLE IF NOT EXISTS admin_audit_logs (
+  id             BIGSERIAL PRIMARY KEY,
+  action         VARCHAR(200) NOT NULL,
+  admin_email    VARCHAR(255),
+  admin_name     VARCHAR(255),
+  admin_user_id  BIGINT,
+  created_at     TIMESTAMP NOT NULL,
+  details        TEXT,
+  ip_address     VARCHAR(64)
+);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_created_at
+  ON admin_audit_logs(created_at);
+
+CREATE INDEX IF NOT EXISTS idx_admin_audit_logs_admin_user_id
+  ON admin_audit_logs(admin_user_id);
+
+-- ============================================================
+--  WEEKLY LEADERBOARD SNAPSHOTS
+-- ============================================================
+
+-- The live leaderboard is computed on the fly by backend services.
+-- This table persists weekly snapshot rows (one row per user per week).
+-- NOTE: matches backend entity: WeeklyLeaderboard (@Table = weekly_leaderboard)
+
+CREATE TABLE IF NOT EXISTS weekly_leaderboard (
+  id                  BIGSERIAL PRIMARY KEY,
+  week_start          DATE NOT NULL,
+  week_end            DATE NOT NULL,
+  user_id             BIGINT NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+  user_name           VARCHAR(255) NOT NULL,
+  rank_position       INTEGER NOT NULL,
+  emission_reduction  DOUBLE PRECISION NOT NULL,
+  goals_completed     INTEGER NOT NULL,
+  badges_earned       INTEGER NOT NULL,
+  score               DOUBLE PRECISION NOT NULL,
+  created_at          TIMESTAMP DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_leaderboard_week_start
+  ON weekly_leaderboard(week_start);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_leaderboard_week_start_rank
+  ON weekly_leaderboard(week_start, rank_position);
+
+CREATE INDEX IF NOT EXISTS idx_weekly_leaderboard_user_week
+  ON weekly_leaderboard(user_id, week_start);
 
 

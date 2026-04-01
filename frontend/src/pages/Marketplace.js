@@ -14,118 +14,58 @@ const CATEGORY_META = {
   "Sustainable Living":  { icon: "♻️", banner: "sustainable-living",  emoji: "♻️" },
 };
 
-/* ── Static fallback data (used until backend is ready) ── */
-const FALLBACK_ITEMS = [
-  {
-    id: 1,
-    name: "Plant 10 Trees",
-    description: "Support reforestation by planting 10 native trees in deforested regions. Each tree absorbs approximately 22 kg of CO₂ per year.",
-    type: "Carbon Offset",
-    price: 2099,
-    carbonOffset: 220,
-    rating: 4.9,
-    badge: "popular",
-    impactLevel: 85,
-  },
-  {
-    id: 2,
-    name: "Solar Panel Micro-Investment",
-    description: "Contribute to community solar panel installations in rural areas. Support clean energy generation and reduce fossil fuel dependency.",
-    type: "Renewable Energy",
-    price: 4199,
-    carbonOffset: 480,
-    rating: 4.7,
-    badge: "popular",
-    impactLevel: 92,
-  },
-  {
-    id: 3,
-    name: "Carbon Credit – 1 Tonne",
-    description: "Purchase verified carbon credits that fund environmental projects worldwide, directly offsetting 1 tonne of your carbon emissions.",
-    type: "Environmental",
-    price: 2899,
-    carbonOffset: 1000,
-    rating: 4.8,
-    badge: null,
-    impactLevel: 100,
-  },
-  {
-    id: 4,
-    name: "Ocean Cleanup Support",
-    description: "Fund ocean plastic removal projects. Every contribution helps remove 5 kg of plastic from oceans and coastal areas.",
-    type: "Environmental",
-    price: 1699,
-    carbonOffset: 150,
-    rating: 4.6,
-    badge: "new",
-    impactLevel: 65,
-  },
-  {
-    id: 5,
-    name: "Wind Energy Certificate",
-    description: "Support wind farm development by purchasing renewable energy certificates. Promote clean energy infrastructure growth.",
-    type: "Renewable Energy",
-    price: 3299,
-    carbonOffset: 350,
-    rating: 4.5,
-    badge: null,
-    impactLevel: 78,
-  },
-  {
-    id: 6,
-    name: "Bamboo Forest Planting",
-    description: "Help plant fast-growing bamboo forests that absorb up to 12 tonnes of CO₂ per hectare per year. Bamboo is one of the most effective carbon sinks.",
-    type: "Carbon Offset",
-    price: 2499,
-    carbonOffset: 300,
-    rating: 4.8,
-    badge: "new",
-    impactLevel: 88,
-  },
-  {
-    id: 7,
-    name: "Eco-Friendly Cookstove",
-    description: "Provide clean cookstoves to communities in developing regions. Reduces indoor pollution and cuts fuel wood consumption by 60%.",
-    type: "Sustainable Living",
-    price: 3749,
-    carbonOffset: 400,
-    rating: 4.4,
-    badge: null,
-    impactLevel: 72,
-  },
-  {
-    id: 8,
-    name: "Mangrove Restoration",
-    description: "Support mangrove planting in coastal areas. Mangroves store 3–5x more carbon than tropical forests and protect shores from erosion.",
-    type: "Carbon Offset",
-    price: 2349,
-    carbonOffset: 260,
-    rating: 4.9,
-    badge: "limited",
-    impactLevel: 90,
-  },
-  {
-    id: 9,
-    name: "Green Commute Pass",
-    description: "Offset your monthly commute emissions by supporting electric bus networks and bike-sharing infrastructure in urban areas.",
-    type: "Sustainable Living",
-    price: 1249,
-    carbonOffset: 120,
-    rating: 4.3,
-    badge: null,
-    impactLevel: 55,
-  },
-];
-
-const SORT_OPTIONS = [
-  { value: "popular",      label: "Most Popular" },
-  { value: "price-low",    label: "Price: Low → High" },
-  { value: "price-high",   label: "Price: High → Low" },
-  { value: "offset-high",  label: "Highest Offset" },
-  { value: "rating",       label: "Top Rated" },
-];
-
 const CATEGORIES = ["All", ...Object.keys(CATEGORY_META)];
+
+function normalizeTypeToSupported(rawType) {
+  const raw = String(rawType || "").trim();
+  const compact = raw.toLowerCase().replace(/[_\s-]+/g, "");
+  if (compact === "carbonoffset") return "Carbon Offset";
+  if (compact === "renewableenergy") return "Renewable Energy";
+  if (compact === "environmental") return "Environmental";
+  if (compact === "sustainableliving") return "Sustainable Living";
+  return "Carbon Offset";
+}
+
+/** Map API DTO (itemName, itemType, …) to card shape used by this page */
+function normalizeMarketplaceItem(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const price = raw.price != null ? Number(raw.price) : 0;
+  const co =
+    raw.carbonOffsetValue != null
+      ? Number(raw.carbonOffsetValue)
+      : raw.carbonOffset != null
+        ? Number(raw.carbonOffset)
+        : 0;
+  const name = raw.itemName ?? raw.name ?? "Untitled";
+  const type = normalizeTypeToSupported(raw.itemType ?? raw.type ?? "Carbon Offset");
+  let rating = null;
+  if (raw.rating != null && raw.rating !== "") {
+    const r = Number(raw.rating);
+    if (!Number.isNaN(r)) rating = r;
+  }
+  const badgeStr = raw.badge != null && String(raw.badge).trim() !== ""
+    ? String(raw.badge).toLowerCase()
+    : null;
+  let ipp = null;
+  if (raw.impactProgressPercent != null && raw.impactProgressPercent !== "") {
+    const n = Number(raw.impactProgressPercent);
+    if (!Number.isNaN(n)) ipp = Math.min(100, Math.max(0, Math.round(n)));
+  }
+  return {
+    id: raw.id,
+    name,
+    type,
+    description: raw.description ?? "",
+    price,
+    carbonOffset: co,
+    rating,
+    badge: badgeStr,
+    impactProgressPercent: ipp,
+    priceUnit: raw.priceUnit && String(raw.priceUnit).trim() ? String(raw.priceUnit).trim() : "unit",
+    headerIcon: raw.headerIcon && String(raw.headerIcon).trim() ? String(raw.headerIcon).trim() : null,
+    bannerKey: null,
+  };
+}
 
 /* ─────────────────────────────────────────────────────────
    MARKETPLACE COMPONENT
@@ -139,12 +79,10 @@ function Marketplace() {
   const [loading, setLoading]           = useState(true);
   const [search, setSearch]             = useState("");
   const [category, setCategory]         = useState("All");
-  const [sortBy, setSortBy]             = useState("popular");
   const [selectedItem, setSelectedItem] = useState(null);
   const [quantity, setQuantity]         = useState(1);
   const [purchasing, setPurchasing]     = useState(false);
   const [toast, setToast]               = useState(null);
-  const [showHistory, setShowHistory]   = useState(false);
 
   // ── Fetch marketplace items ──
   useEffect(() => {
@@ -153,12 +91,23 @@ function Marketplace() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    // Try fetching from backend; fall back to static data
-    const fetchItems = axios.get(`${API_BASE}/api/marketplace/items`, { headers })
-      .then((res) => Array.isArray(res.data) ? res.data : FALLBACK_ITEMS)
-      .catch(() => FALLBACK_ITEMS);
+    // Backend: /api/marketplace/items or /api/marketplace
+    const fetchItems = axios
+      .get(`${API_BASE}/api/marketplace/items`, { headers })
+      .catch(() => axios.get(`${API_BASE}/api/marketplace`, { headers }))
+      .then((res) => {
+        const arr = Array.isArray(res.data) ? res.data : [];
+        return arr.map(normalizeMarketplaceItem).filter(Boolean);
+      })
+      .catch(() => []);
 
-    const fetchTxns = axios.get(`${API_BASE}/api/marketplace/transactions`, { headers })
+    const fetchTxns = axios
+      .get(`${API_BASE}/api/auth/me`, { headers })
+      .then((meRes) => meRes.data?.id)
+      .then((userId) => {
+        if (!userId) throw new Error("User ID not found.");
+        return axios.get(`${API_BASE}/api/transactions/user/${userId}`, { headers });
+      })
       .then((res) => Array.isArray(res.data) ? res.data : [])
       .catch(() => []);
 
@@ -174,7 +123,7 @@ function Marketplace() {
   const totalOffset = transactions.reduce((s, t) => s + (t.carbonOffset || 0), 0);
   const totalSpent  = transactions.reduce((s, t) => s + (t.amount || 0), 0);
 
-  // ── Filtering + Sorting ──
+  // ── Filtering ──
   const filteredItems = useCallback(() => {
     let result = [...items];
 
@@ -193,30 +142,8 @@ function Marketplace() {
       );
     }
 
-    // Sort
-    switch (sortBy) {
-      case "price-low":
-        result.sort((a, b) => a.price - b.price);
-        break;
-      case "price-high":
-        result.sort((a, b) => b.price - a.price);
-        break;
-      case "offset-high":
-        result.sort((a, b) => b.carbonOffset - a.carbonOffset);
-        break;
-      case "rating":
-        result.sort((a, b) => (b.rating || 0) - (a.rating || 0));
-        break;
-      default: // popular – badges first, then rating
-        result.sort((a, b) => {
-          if (a.badge === "popular" && b.badge !== "popular") return -1;
-          if (b.badge === "popular" && a.badge !== "popular") return 1;
-          return (b.rating || 0) - (a.rating || 0);
-        });
-    }
-
     return result;
-  }, [items, category, search, sortBy]);
+  }, [items, category, search]);
 
   const displayedItems = filteredItems();
 
@@ -245,42 +172,28 @@ function Marketplace() {
     const headers = { Authorization: `Bearer ${token}` };
 
     try {
-      await axios.post(`${API_BASE}/api/marketplace/purchase`, {
-        itemId: selectedItem.id,
-        quantity,
-      }, { headers });
+      // Fetch current user to get userId
+      const meRes = await axios.get(`${API_BASE}/api/auth/me`, { headers });
+      const userId = meRes.data?.id;
+      if (!userId) {
+        throw new Error("User ID not found for purchase.");
+      }
 
-      // Add to local transaction list
-      const newTxn = {
-        id: Date.now(),
-        itemName: selectedItem.name,
-        type: selectedItem.type,
-        quantity,
-        amount: selectedItem.price * quantity,
-        carbonOffset: selectedItem.carbonOffset * quantity,
-        date: new Date().toISOString(),
-        status: "Confirmed",
-      };
-      setTransactions((prev) => [newTxn, ...prev]);
-
-      setToast(`🎉 Successfully purchased ${quantity}× ${selectedItem.name}!`);
-      closePurchaseModal();
-    } catch {
-      // Even if backend isn't ready, simulate success for demo
-      const newTxn = {
-        id: Date.now(),
-        itemName: selectedItem.name,
-        type: selectedItem.type,
-        quantity,
-        amount: selectedItem.price * quantity,
-        carbonOffset: selectedItem.carbonOffset * quantity,
-        date: new Date().toISOString(),
-        status: "Confirmed",
-      };
-      setTransactions((prev) => [newTxn, ...prev]);
+      // Create transaction in backend (which will also trigger a purchase notification)
+      await axios.post(
+        `${API_BASE}/api/transactions`,
+        {
+          userId,
+          marketplaceItemId: selectedItem.id,
+        },
+        { headers }
+      );
 
       setToast(`🎉 Successfully purchased ${quantity}× ${selectedItem.name}!`);
       closePurchaseModal();
+    } catch (err) {
+      console.error("Purchase failed", err);
+      setToast("Purchase failed. Please try again.");
     } finally {
       setPurchasing(false);
     }
@@ -293,15 +206,6 @@ function Marketplace() {
       return () => clearTimeout(t);
     }
   }, [toast]);
-
-  const formatDate = (dateStr) =>
-    dateStr
-      ? new Date(dateStr).toLocaleDateString("en-IN", {
-          day: "numeric", month: "short", year: "numeric",
-        })
-      : "—";
-
-  const maxOffset = Math.max(...items.map((i) => i.carbonOffset || 0), 1);
 
   // ── Render ──
   return (
@@ -371,19 +275,6 @@ function Marketplace() {
                 ))}
               </div>
 
-              <div className="marketplace-sort-wrap">
-                <span className="marketplace-sort-label">Sort:</span>
-                <select
-                  id="marketplace-sort"
-                  className="marketplace-sort-select"
-                  value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value)}
-                >
-                  {SORT_OPTIONS.map((opt) => (
-                    <option key={opt.value} value={opt.value}>{opt.label}</option>
-                  ))}
-                </select>
-              </div>
             </div>
 
             {/* ══ Product Grid ══ */}
@@ -399,6 +290,7 @@ function Marketplace() {
               <div className="marketplace-grid">
                 {displayedItems.map((item) => {
                   const meta = CATEGORY_META[item.type] || { icon: "🌿", banner: "carbon-offset", emoji: "🌿" };
+                  const bannerClass = item.bannerKey || meta.banner;
                   return (
                     <div
                       key={item.id}
@@ -409,13 +301,8 @@ function Marketplace() {
                       onKeyDown={(e) => e.key === "Enter" && openPurchaseModal(item)}
                     >
                       {/* Banner */}
-                      <div className={`marketplace-card-banner ${meta.banner}`}>
-                        {meta.icon}
-                        {item.badge && (
-                          <span className={`marketplace-card-badge ${item.badge}`}>
-                            {item.badge}
-                          </span>
-                        )}
+                      <div className={`marketplace-card-banner ${bannerClass}`}>
+                        {item.headerIcon || meta.icon}
                       </div>
 
                       {/* Body */}
@@ -423,19 +310,6 @@ function Marketplace() {
                         <span className="marketplace-card-type">{meta.emoji} {item.type}</span>
                         <h3 className="marketplace-card-name">{item.name}</h3>
                         <p className="marketplace-card-desc">{item.description}</p>
-
-                        {/* Impact bar */}
-                        <div className="marketplace-card-impact">
-                          <div className="marketplace-card-impact-bar-wrap">
-                            <div
-                              className="marketplace-card-impact-bar"
-                              style={{ width: `${Math.round((item.carbonOffset / maxOffset) * 100)}%` }}
-                            />
-                          </div>
-                          <span className="marketplace-card-impact-label">
-                            {item.carbonOffset} kg
-                          </span>
-                        </div>
 
                         <div className="marketplace-card-meta">
                           <span className="marketplace-card-offset">
@@ -454,7 +328,10 @@ function Marketplace() {
                       <div className="marketplace-card-footer">
                         <span className="marketplace-card-price">
                           ₹{item.price.toLocaleString("en-IN")}
-                          <span className="marketplace-card-price-unit"> /unit</span>
+                          <span className="marketplace-card-price-unit">
+                            {" "}
+                            /{item.priceUnit || "unit"}
+                          </span>
                         </span>
                         <button
                           className="marketplace-card-buy-btn"
@@ -469,66 +346,6 @@ function Marketplace() {
               </div>
             )}
 
-            {/* ══ Transaction History ══ */}
-            <section className="marketplace-history-section card">
-              <div className="marketplace-history-header">
-                <h2 className="marketplace-history-title">
-                  💳 Purchase History ({transactions.length})
-                </h2>
-                {transactions.length > 0 && (
-                  <button
-                    type="button"
-                    className="marketplace-history-toggle"
-                    onClick={() => setShowHistory((v) => !v)}
-                  >
-                    {showHistory ? "Hide" : "Show"} history
-                  </button>
-                )}
-              </div>
-
-              {showHistory && (
-                transactions.length === 0 ? (
-                  <p className="marketplace-history-empty">
-                    No purchases yet. Start offsetting your carbon footprint today!
-                  </p>
-                ) : (
-                  <div className="marketplace-history-table-wrap">
-                    <table className="marketplace-history-table">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Item</th>
-                          <th>Type</th>
-                          <th>Qty</th>
-                          <th>Amount</th>
-                          <th>CO₂ Offset</th>
-                          <th>Status</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {transactions.map((txn) => (
-                          <tr key={txn.id}>
-                            <td>{formatDate(txn.date)}</td>
-                            <td><strong>{txn.itemName}</strong></td>
-                            <td>{txn.type}</td>
-                            <td>{txn.quantity}</td>
-                            <td className="marketplace-history-amount">
-                              ₹{(txn.amount || 0).toLocaleString("en-IN")}
-                            </td>
-                            <td>{(txn.carbonOffset || 0).toLocaleString()} kg</td>
-                            <td>
-                              <span className={`marketplace-history-status ${(txn.status || "confirmed").toLowerCase()}`}>
-                                {txn.status || "Confirmed"}
-                              </span>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )
-              )}
-            </section>
           </>
         )}
 
@@ -551,8 +368,12 @@ function Marketplace() {
                 ×
               </button>
 
-              <div className={`marketplace-modal-banner ${(CATEGORY_META[selectedItem.type] || {}).banner || "carbon-offset"}`}>
-                {(CATEGORY_META[selectedItem.type] || {}).icon || "🌿"}
+              <div
+                className={`marketplace-modal-banner ${
+                  selectedItem.bannerKey || (CATEGORY_META[selectedItem.type] || {}).banner || "carbon-offset"
+                }`}
+              >
+                {selectedItem.headerIcon || (CATEGORY_META[selectedItem.type] || {}).icon || "🌿"}
               </div>
 
               <div className="marketplace-modal-body">

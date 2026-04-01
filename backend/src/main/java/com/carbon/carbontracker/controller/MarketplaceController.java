@@ -1,7 +1,10 @@
 package com.carbon.carbontracker.controller;
 
 import com.carbon.carbontracker.dto.MarketplaceItemDTO;
+import com.carbon.carbontracker.service.AdminAuditLogService;
 import com.carbon.carbontracker.service.MarketplaceService;
+import com.carbon.carbontracker.util.ClientIpUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -16,12 +19,19 @@ import java.util.List;
 public class MarketplaceController {
 
     private final MarketplaceService marketplaceService;
+    private final AdminAuditLogService adminAuditLogService;
 
     // ============================
     // 👤 USER: Get all items
     // ============================
     @GetMapping
     public ResponseEntity<List<MarketplaceItemDTO>> getAllItems() {
+        return ResponseEntity.ok(marketplaceService.getAllItems());
+    }
+
+    /** Alias for frontend that calls /api/marketplace/items */
+    @GetMapping("/items")
+    public ResponseEntity<List<MarketplaceItemDTO>> getAllItemsAlias() {
         return ResponseEntity.ok(marketplaceService.getAllItems());
     }
 
@@ -37,9 +47,14 @@ public class MarketplaceController {
     // 👨‍💼 ADMIN: Create item
     // ============================
     @PostMapping
-    public ResponseEntity<MarketplaceItemDTO> createItem(@RequestBody MarketplaceItemDTO dto) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(marketplaceService.createItem(dto));
+    public ResponseEntity<MarketplaceItemDTO> createItem(@RequestBody MarketplaceItemDTO dto,
+                                                        HttpServletRequest request) {
+        MarketplaceItemDTO created = marketplaceService.createItem(dto, ClientIpUtil.resolve(request));
+        adminAuditLogService.log(
+                "Marketplace Item Created",
+                created.getItemName() != null ? created.getItemName() : "",
+                request);
+        return ResponseEntity.status(HttpStatus.CREATED).body(created);
     }
 
     // ============================
@@ -47,16 +62,27 @@ public class MarketplaceController {
     // ============================
     @PutMapping("/{id}")
     public ResponseEntity<MarketplaceItemDTO> updateItem(@PathVariable Long id,
-                                                         @RequestBody MarketplaceItemDTO dto) {
-        return ResponseEntity.ok(marketplaceService.updateItem(id, dto));
+                                                         @RequestBody MarketplaceItemDTO dto,
+                                                         HttpServletRequest request) {
+        MarketplaceItemDTO updated = marketplaceService.updateItem(id, dto, ClientIpUtil.resolve(request));
+        adminAuditLogService.log(
+                "Marketplace Item Updated",
+                updated.getItemName() != null ? updated.getItemName() : ("id " + id),
+                request);
+        return ResponseEntity.ok(updated);
     }
 
     // ============================
     // 👨‍💼 ADMIN: Delete item
     // ============================
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteItem(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteItem(@PathVariable Long id, HttpServletRequest request) {
+        MarketplaceItemDTO existing = marketplaceService.getItemById(id);
         marketplaceService.deleteItem(id);
+        adminAuditLogService.log(
+                "Marketplace Item Deleted",
+                existing.getItemName() != null ? existing.getItemName() : ("id " + id),
+                request);
         return ResponseEntity.noContent().build();
     }
 

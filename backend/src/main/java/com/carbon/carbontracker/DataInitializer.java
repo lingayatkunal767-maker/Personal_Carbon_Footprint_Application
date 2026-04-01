@@ -1,10 +1,15 @@
 package com.carbon.carbontracker;
 
 import com.carbon.carbontracker.model.BadgeTemplate;
+import com.carbon.carbontracker.model.MarketplaceItem;
 import com.carbon.carbontracker.repository.BadgeTemplateRepository;
+import com.carbon.carbontracker.repository.MarketplaceRepository;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+
+import java.math.BigDecimal;
+import java.util.List;
 
 @Configuration
 public class DataInitializer {
@@ -200,6 +205,194 @@ public class DataInitializer {
                     .build());
 
         };
+    }
+
+    @Bean
+    public CommandLineRunner marketplaceSeeder(MarketplaceRepository marketplaceRepository) {
+        return args -> {
+            // Normalize existing rows so only 4 category/banner types are used.
+            normalizeMarketplaceRows(marketplaceRepository);
+
+            // Ensure at least 2 items exist per category at startup.
+            ensureMarketplaceCount(marketplaceRepository, "Carbon Offset", 2, new MarketplaceItem[]{
+                    MarketplaceItem.builder()
+                            .itemName("Tree Planting Pack")
+                            .itemType("Carbon Offset")
+                            .price(new BigDecimal("499.00"))
+                            .description("Support verified tree plantation projects.")
+                            .carbonOffsetValue(new BigDecimal("25.00"))
+                            .badge("popular")
+                            .priceUnit("unit")
+                            .headerIcon("🌳")
+                            .bannerKey("carbon-offset")
+                            .createdBy("system-seed")
+                            .build(),
+                    MarketplaceItem.builder()
+                            .itemName("Household Carbon Offset")
+                            .itemType("Carbon Offset")
+                            .price(new BigDecimal("899.00"))
+                            .description("Offset your monthly household emissions.")
+                            .carbonOffsetValue(new BigDecimal("48.00"))
+                            .badge("new")
+                            .priceUnit("unit")
+                            .headerIcon("🍃")
+                            .bannerKey("carbon-offset")
+                            .createdBy("system-seed")
+                            .build()
+            });
+
+            ensureMarketplaceCount(marketplaceRepository, "Renewable Energy", 2, new MarketplaceItem[]{
+                    MarketplaceItem.builder()
+                            .itemName("Solar Energy Credit")
+                            .itemType("Renewable Energy")
+                            .price(new BigDecimal("799.00"))
+                            .description("Fund clean solar generation projects.")
+                            .carbonOffsetValue(new BigDecimal("40.00"))
+                            .badge("popular")
+                            .priceUnit("unit")
+                            .headerIcon("☀️")
+                            .bannerKey("renewable-energy")
+                            .createdBy("system-seed")
+                            .build(),
+                    MarketplaceItem.builder()
+                            .itemName("Wind Farm Support")
+                            .itemType("Renewable Energy")
+                            .price(new BigDecimal("999.00"))
+                            .description("Contribute to verified wind energy expansion.")
+                            .carbonOffsetValue(new BigDecimal("52.00"))
+                            .badge("new")
+                            .priceUnit("unit")
+                            .headerIcon("💨")
+                            .bannerKey("renewable-energy")
+                            .createdBy("system-seed")
+                            .build()
+            });
+
+            ensureMarketplaceCount(marketplaceRepository, "Environmental", 2, new MarketplaceItem[]{
+                    MarketplaceItem.builder()
+                            .itemName("River Cleanup Drive")
+                            .itemType("Environmental")
+                            .price(new BigDecimal("399.00"))
+                            .description("Support plastic removal and river restoration.")
+                            .carbonOffsetValue(new BigDecimal("18.00"))
+                            .badge("limited")
+                            .priceUnit("unit")
+                            .headerIcon("🌍")
+                            .bannerKey("environmental")
+                            .createdBy("system-seed")
+                            .build(),
+                    MarketplaceItem.builder()
+                            .itemName("Mangrove Restoration")
+                            .itemType("Environmental")
+                            .price(new BigDecimal("749.00"))
+                            .description("Restore coastal mangrove ecosystems.")
+                            .carbonOffsetValue(new BigDecimal("36.00"))
+                            .badge("popular")
+                            .priceUnit("unit")
+                            .headerIcon("🌱")
+                            .bannerKey("environmental")
+                            .createdBy("system-seed")
+                            .build()
+            });
+
+            ensureMarketplaceCount(marketplaceRepository, "Sustainable Living", 2, new MarketplaceItem[]{
+                    MarketplaceItem.builder()
+                            .itemName("Reusable Living Kit")
+                            .itemType("Sustainable Living")
+                            .price(new BigDecimal("299.00"))
+                            .description("Starter kit for reducing daily plastic waste.")
+                            .carbonOffsetValue(new BigDecimal("10.00"))
+                            .badge("new")
+                            .priceUnit("unit")
+                            .headerIcon("♻️")
+                            .bannerKey("sustainable-living")
+                            .createdBy("system-seed")
+                            .build(),
+                    MarketplaceItem.builder()
+                            .itemName("Compost Home Set")
+                            .itemType("Sustainable Living")
+                            .price(new BigDecimal("549.00"))
+                            .description("Home composting set for food waste reduction.")
+                            .carbonOffsetValue(new BigDecimal("16.00"))
+                            .badge("limited")
+                            .priceUnit("unit")
+                            .headerIcon("🪴")
+                            .bannerKey("sustainable-living")
+                            .createdBy("system-seed")
+                            .build()
+            });
+        };
+    }
+
+    private void normalizeMarketplaceRows(MarketplaceRepository repo) {
+        List<MarketplaceItem> items = repo.findAll();
+        boolean changed = false;
+        for (MarketplaceItem item : items) {
+            String normalizedType = normalizeType(item.getItemType());
+            String normalizedBanner = bannerFromType(normalizedType);
+            String normalizedIcon = iconFromType(normalizedType);
+
+            boolean itemChanged = false;
+            if (!normalizedType.equals(item.getItemType())) {
+                item.setItemType(normalizedType);
+                itemChanged = true;
+            }
+            if (!normalizedBanner.equals(item.getBannerKey())) {
+                item.setBannerKey(normalizedBanner);
+                itemChanged = true;
+            }
+            if (!normalizedIcon.equals(item.getHeaderIcon())) {
+                item.setHeaderIcon(normalizedIcon);
+                itemChanged = true;
+            }
+            if (itemChanged) {
+                changed = true;
+            }
+        }
+        if (changed) {
+            repo.saveAll(items);
+        }
+    }
+
+    private String normalizeType(String rawType) {
+        if (rawType == null || rawType.isBlank()) return "Carbon Offset";
+        String compact = rawType.trim().toLowerCase().replace('_', ' ').replace('-', ' ');
+        compact = compact.replaceAll("\\s+", " ").trim();
+        if (compact.contains("renewable")) return "Renewable Energy";
+        if (compact.contains("sustainable")) return "Sustainable Living";
+        if (compact.contains("environment")) return "Environmental";
+        if (compact.contains("carbon")) return "Carbon Offset";
+        return "Carbon Offset";
+    }
+
+    private String bannerFromType(String type) {
+        return switch (type) {
+            case "Renewable Energy" -> "renewable-energy";
+            case "Environmental" -> "environmental";
+            case "Sustainable Living" -> "sustainable-living";
+            default -> "carbon-offset";
+        };
+    }
+
+    private String iconFromType(String type) {
+        return switch (type) {
+            case "Renewable Energy" -> "☀️";
+            case "Environmental" -> "🌍";
+            case "Sustainable Living" -> "♻️";
+            default -> "🌳";
+        };
+    }
+
+    private void ensureMarketplaceCount(MarketplaceRepository repo, String category, int minimum, MarketplaceItem[] candidates) {
+        long existing = repo.countByItemType(category);
+        if (existing >= minimum) {
+            return;
+        }
+        int needed = (int) (minimum - existing);
+        for (int i = 0; i < candidates.length && needed > 0; i++) {
+            repo.save(candidates[i]);
+            needed--;
+        }
     }
 }
 

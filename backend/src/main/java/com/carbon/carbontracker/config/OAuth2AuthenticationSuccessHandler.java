@@ -2,6 +2,8 @@ package com.carbon.carbontracker.config;
 
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.repository.UserRepository;
+import com.carbon.carbontracker.service.AdminAuditLogService;
+import com.carbon.carbontracker.service.AdminSettingsStoreService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.core.Authentication;
@@ -29,6 +31,12 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private AdminAuditLogService adminAuditLogService;
+
+    @Autowired
+    private AdminSettingsStoreService adminSettingsStoreService;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request, HttpServletResponse response,
@@ -68,6 +76,9 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
         if (emailToStore != null && !emailToStore.isBlank()) {
             String finalEmail = emailToStore;
             String finalName = name;
+            boolean maintenanceOn = adminSettingsStoreService.getBoolean("maintenanceMode", false);
+            String maintenanceStart = adminSettingsStoreService.getString("maintenanceStart", "");
+            String maintenanceEnd = adminSettingsStoreService.getString("maintenanceEnd", "");
 
             Optional<User> existingOpt = userRepository.findByEmail(finalEmail);
 
@@ -75,10 +86,39 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
             if (existingOpt.isPresent()) {
                 User existing = existingOpt.get();
                 if (!existing.isActive()) {
-                    response.sendError(HttpServletResponse.SC_FORBIDDEN, "Your account has been blocked. Please contact support.");
+                    String blockedRedirect = UriComponentsBuilder
+                            .fromUriString(authorizedRedirectUri)
+                            .queryParam("error", "blocked")
+                            .build()
+                            .toUriString();
+                    response.sendRedirect(blockedRedirect);
+                    return;
+                }
+                // During maintenance, allow only admins.
+                if (maintenanceOn && !AdminAuditLogService.isAdminRole(existing.getRole())) {
+                    String blockedRedirect = UriComponentsBuilder
+                            .fromUriString(authorizedRedirectUri)
+                            .queryParam("error", "maintenance")
+                            .queryParam("maintenanceStart", maintenanceStart)
+                            .queryParam("maintenanceEnd", maintenanceEnd)
+                            .build()
+                            .toUriString();
+                    response.sendRedirect(blockedRedirect);
                     return;
                 }
             } else {
+                // During maintenance, do not allow new non-admin OAuth sign-ins.
+                if (maintenanceOn) {
+                    String blockedRedirect = UriComponentsBuilder
+                            .fromUriString(authorizedRedirectUri)
+                            .queryParam("error", "maintenance")
+                            .queryParam("maintenanceStart", maintenanceStart)
+                            .queryParam("maintenanceEnd", maintenanceEnd)
+                            .build()
+                            .toUriString();
+                    response.sendRedirect(blockedRedirect);
+                    return;
+                }
                 // Create new active user with default USER role
                 User user = User.builder()
                         .name(finalName)
@@ -89,6 +129,15 @@ public class OAuth2AuthenticationSuccessHandler implements AuthenticationSuccess
                         .build();
                 userRepository.save(user);
             }
+        }
+
+        if (emailToStore != null && !emailToStore.isBlank()) {
+            userRepository.findByEmail(emailToStore).ifPresent(u -> {
+                if (AdminAuditLogService.isAdminRole(u.getRole())) {
+                    adminAuditLogService.logForUser(u, "Admin Login",
+                            "Signed in with OAuth (" + provider + ")", request);
+                }
+            });
         }
 
         String token = jwtUtil.generateToken(subject);

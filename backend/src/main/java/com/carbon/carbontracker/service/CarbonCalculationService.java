@@ -2,9 +2,13 @@ package com.carbon.carbontracker.service;
 
 import org.springframework.stereotype.Service;
 import com.carbon.carbontracker.dto.SurveyRequest;
+import lombok.RequiredArgsConstructor;
 
 @Service
+@RequiredArgsConstructor
 public class CarbonCalculationService {
+
+    private final AdminSettingsStoreService settingsStoreService;
 
     public double calculateTransport(SurveyRequest request) {
 
@@ -13,6 +17,7 @@ public class CarbonCalculationService {
         }
 
         double factor = 0;
+        final double configuredTransportFactor = settingsStoreService.getDouble("transportFactor", 0.12);
 
         switch (request.getTransportMode().toUpperCase()) {
 
@@ -26,11 +31,11 @@ public class CarbonCalculationService {
                 break;
 
             case "PUBLIC":
-                factor = 0.1;
+                factor = configuredTransportFactor;
                 break;
 
             case "BIKE":
-                factor = 0.02;
+                factor = Math.max(0.0, configuredTransportFactor * 0.2);
                 break;
 
             case "WALK":
@@ -54,10 +59,15 @@ public class CarbonCalculationService {
 
         double base = 0;
 
+        final double vegFactor = settingsStoreService.getDouble("foodVegFactor", 1.5);
+        final double nonVegFactor = settingsStoreService.getDouble("foodNonVegFactor", 3.3);
+        final double dairyFactor = settingsStoreService.getDouble("foodDairyFactor", 2.1);
+
         switch (request.getDietType().toUpperCase()) {
-            case "VEG": base = 2; break;
-            case "NON_VEG": base = 5; break;
-            case "VEGAN": base = 1.5; break;
+            case "VEG": base = vegFactor; break;
+            case "NON_VEG": base = nonVegFactor; break;
+            case "VEGAN": base = Math.max(0.0, vegFactor * 0.8); break;
+            case "DAIRY": base = dairyFactor; break;
             default: base = 0;
         }
 
@@ -72,7 +82,8 @@ public class CarbonCalculationService {
             return 0;
         }
 
-        double emission = electricity * 0.82;
+        final double electricityFactor = settingsStoreService.getDouble("electricityFactor", 0.82);
+        double emission = electricity * electricityFactor;
 
         if (Boolean.TRUE.equals(request.getRenewable())) {
             emission *= 0.6;

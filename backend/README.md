@@ -1,27 +1,31 @@
-# CarbonCalc — Backend
+# CarbonCalc - Backend
 
 ## Overview
 
-This Spring Boot (Java 17) backend powers the **Personal Carbon Footprint** application.
+Spring Boot (Java 17) backend for the Personal Carbon Footprint application.
 
-It is responsible for:
-- OAuth2 login (Google / GitHub) and JWT token generation
-- User management (including admin block / unblock / soft delete)
-- Lifestyle surveys and carbon logs
-- Goals (create, update, monitor) and automatic progress updates
-- Badge templates, user badges, and auto‑awarding rules
-- Leaderboard calculation based on emission reductions, goals, and badges
+It handles:
+- JWT and OAuth2 authentication (Google/GitHub)
+- User management and admin controls
+- Carbon logs, goals, badges, and analytics
+- Marketplace items and user transactions
+- User/admin notifications
+- Live leaderboard and weekly leaderboard snapshots
+- Admin settings (including maintenance mode)
 
-The React frontend (in `../frontend`) talks to this backend at `http://localhost:8080`.
+Frontend app path: `../frontend`  
+Default backend URL: `http://localhost:8080`
 
 ---
 
 ## Tech stack
 
-- Java 17, Spring Boot 3
-- Spring Data JPA (Hibernate) with **PostgreSQL**
-- Spring Security (OAuth2 client + JWT)
-- Maven build
+- Java 17
+- Spring Boot 3
+- Spring Security (JWT + OAuth2)
+- Spring Data JPA / Hibernate
+- PostgreSQL
+- Maven
 
 ---
 
@@ -29,130 +33,116 @@ The React frontend (in `../frontend`) talks to this backend at `http://localhost
 
 - JDK 17+
 - Maven 3.8+
-- PostgreSQL running locally
+- PostgreSQL
 
-Recommended local DB:
-
+Default local DB:
 - Database: `carbon_tracker`
-- User: `postgres`
+- Username: `postgres`
 - Password: `root`
-
-You can change these in `src/main/resources/application-local.properties`.
 
 ---
 
 ## Configuration
 
-Key properties (see `application.properties` + `application-local.properties`):
+Check:
+- `src/main/resources/application.properties`
+- `src/main/resources/application-local.properties`
 
-- **Database**
-  - `spring.datasource.url=jdbc:postgresql://localhost:5432/carbon_tracker`
-  - `spring.datasource.username=postgres`
-  - `spring.datasource.password=root`
-  - `spring.jpa.hibernate.ddl-auto=update`
-- **OAuth2**
-  - `spring.security.oauth2.client.registration.google.*`
-  - `spring.security.oauth2.client.registration.github.*`
-  - `app.oauth2.authorizedRedirectUri=http://localhost:3000/oauth2/redirect`
-- **Mail (optional)**
-  - `app.mail.enabled`, `spring.mail.*` — used for forgot‑password / OTP flows.
+Important properties:
+- `spring.datasource.url=jdbc:postgresql://localhost:5432/carbon_tracker`
+- `spring.datasource.username=postgres`
+- `spring.datasource.password=root`
+- `spring.jpa.hibernate.ddl-auto=update`
+- `app.oauth2.authorizedRedirectUri=http://localhost:3000/oauth2/redirect`
 
 ---
 
-## Database schema & seeding
+## Setup and Run
 
-- Tables are created/updated automatically by Hibernate (`ddl-auto=update`).
-- `db_scripts/schema.sql` contains a reference PostgreSQL schema for manual setup.
-- `DataInitializer.java` seeds default **badge templates** and related data on startup when the database is empty.
-
----
-
-## Running the backend (development)
-
-From the `backend` folder:
+From `backend/`:
 
 ```bash
-# 1. Ensure PostgreSQL is running and the DB exists
-#    psql -U postgres -c "CREATE DATABASE carbon_tracker;"   # run once
-
-# 2. Start Spring Boot
 mvn spring-boot:run
 ```
 
-Backend will listen on `http://localhost:8080`.
-
----
-
-## Build & run (packaged JAR)
+### Build
 
 ```bash
 mvn clean package
 java -jar target/carbontracker-0.0.1-SNAPSHOT.jar
 ```
 
----
+## Key APIs
 
-## Important API endpoints (current project)
+### Auth and settings
+- `POST /api/auth/login`
+- `GET /api/auth/me`
+- `GET /api/admin/settings`
+- `PUT /api/admin/settings`
 
-### Auth & users
+Maintenance mode behavior:
+- Non-admin password login is blocked when maintenance is enabled.
+- Non-admin OAuth login is also blocked.
+- Admin login remains allowed.
 
-- `GET /api/auth/me` — current user details (used by layout, dashboard, leaderboard)
-- `GET /api/users` — list all users (admin)
-- `PUT /api/users/{id}/block` / `PUT /api/users/{id}/unblock` — admin block / unblock
-- `DELETE /api/users/{id}` — admin soft delete (marks user inactive)
+### Users
+- `GET /api/users`
+- `PUT /api/users/{id}/block`
+- `PUT /api/users/{id}/unblock`
+- `DELETE /api/users/{id}`
 
-### Carbon logs & survey
-
-- `GET /api/carbon/logs?from=YYYY-MM-DD&to=YYYY-MM-DD` — carbon logs for current user
-- `PUT /api/carbon/logs/{id}` — update a carbon log
-- `GET /api/surveys` / `POST /api/surveys` — lifestyle survey responses (used for badges like ECO_STARTER, SURVEY_MASTER)
-
-### Goals
-
-- `POST /api/goals` — create a goal for logged‑in user
-- `GET /api/goals` — list current user’s goals
-- `GET /api/goals/admin` — all non‑admin user goals (admin dashboard)
-- `PUT /api/goals/{id}` / `DELETE /api/goals/{id}` — update / delete goals
+### Carbon logs and goals
+- `GET /api/carbon/logs`
+- `GET /api/carbon/logs/admin/all`
+- `POST /api/goals`
+- `GET /api/goals`
+- `GET /api/goals/admin`
 
 ### Badges
+- `GET /api/badge-templates`
+- `POST /api/badge-templates`
+- `PUT /api/badge-templates/{id}`
+- `GET /api/badges`
+- `POST /api/badges/award/{userId}`
+- `GET /api/badges/admin/stats`
 
-- `GET /api/badge-templates` — list badge templates
-- `POST /api/badge-templates` — create new badge template
-- `PUT /api/badge-templates/{id}` — update name/description/condition/icon/active
-- `GET /api/badges` — list badges for current user
-- `POST /api/badges/award/{userId}` — award a badge to a user (admin “Award Badge” modal)
+### Marketplace and transactions
+- `GET /api/marketplace/items`
+- `POST /api/marketplace/items`
+- `PUT /api/marketplace/items/{id}`
+- `DELETE /api/marketplace/items/{id}`
+- `POST /api/transactions`
+- `GET /api/transactions/user/{userId}`
+- `GET /api/transactions`
+
+### Notifications
+- `GET /api/notifications`
+- `GET /api/notifications/user/{userId}`
+- `POST /api/notifications`
+- `PUT /api/notifications/{id}/read`
+- `PUT /api/notifications/{id}/hide`
 
 ### Leaderboard
+- `GET /api/leaderboard` (live)
+- `GET /api/leaderboard/weekly?weekStart=YYYY-MM-DD`
+- `GET /api/leaderboard/weekly/weeks`
 
-- `GET /api/leaderboard` — global leaderboard for **non‑admin** users.
-
-Score formula in `LeaderboardService`:
-
-- Compute `emissionReduction` as **% drop in total emissions** (last 30 days vs previous 30).
-- Count:
-  - `goalsCompleted` = number of goals with status `COMPLETED`
-  - `badgesEarned`   = number of badges awarded to the user
-- Final score:
-
-```text
-score = (emissionReduction × 50)
-      + (goalsCompleted  × 20)
-      + (badgesEarned    × 10)
-```
+Live leaderboard scoring uses emission reduction, completed goals, and earned badges.
+Weekly snapshots are stored in `weekly_leaderboard`.
 
 ---
 
-## Testing
+## Schema and data notes
+
+- Hibernate updates schema at startup (`ddl-auto=update`).
+- Reference SQL is maintained in `../db_scripts/schema.sql`.
+- Weekly leaderboard snapshots are persisted for historical views.
+
+---
+
+## Test
 
 ```bash
 mvn test
 ```
-
----
-
-## Production notes
-
-- Use separate configuration (DB, OAuth2, mail) for non‑dev environments.
-- Store secrets (DB password, OAuth client secrets, JWT keys, mail password) outside source control.
-- Add HTTPS, logging, metrics, and backups for a real deployment.
 

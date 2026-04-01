@@ -2,6 +2,7 @@ package com.carbon.carbontracker.service;
 
 import com.carbon.carbontracker.dto.BadgeRequest;
 import com.carbon.carbontracker.dto.BadgeResponse;
+import com.carbon.carbontracker.dto.BadgeStatsDTO;
 import com.carbon.carbontracker.model.Badge;
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.repository.BadgeRepository;
@@ -50,6 +51,19 @@ public class BadgeService {
         return badgeRepository.findByUserId(userId)
                 .stream()
                 .map(this::toResponse)
+                .collect(Collectors.toList());
+    }
+
+    // ---------------------------------------------------------------
+    // Admin analytics: count badges earned globally by badge name
+    // ---------------------------------------------------------------
+    public List<BadgeStatsDTO> getBadgeStatsForAdmin() {
+        return badgeRepository.findBadgeStatsForAdmin()
+                .stream()
+                .map(row -> new BadgeStatsDTO(
+                        String.valueOf(row[0]),
+                        row[1] instanceof Number ? ((Number) row[1]).longValue() : 0L
+                ))
                 .collect(Collectors.toList());
     }
 

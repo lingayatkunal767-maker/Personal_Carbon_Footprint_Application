@@ -16,79 +16,18 @@ const TYPE_META = {
   system:      { icon: "🔔", label: "System" },
 };
 
-/* ── Fallback notifications (used when backend is unavailable) ── */
-const FALLBACK_NOTIFICATIONS = [
-  {
-    id: 1,
-    type: "goal",
-    message: "Congratulations! You completed your goal <strong>Reduce monthly emissions by 20%</strong>.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 15).toISOString(),
-    read: false,
-  },
-  {
-    id: 2,
-    type: "badge",
-    message: "You earned the <strong>Eco Starter</strong> badge! 🌱 Keep up the great work.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 2).toISOString(),
-    read: false,
-  },
-  {
-    id: 3,
-    type: "leaderboard",
-    message: "Your rank improved! You are now ranked <strong>#3</strong> on the leaderboard.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 5).toISOString(),
-    read: false,
-  },
-  {
-    id: 4,
-    type: "emission",
-    message: "High emission alert: Your daily emission of <strong>68 kg CO₂e</strong> exceeds the recommended limit.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 12).toISOString(),
-    read: true,
-  },
-  {
-    id: 5,
-    type: "purchase",
-    message: "Your purchase of <strong>Plant 10 Trees</strong> (₹2,099) has been confirmed. 🌳",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 24).toISOString(),
-    read: true,
-  },
-  {
-    id: 6,
-    type: "badge",
-    message: "You earned the <strong>Week Warrior</strong> badge for logging 7 consecutive days! 📅",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 36).toISOString(),
-    read: true,
-  },
-  {
-    id: 7,
-    type: "goal",
-    message: "New goal suggestion: <strong>Switch to public transport</strong> to reduce your transport emissions by 40%.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 48).toISOString(),
-    read: true,
-  },
-  {
-    id: 8,
-    type: "system",
-    message: "Welcome to CarbonCalc! Start by completing the <strong>Lifestyle Survey</strong> to get your first carbon footprint estimate.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 72).toISOString(),
-    read: true,
-  },
-  {
-    id: 9,
-    type: "purchase",
-    message: "Your purchase of <strong>Solar Panel Micro-Investment</strong> (₹4,199) has been confirmed. ☀️",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 96).toISOString(),
-    read: true,
-  },
-  {
-    id: 10,
-    type: "leaderboard",
-    message: "Leaderboard updated! Check your current rank and see how you compare with others.",
-    timestamp: new Date(Date.now() - 1000 * 60 * 60 * 120).toISOString(),
-    read: true,
-  },
-];
+function normalizeNotification(raw) {
+  if (!raw || typeof raw !== "object") return null;
+  const type = String(raw.type || "system").toLowerCase();
+  const message = raw.message || raw.title || "";
+  return {
+    id: raw.id,
+    type,
+    message,
+    timestamp: raw.timestamp || raw.createdAt || "",
+    read: raw.read === true || raw.isRead === true,
+  };
+}
 
 const FILTER_OPTIONS = [
   { key: "all",         label: "All" },
@@ -116,12 +55,17 @@ function Notifications() {
 
     const headers = { Authorization: `Bearer ${token}` };
 
-    axios.get(`${API_BASE}/api/notifications`, { headers })
-      .then((res) => {
-        const data = Array.isArray(res.data) ? res.data : FALLBACK_NOTIFICATIONS;
-        setNotifications(data);
+    axios.get(`${API_BASE}/api/auth/me`, { headers })
+      .then((meRes) => meRes.data?.id)
+      .then((userId) => {
+        if (!userId) throw new Error("User ID not found.");
+        return axios.get(`${API_BASE}/api/notifications/user/${userId}`, { headers });
       })
-      .catch(() => setNotifications(FALLBACK_NOTIFICATIONS))
+      .then((res) => {
+        const data = Array.isArray(res.data) ? res.data : [];
+        setNotifications(data.map(normalizeNotification).filter(Boolean));
+      })
+      .catch(() => setNotifications([]))
       .finally(() => setLoading(false));
   }, [navigate]);
 
@@ -178,9 +122,11 @@ function Notifications() {
     setNotifications((prev) => prev.filter((n) => n.id !== id));
     const token = localStorage.getItem("token");
     if (token) {
-      axios.delete(`${API_BASE}/api/notifications/${id}`, {
-        headers: { Authorization: `Bearer ${token}` },
-      }).catch(() => {});
+      axios.put(
+        `${API_BASE}/api/notifications/${id}/hide`,
+        {},
+        { headers: { Authorization: `Bearer ${token}` } }
+      ).catch(() => {});
     }
   };
 

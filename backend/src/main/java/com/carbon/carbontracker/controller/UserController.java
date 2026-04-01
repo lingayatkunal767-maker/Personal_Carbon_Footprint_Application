@@ -2,6 +2,9 @@ package com.carbon.carbontracker.controller;
 
 import com.carbon.carbontracker.model.User;
 import com.carbon.carbontracker.repository.UserRepository;
+import com.carbon.carbontracker.service.AdminAuditLogService;
+import jakarta.servlet.http.HttpServletRequest;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
@@ -11,13 +14,11 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/users")
+@RequiredArgsConstructor
 public class UserController {
 
     private final UserRepository userRepository;
-
-    public UserController(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
+    private final AdminAuditLogService adminAuditLogService;
 
     // Basic list of users for admin tooling (e.g. badge assignment UI)
     @GetMapping
@@ -32,21 +33,33 @@ public class UserController {
     }
 
     @PutMapping("/{id}/block")
-    public User blockUser(@PathVariable Long id) {
+    public User blockUser(@PathVariable Long id, HttpServletRequest request) {
         User user = userRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         user.setActive(false);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        adminAuditLogService.log(
+                "User Blocked",
+                (saved.getName() != null ? saved.getName() + " • " : "")
+                        + (saved.getEmail() != null ? saved.getEmail() : "id " + id),
+                request);
+        return saved;
     }
 
     @PutMapping("/{id}/unblock")
-    public User unblockUser(@PathVariable Long id) {
+    public User unblockUser(@PathVariable Long id, HttpServletRequest request) {
         User user = userRepository
                 .findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "User not found"));
         user.setActive(true);
-        return userRepository.save(user);
+        User saved = userRepository.save(user);
+        adminAuditLogService.log(
+                "User Unblocked",
+                (saved.getName() != null ? saved.getName() + " • " : "")
+                        + (saved.getEmail() != null ? saved.getEmail() : "id " + id),
+                request);
+        return saved;
     }
 
     @DeleteMapping("/{id}")

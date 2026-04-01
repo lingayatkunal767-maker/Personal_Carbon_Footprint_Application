@@ -43,7 +43,20 @@ function AppLayout({ children }) {
     return () => document.removeEventListener("click", handleClickOutside);
   }, [profileOpen]);
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    const token = localStorage.getItem("token");
+    const role = (user.role || "").toString().toUpperCase();
+    if (token && role === "ADMIN") {
+      try {
+        await axios.post(
+          `${API_BASE}/api/auth/logout`,
+          {},
+          { headers: { Authorization: `Bearer ${token}` } }
+        );
+      } catch {
+        /* still sign out locally */
+      }
+    }
     localStorage.removeItem("token");
     navigate("/");
   };
@@ -128,14 +141,6 @@ function AppLayout({ children }) {
               </NavLink>
 
               <NavLink
-                to="/AdminDashboard?tab=carbon"
-                className={() => `app-nav-item ${currentAdminTab === "carbon" ? "active" : ""}`}
-              >
-                <span className="app-nav-icon">🌍</span>
-                <span>Carbon Data</span>
-              </NavLink>
-
-              <NavLink
                 to="/AdminDashboard?tab=goals"
                 className={() => `app-nav-item ${currentAdminTab === "goals" ? "active" : ""}`}
               >
@@ -181,6 +186,14 @@ function AppLayout({ children }) {
               >
                 <span className="app-nav-icon">🔔</span>
                 <span>Notifications</span>
+              </NavLink>
+
+              <NavLink
+                to="/AdminDashboard?tab=admin-logs"
+                className={() => `app-nav-item ${currentAdminTab === "admin-logs" ? "active" : ""}`}
+              >
+                <span className="app-nav-icon">🧾</span>
+                <span>Admin Logs</span>
               </NavLink>
 
               <NavLink
@@ -248,9 +261,7 @@ function AppLayout({ children }) {
         </main>
 
         <footer className="app-footer">
-          <p className="app-footer-brand">
-            <span aria-hidden>🌿</span> CarbonCalc
-          </p>
+          
           <span>© 2026 CarbonCalc. All rights reserved.</span>
         </footer>
       </div>

@@ -170,20 +170,21 @@ public class GoalService {
     private GoalResponse toResponse(Goal goal) {
 
         return GoalResponse.builder()
-        .id(goal.getId())
-        .userId(goal.getUser().getId())
-        .userName(goal.getUser().getName() != null ? goal.getUser().getName() : goal.getUser().getEmail())
-        .goalTitle(goal.getGoalTitle())
-        .category(goal.getCategory())
-        .reductionTarget(goal.getReductionTarget())
-        .timeframe(goal.getTimeframe())
-        .description(goal.getDescription())
-        .targetEmission(goal.getTargetEmission())
-        .currentEmission(goal.getCurrentEmission())
-        .progressPercentage(goal.getProgressPercentage())
-        .status(goal.getStatus())
-        .createdAt(goal.getCreatedAt())
-        .build();
+                .id(goal.getId())
+                .userId(goal.getUser().getId())
+                .userName(goal.getUser().getName() != null ? goal.getUser().getName() : goal.getUser().getEmail())
+                .goalTitle(goal.getGoalTitle())
+                .category(goal.getCategory())
+                .reductionTarget(goal.getReductionTarget())
+                .timeframe(goal.getTimeframe())
+                .description(goal.getDescription())
+                .targetEmission(goal.getTargetEmission())
+                .currentEmission(goal.getCurrentEmission())
+                .progressPercentage(goal.getProgressPercentage())
+                .status(goal.getStatus())
+                .createdAt(goal.getCreatedAt())
+                .endDate(goal.getEndDate())
+                .build();
     }
 
     // ---------------------------------------------------------------
@@ -248,9 +249,10 @@ public class GoalService {
 
         if (target != null && target.compareTo(BigDecimal.ZERO) > 0) {
 
+            // Progress is how much of the target emission "budget" has been used.
+            // 0% at 0, 100% when current >= target.
             double progress =
-                    target.subtract(current)
-                            .divide(target, 4, java.math.RoundingMode.HALF_UP)
+                    current.divide(target, 4, java.math.RoundingMode.HALF_UP)
                             .doubleValue() * 100;
 
             if (progress < 0) progress = 0;
@@ -258,11 +260,11 @@ public class GoalService {
 
             goal.setProgressPercentage(progress);
 
-            if (goal.getEndDate() != null
-                    && !today.isBefore(goal.getEndDate())
-                    && current.compareTo(target) <= 0) {
-
+            // Mark goal completed once target is reached or exceeded.
+            if (current.compareTo(target) >= 0) {
                 goal.setStatus(GoalStatus.COMPLETED);
+                // Trigger badge rules when goal is auto-completed from emissions update
+                badgeRuleService.afterGoalStatusUpdated(userId, GoalStatus.COMPLETED);
             }
         }
 

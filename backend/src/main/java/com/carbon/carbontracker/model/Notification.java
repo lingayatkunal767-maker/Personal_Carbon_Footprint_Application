@@ -31,6 +31,32 @@ public class Notification {
     @Column(name = "is_read")
     private Boolean isRead = false;
 
+    /** If true, user has dismissed this notification in the UI. Admins still see it. */
+    @Column(name = "hidden_for_user")
+    private Boolean hiddenForUser = false;
+
     @Column(name = "created_at")
     private LocalDateTime createdAt = LocalDateTime.now();
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "admin_name")
+    private String adminName;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
+
+    @PrePersist
+    public void prePersist() {
+        if (createdAt == null) {
+            createdAt = LocalDateTime.now();
+        }
+        updatedAt = createdAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        updatedAt = LocalDateTime.now();
+    }
 }

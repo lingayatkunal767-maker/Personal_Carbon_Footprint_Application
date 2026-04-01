@@ -1,33 +1,62 @@
-# CarbonTracker – Database
+# CarbonTracker - Database
 
-PostgreSQL database for the CarbonTracker backend.
+## Overview
+
+PostgreSQL schema notes for the CarbonCalc backend.
+
+---
+
+## Setup
 
 ### Create database
-
-1. Install PostgreSQL.
-2. Create the database:
 
 ```sql
 CREATE DATABASE carbon_tracker;
 ```
 
-### Connection settings
+---
 
-Default connection (see `backend/src/main/resources/application.properties` or `backend/application-local.properties`):
+### Default local connection
 
-- **URL:** `jdbc:postgresql://localhost:5432/carbon_tracker`
-- **Username:** `postgres`
-- **Password:** `root`
+Configured in backend properties:
+- URL: `jdbc:postgresql://localhost:5432/carbon_tracker`
+- Username: `postgres`
+- Password: `root`
 
-Update these values if your local PostgreSQL uses different credentials.
+---
 
-### Schema
+## Schema
 
-- Core tables:
-  - `Users`
-  - `CarbonLogs`
-  - `AuthTokens`
-- Relationships follow the ER diagram (`Users` ↔ `CarbonLogs`, `Users` ↔ `AuthTokens`).
+- Main reference file: `schema.sql`
+- Runtime schema is managed by Hibernate (`spring.jpa.hibernate.ddl-auto=update`)
 
-Tables are created automatically by Spring Data JPA (`ddl-auto=update`).  
-You can also open `schema.sql` in this folder for a reference DDL. 
+If you are creating a fresh DB manually, run `schema.sql` first, then start backend.
+
+---
+
+## Tables
+
+The schema currently includes:
+
+1. `users`
+2. `auth_tokens`
+3. `badge_templates`
+4. `badges`
+5. `carbon_logs`
+6. `goals`
+7. `marketplace`
+8. `marketplace_items`
+9. `notifications`
+10. `surveys`
+11. `transactions`
+12. `admin_audit_logs`
+13. `weekly_leaderboard`
+
+---
+
+## Notes
+
+- Added missing tables to match current project DB:  
+  `admin_audit_logs`, `marketplace`, `marketplace_items`, `notifications`, `transactions`.
+- Aligned table definitions with live PostgreSQL metadata for those newly added tables.
+- `weekly_leaderboard` is used to persist weekly leaderboard snapshots for `Last week` views.

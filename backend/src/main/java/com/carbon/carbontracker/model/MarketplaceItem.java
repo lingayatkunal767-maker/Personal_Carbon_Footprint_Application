@@ -32,11 +32,53 @@ public class MarketplaceItem {
     @Column(name = "carbon_offset_value")
     private BigDecimal carbonOffsetValue;
 
+    /** Display rating 0–5, e.g. 4.9 */
+    @Column(precision = 3, scale = 2)
+    private BigDecimal rating;
+
+    /** Card badge: popular | limited | new (null = none) */
+    @Column(length = 32)
+    private String badge;
+
+    /** Progress bar fill 0–100; if null, client may derive from offset vs max */
+    @Column(name = "impact_progress_percent")
+    private Integer impactProgressPercent;
+
+    /** Shown after price, e.g. "unit" → "₹… /unit" */
+    @Column(name = "price_unit", length = 64)
+    private String priceUnit;
+
+    /** Emoji in card header banner (optional; else category default) */
+    @Column(name = "header_icon", length = 32)
+    private String headerIcon;
+
+    /** CSS banner class key: carbon-offset, renewable-energy, environmental, sustainable-living */
+    @Column(name = "banner_key", length = 64)
+    private String bannerKey;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
+
+    @Column(name = "updated_at")
+    private LocalDateTime updatedAt;
+
+    @Column(name = "created_by")
+    private String createdBy;
+
+    @Column(name = "updated_by")
+    private String updatedBy;
+
+    @Column(name = "ip_address")
+    private String ipAddress;
 
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        this.updatedAt = this.createdAt;
+    }
+
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
     }
 }
