@@ -45,3 +45,4 @@ Tables (high-level):
 
 - Ensure foreign key constraints and proper indexing for query performance.
 - Keep sensitive DB credentials out of checked-in files; use env vars or secrets manager.
+-
