@@ -24,6 +24,12 @@ public class Marketplace {
     @Column(name = "item_price", nullable = false)
     private BigDecimal itemPrice;
 
+    @Column(name = "category", length = 100)
+    private String category;
+
+    @Column(name = "carbon_offset")
+    private Integer carbonOffset;
+
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 

@@ -40,6 +40,25 @@ public class Goal {
     @Column(name = "end_date")
     private LocalDateTime endDate;
 
+    @Column(name = "category", length = 100)
+    private String category;
+
+    @Column(name = "timeframe", length = 100)
+    private String timeframe;
+
+    @Column(name = "recurrence", length = 50)
+    private String recurrence;
+
+    @Column(name = "description", columnDefinition = "TEXT")
+    private String description;
+
+    @Column(name = "goal_type", nullable = true)
+    private String goalType = "REDUCTION";
+
+    public String getGoalType() {
+        return goalType != null ? goalType : "REDUCTION";
+    }
+
     @JsonIgnore
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)
@@ -52,6 +71,9 @@ public class Goal {
         }
         if (this.currentEmission == null) {
             this.currentEmission = BigDecimal.ZERO;
+        }
+        if (this.goalType == null) {
+            this.goalType = "REDUCTION";
         }
         this.createdAt = LocalDateTime.now();
     }

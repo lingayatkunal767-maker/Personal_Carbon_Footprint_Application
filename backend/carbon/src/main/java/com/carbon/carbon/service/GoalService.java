@@ -85,7 +85,7 @@ public class GoalService {
      * Create new goal for a user
      */
     @Transactional
-    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission, LocalDateTime startDate, LocalDateTime endDate) {
+    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission, LocalDateTime startDate, LocalDateTime endDate, String category, String timeframe, String recurrence, String description) {
         log.info("Creating goal for user ID: {} with title: {}", userId, goalTitle);
         
         // Validate inputs
@@ -119,6 +119,10 @@ public class GoalService {
         goal.setStatus("active");
         goal.setStartDate(startDate);
         goal.setEndDate(endDate);
+        goal.setCategory(category);
+        goal.setTimeframe(timeframe);
+        goal.setRecurrence(recurrence);
+        goal.setDescription(description);
 
         Goal saved = goalRepository.save(goal);
         log.info("Goal created with ID: {}", saved.getId());
@@ -304,6 +308,11 @@ public class GoalService {
                 goal.getCreatedAt(),
                 goal.getStartDate(),
                 goal.getEndDate(),
+                goal.getCategory(),
+                goal.getTimeframe(),
+                goal.getRecurrence(),
+                goal.getDescription(),
+                goal.getGoalType(),
                 progressPercentage
         );
     }

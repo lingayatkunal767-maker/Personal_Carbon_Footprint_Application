@@ -7,7 +7,9 @@ import com.carbon.carbon.repository.GoalRepository;
 import com.carbon.carbon.repository.TransactionRepository;
 import com.carbon.carbon.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -32,7 +34,8 @@ public class BadgeAwardingService {
     /**
      * Check all badge conditions and award as needed after a carbon log entry.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void checkAndAwardBadges(Long userId) {
         log.debug("Checking badges for user ID: {}", userId);
         try {
@@ -70,7 +73,8 @@ public class BadgeAwardingService {
     /**
      * Award goal-completion-specific badges.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardGoalCompletionBadges(Long userId) {
         log.debug("Awarding goal completion badges for user ID: {}", userId);
         try {
@@ -100,7 +104,8 @@ public class BadgeAwardingService {
     /**
      * Award marketplace-related badges after a purchase.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardMarketplaceBadges(Long userId) {
         log.debug("Awarding marketplace badges for user ID: {}", userId);
         try {

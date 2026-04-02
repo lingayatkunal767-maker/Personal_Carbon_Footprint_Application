@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 import java.util.Map;
 
@@ -94,10 +96,14 @@ public class GoalController {
             Long userId = Long.valueOf(request.get("userId").toString());
             String goalTitle = request.get("goalTitle").toString();
             BigDecimal targetEmission = new BigDecimal(request.get("targetEmission").toString());
-            LocalDateTime startDate = request.get("startDate") != null ? LocalDateTime.parse(request.get("startDate").toString()) : null;
-            LocalDateTime endDate = request.get("endDate") != null ? LocalDateTime.parse(request.get("endDate").toString()) : null;
+            LocalDateTime startDate = request.get("startDate") != null ? parseDate(request.get("startDate").toString()) : null;
+            LocalDateTime endDate = request.get("endDate") != null ? parseDate(request.get("endDate").toString()) : null;
+            String category = request.get("category") != null ? request.get("category").toString() : null;
+            String timeframe = request.get("timeframe") != null ? request.get("timeframe").toString() : null;
+            String recurrence = request.get("recurrence") != null ? request.get("recurrence").toString() : null;
+            String description = request.get("description") != null ? request.get("description").toString() : null;
 
-            GoalDTO goal = goalService.createGoal(userId, goalTitle, targetEmission, startDate, endDate);
+            GoalDTO goal = goalService.createGoal(userId, goalTitle, targetEmission, startDate, endDate, category, timeframe, recurrence, description);
             return ResponseEntity.status(HttpStatus.CREATED).body(goal);
         } catch (IllegalArgumentException e) {
             log.warn("Invalid input for goal creation: {}", e.getMessage());
@@ -151,9 +157,9 @@ public class GoalController {
             GoalDTO goal = goalService.completeGoal(goalId);
             return ResponseEntity.ok(goal);
         } catch (RuntimeException e) {
-            log.warn("Goal not found: {}", goalId);
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "Goal not found"));
+            log.warn("Error completing goal {}: {}", goalId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error completing goal", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -171,9 +177,9 @@ public class GoalController {
             GoalDTO goal = goalService.abandonGoal(goalId);
             return ResponseEntity.ok(goal);
         } catch (RuntimeException e) {
-            log.warn("Goal not found: {}", goalId);
+            log.warn("Error abandoning goal {}: {}", goalId, e.getMessage());
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(Map.of("message", "Goal not found"));
+                    .body(Map.of("message", e.getMessage()));
         } catch (Exception e) {
             log.error("Error abandoning goal", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
@@ -245,6 +251,14 @@ public class GoalController {
             log.error("Error fetching goal activities", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to fetch goal activities"));
+        }
+    }
+
+    private LocalDateTime parseDate(String dateStr) {
+        try {
+            return OffsetDateTime.parse(dateStr).toLocalDateTime();
+        } catch (DateTimeParseException e) {
+            return LocalDateTime.parse(dateStr);
         }
     }
 }

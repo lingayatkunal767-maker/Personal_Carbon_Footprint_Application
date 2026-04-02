@@ -5,14 +5,15 @@ import com.carbon.carbon.repository.CarbonLogRepository;
 import com.carbon.carbon.repository.LeaderboardRepository;
 import com.carbon.carbon.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 
 @Slf4j
 @Service
-@Transactional
 public class LeaderboardScoreService {
 
     private final LeaderboardRepository leaderboardRepository;
@@ -31,6 +32,8 @@ public class LeaderboardScoreService {
      * Update leaderboard score based on carbon reduction
      * Called when emissions are recorded
      */
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void updateScoreBasedOnEmissions(Long userId, BigDecimal emissionAmount) {
         log.debug("Updating leaderboard score for user ID: {} with emission: {}", userId, emissionAmount);
 
@@ -77,6 +80,8 @@ public class LeaderboardScoreService {
      * Recalculate leaderboard score based on total emissions
      * Called periodically or on demand
      */
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void recalculateScore(Long userId) {
         log.debug("Recalculating leaderboard score for user ID: {}", userId);
 
@@ -121,6 +126,8 @@ public class LeaderboardScoreService {
     /**
      * Bonus score for completing goals
      */
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardGoalCompletionBonus(Long userId, BigDecimal bonusPoints) {
         log.debug("Awarding goal completion bonus to user ID: {} - Bonus: {}", userId, bonusPoints);
 
@@ -146,6 +153,8 @@ public class LeaderboardScoreService {
     /**
      * Bonus score for marketplace purchases
      */
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardMarketplacePurchaseBonus(Long userId, BigDecimal bonusPoints) {
         log.debug("Awarding marketplace purchase bonus to user ID: {} - Bonus: {}", userId, bonusPoints);
 

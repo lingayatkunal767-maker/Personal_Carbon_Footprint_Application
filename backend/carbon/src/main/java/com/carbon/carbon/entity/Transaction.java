@@ -22,6 +22,12 @@ public class Transaction {
     @Column(name = "amount", nullable = false)
     private BigDecimal amount;
 
+    @Column(name = "status", nullable = false, length = 50)
+    private String status = "COMPLETED";
+
+    @Column(name = "quantity")
+    private Integer quantity = 1;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private LocalDateTime createdAt;
 
@@ -37,5 +43,8 @@ public class Transaction {
     @PrePersist
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
+        if (this.status == null) {
+            this.status = "COMPLETED";
+        }
     }
 }

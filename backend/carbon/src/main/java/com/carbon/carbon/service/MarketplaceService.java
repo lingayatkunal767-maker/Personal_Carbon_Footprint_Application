@@ -66,6 +66,8 @@ public class MarketplaceService {
         Marketplace marketplace = new Marketplace();
         marketplace.setItemName(itemDTO.getItemName().trim());
         marketplace.setItemPrice(itemDTO.getItemPrice());
+        marketplace.setCategory(itemDTO.getCategory());
+        marketplace.setCarbonOffset(itemDTO.getCarbonOffset());
         marketplace.setDescription(itemDTO.getDescription());
 
         Marketplace saved = marketplaceRepository.save(marketplace);
@@ -98,6 +100,14 @@ public class MarketplaceService {
             marketplace.setDescription(itemDTO.getDescription());
         }
 
+        if (itemDTO.getCategory() != null) {
+            marketplace.setCategory(itemDTO.getCategory());
+        }
+
+        if (itemDTO.getCarbonOffset() != null) {
+            marketplace.setCarbonOffset(itemDTO.getCarbonOffset());
+        }
+
         Marketplace updated = marketplaceRepository.save(marketplace);
         log.info("Marketplace item updated successfully");
         return convertToDTO(updated);
@@ -127,6 +137,8 @@ public class MarketplaceService {
                 marketplace.getId(),
                 marketplace.getItemName(),
                 marketplace.getItemPrice(),
+                marketplace.getCategory(),
+                marketplace.getCarbonOffset(),
                 marketplace.getDescription(),
                 marketplace.getCreatedAt()
         );

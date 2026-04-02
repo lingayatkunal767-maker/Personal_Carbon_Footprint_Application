@@ -14,6 +14,10 @@ public class TransactionDTO {
     private Long userId;
     private Long marketplaceItemId;
     private String itemName;
+    private String category;
+    private Integer carbonOffset;
+    private Integer quantity;
     private BigDecimal amount;
+    private String status;
     private LocalDateTime createdAt;
 }
