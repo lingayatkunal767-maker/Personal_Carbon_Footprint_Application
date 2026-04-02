@@ -1,6 +1,7 @@
 package com.carbon.carbon.config;
 
 import com.carbon.carbon.entity.Marketplace;
+
 import com.carbon.carbon.entity.Notification;
 import com.carbon.carbon.repository.MarketplaceRepository;
 import com.carbon.carbon.repository.NotificationRepository;
