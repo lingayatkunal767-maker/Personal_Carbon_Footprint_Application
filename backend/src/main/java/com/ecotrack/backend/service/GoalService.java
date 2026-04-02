@@ -6,41 +6,35 @@ import com.ecotrack.backend.entity.Goal;
 import com.ecotrack.backend.entity.User;
 import com.ecotrack.backend.repository.GoalRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Stream;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class GoalService {
 
-    private final GoalRepository goalRepo;
-    private final BadgeService badgeService;
+    private final GoalRepository      goalRepo;
+    private final BadgeService        badgeService;
+    private final NotificationService notificationService;
 
-    /**
-     * Fetches both personal goals and community-wide admin goals.
-     */
+    /** Returns all personal goals + community goals (distinct) */
     public List<GoalResponse> getAll(User user) {
-        // 1. Get personal goals for this specific user
-        List<Goal> personalGoals = goalRepo.findByUserOrderByCreatedAtDesc(user);
-
-        // 2. Get community goals posted by any Admin
-        List<Goal> communityGoals = goalRepo.findByIsCommunityGoalTrueOrderByCreatedAtDesc();
-
-        // 3. Merge them and convert to DTOs
-        return Stream.concat(personalGoals.stream(), communityGoals.stream())
-                .distinct()
-                .map(this::toDto)
-                .toList();
+        List<Goal> personal  = goalRepo.findByUserOrderByCreatedAtDesc(user);
+        List<Goal> community = goalRepo.findByIsCommunityGoalTrueOrderByCreatedAtDesc();
+        log.debug("getAll userId={} personal={} community={}", user.getId(), personal.size(), community.size());
+        return Stream.concat(personal.stream(), community.stream())
+                .distinct().map(this::toDto).toList();
     }
 
     /**
-     * Creates a goal. If the creator is an ADMIN, it is flagged as a community goal.
+     * Create a personal goal.
+     * Admin goals are created via AdminController and saved properly.
      */
     public GoalResponse create(User user, GoalRequest req) {
-        boolean isCommunity = "ADMIN".equalsIgnoreCase(user.getRole());
-
         Goal g = Goal.builder()
                 .user(user)
                 .title(req.getTitle())
@@ -50,39 +44,84 @@ public class GoalService {
                 .deadline(req.getDeadline())
                 .currentProgress(0.0)
                 .status("ACTIVE")
-                .isCommunityGoal(isCommunity) // Correctly flags the goal
+                .isCommunityGoal(false) // Users always create personal goals
+                .acceptedCount(0)
+                .rejectedCount(0)
                 .build();
-
-        return toDto(goalRepo.save(g));
+        GoalResponse r = toDto(goalRepo.save(g));
+        log.info("Personal goal created id={} userId={} title='{}'", r.getId(), user.getId(), r.getTitle());
+        return r;
     }
 
-    /**
-     * Updates progress for a specific personal goal.
-     */
+    /** Set exact progress on a specific goal */
     public GoalResponse updateProgress(User user, Long id, Double progress) {
         Goal g = goalRepo.findById(id)
                 .filter(x -> x.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
-
         g.setCurrentProgress(progress);
         checkGoalCompletion(g);
-
+        log.info("updateProgress goalId={} progress={}", id, progress);
         return toDto(goalRepo.save(g));
     }
 
     /**
-     * Milestone 4: Finds the latest ACTIVE personal goal and increments progress.
+     * FIX: Adds progress to the most-recent ACTIVE personal goal.
+     * This is what LogActivityModal and GoalPage call via /api/goals/active/increment.
      */
     public GoalResponse addProgress(User user, Double additionalProgress) {
-        Goal g = goalRepo.findByUserOrderByCreatedAtDesc(user).stream()
-                .filter(goal -> "ACTIVE".equals(goal.getStatus()))
-                .findFirst()
-                .orElseThrow(() -> new RuntimeException("No active goal found to update"));
-
-        g.setCurrentProgress(g.getCurrentProgress() + additionalProgress);
+        // FIX: use findByUserAndStatusOrderByCreatedAtDesc to get all active goals
+        List<Goal> active = goalRepo.findByUserAndStatusOrderByCreatedAtDesc(user, "ACTIVE");
+        if (active.isEmpty()) {
+            throw new RuntimeException("No active personal goal found. Create a goal first.");
+        }
+        Goal g = active.get(0);
+        double newProgress = (g.getCurrentProgress() != null ? g.getCurrentProgress() : 0.0) + additionalProgress;
+        g.setCurrentProgress(newProgress);
         checkGoalCompletion(g);
-
+        log.info("addProgress goalId={} added={} total={}", g.getId(), additionalProgress, newProgress);
         return toDto(goalRepo.save(g));
+    }
+
+    /**
+     * User accepts a community challenge — creates their own personal copy.
+     * Increments acceptedCount on the community goal.
+     */
+    public GoalResponse acceptCommunityGoal(User user, Long communityGoalId) {
+        Goal community = goalRepo.findById(communityGoalId)
+                .filter(g -> Boolean.TRUE.equals(g.getIsCommunityGoal()))
+                .orElseThrow(() -> new RuntimeException("Community goal not found"));
+
+        // Increment accepted count
+        community.setAcceptedCount((community.getAcceptedCount() != null ? community.getAcceptedCount() : 0) + 1);
+        goalRepo.save(community);
+
+        // Create a personal copy for this user
+        Goal personal = Goal.builder()
+                .user(user)
+                .title(community.getTitle())
+                .description(community.getDescription())
+                .category(community.getCategory())
+                .targetAmount(community.getTargetAmount())
+                .deadline(community.getDeadline())
+                .currentProgress(0.0)
+                .status("ACTIVE")
+                .isCommunityGoal(false)
+                .build();
+
+        log.info("User {} accepted community goal id={}", user.getId(), communityGoalId);
+        return toDto(goalRepo.save(personal));
+    }
+
+    /**
+     * User rejects a community challenge — only increments rejectedCount.
+     */
+    public void rejectCommunityGoal(User user, Long communityGoalId) {
+        Goal community = goalRepo.findById(communityGoalId)
+                .filter(g -> Boolean.TRUE.equals(g.getIsCommunityGoal()))
+                .orElseThrow(() -> new RuntimeException("Community goal not found"));
+        community.setRejectedCount((community.getRejectedCount() != null ? community.getRejectedCount() : 0) + 1);
+        goalRepo.save(community);
+        log.info("User {} rejected community goal id={}", user.getId(), communityGoalId);
     }
 
     public void delete(User user, Long id) {
@@ -90,41 +129,36 @@ public class GoalService {
                 .filter(x -> x.getUser().getId().equals(user.getId()))
                 .orElseThrow(() -> new RuntimeException("Goal not found"));
         goalRepo.delete(g);
+        log.info("Goal deleted id={} by userId={}", id, user.getId());
     }
 
-    /**
-     * Validates completion and awards the appropriate badge.
-     */
     public void checkGoalCompletion(Goal goal) {
-        double pct = goal.getTargetAmount() > 0 ? (goal.getCurrentProgress() / goal.getTargetAmount()) * 100 : 0;
+        if (goal.getTargetAmount() == null || goal.getTargetAmount() == 0) return;
+        double pct = (goal.getCurrentProgress() / goal.getTargetAmount()) * 100;
 
         if (pct >= 100 && !"COMPLETED".equals(goal.getStatus())) {
             goal.setStatus("COMPLETED");
+            log.info("Goal COMPLETED id={} title='{}'", goal.getId(), goal.getTitle());
 
-            String badgeName = switch(goal.getCategory().toLowerCase()) {
+            String badgeName = switch (goal.getCategory() != null ? goal.getCategory().toLowerCase() : "general") {
                 case "transport" -> "Transport Pro";
                 case "food"      -> "Green Eater";
                 case "energy"    -> "Power Saver";
                 default          -> "Goal Getter";
             };
-
             badgeService.awardBadge(goal.getUser().getId(), badgeName);
+            notificationService.notifyGoalCompleted(goal.getUser(), goal.getTitle());
         }
     }
 
-    /**
-     * Endpoint for specifically fetching only community challenges.
-     */
     public List<GoalResponse> getGlobalCommunityGoals() {
         return goalRepo.findByIsCommunityGoalTrueOrderByCreatedAtDesc()
-                .stream()
-                .map(this::toDto)
-                .toList();
+                .stream().map(this::toDto).toList();
     }
 
-    private GoalResponse toDto(Goal g) {
-        int pct = g.getTargetAmount() > 0 ? (int) Math.min((g.getCurrentProgress() / g.getTargetAmount()) * 100, 100) : 0;
-
+    public GoalResponse toDto(Goal g) {
+        int pct = (g.getTargetAmount() != null && g.getTargetAmount() > 0)
+                ? (int) Math.min((g.getCurrentProgress() / g.getTargetAmount()) * 100, 100) : 0;
         return GoalResponse.builder()
                 .id(g.getId())
                 .title(g.getTitle())
@@ -136,8 +170,9 @@ public class GoalService {
                 .deadline(g.getDeadline())
                 .status(g.getStatus())
                 .createdAt(g.getCreatedAt())
-                // FIX: Safely handle null values from the database
                 .isCommunityGoal(Boolean.TRUE.equals(g.getIsCommunityGoal()))
+                .acceptedCount(g.getAcceptedCount() != null ? g.getAcceptedCount() : 0)
+                .rejectedCount(g.getRejectedCount() != null ? g.getRejectedCount() : 0)
                 .build();
     }
 }

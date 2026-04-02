@@ -2,8 +2,10 @@ package com.ecotrack.backend.controller;
 
 import com.ecotrack.backend.dto.*;
 import com.ecotrack.backend.service.AuthService;
+import com.ecotrack.backend.service.LogService;
 import com.ecotrack.backend.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
