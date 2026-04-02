@@ -7,7 +7,9 @@ import com.carbon.carbon.repository.GoalRepository;
 import com.carbon.carbon.repository.TransactionRepository;
 import com.carbon.carbon.repository.UserRepository;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
@@ -18,21 +20,25 @@ public class BadgeAwardingService {
     private final UserRepository userRepository;
     private final GoalRepository goalRepository;
     private final TransactionRepository transactionRepository;
+    private final NotificationService notificationService;
 
     public BadgeAwardingService(BadgeRepository badgeRepository,
                                 UserRepository userRepository,
                                 GoalRepository goalRepository,
-                                TransactionRepository transactionRepository) {
+                                TransactionRepository transactionRepository,
+                                NotificationService notificationService) {
         this.badgeRepository = badgeRepository;
         this.userRepository = userRepository;
         this.goalRepository = goalRepository;
         this.transactionRepository = transactionRepository;
+        this.notificationService = notificationService;
     }
 
     /**
      * Check all badge conditions and award as needed after a carbon log entry.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void checkAndAwardBadges(Long userId) {
         log.debug("Checking badges for user ID: {}", userId);
         try {
@@ -70,7 +76,8 @@ public class BadgeAwardingService {
     /**
      * Award goal-completion-specific badges.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardGoalCompletionBadges(Long userId) {
         log.debug("Awarding goal completion badges for user ID: {}", userId);
         try {
@@ -100,7 +107,8 @@ public class BadgeAwardingService {
     /**
      * Award marketplace-related badges after a purchase.
      */
-    @Transactional
+    @Async
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void awardMarketplaceBadges(Long userId) {
         log.debug("Awarding marketplace badges for user ID: {}", userId);
         try {
@@ -137,6 +145,8 @@ public class BadgeAwardingService {
             badge.setDescription(description);
             badgeRepository.save(badge);
             log.info("Awarded badge '{}' to user ID: {}", badgeName, user.getId());
+            
+            notificationService.createNotification(user.getId(), "You earned the " + badgeName + " badge! " + description, "BADGE");
         }
     }
 }

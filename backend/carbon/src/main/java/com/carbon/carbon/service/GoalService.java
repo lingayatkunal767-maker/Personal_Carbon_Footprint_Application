@@ -25,12 +25,14 @@ public class GoalService {
     private final GoalRepository goalRepository;
     private final UserRepository userRepository;
     private final BadgeAwardingService badgeAwardingService;
+    private final NotificationService notificationService;
 
     public GoalService(GoalRepository goalRepository, UserRepository userRepository,
-                       BadgeAwardingService badgeAwardingService) {
+                       BadgeAwardingService badgeAwardingService, NotificationService notificationService) {
         this.goalRepository = goalRepository;
         this.userRepository = userRepository;
         this.badgeAwardingService = badgeAwardingService;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -85,7 +87,7 @@ public class GoalService {
      * Create new goal for a user
      */
     @Transactional
-    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission, LocalDateTime startDate, LocalDateTime endDate) {
+    public GoalDTO createGoal(Long userId, String goalTitle, BigDecimal targetEmission, LocalDateTime startDate, LocalDateTime endDate, String category, String timeframe, String recurrence, String description) {
         log.info("Creating goal for user ID: {} with title: {}", userId, goalTitle);
         
         // Validate inputs
@@ -119,6 +121,10 @@ public class GoalService {
         goal.setStatus("active");
         goal.setStartDate(startDate);
         goal.setEndDate(endDate);
+        goal.setCategory(category);
+        goal.setTimeframe(timeframe);
+        goal.setRecurrence(recurrence);
+        goal.setDescription(description);
 
         Goal saved = goalRepository.save(goal);
         log.info("Goal created with ID: {}", saved.getId());
@@ -156,6 +162,7 @@ public class GoalService {
         if (newEmission.compareTo(goal.getTargetEmission()) >= 0) {
             goal.setStatus("completed");
             log.info("Goal ID: {} has been completed", goalId);
+            notificationService.createNotification(goal.getUser().getId(), "Congratulations! You completed your goal: " + goal.getGoalTitle() + ".", "GOAL");
         }
 
         Goal updated = goalRepository.save(goal);
@@ -181,6 +188,8 @@ public class GoalService {
 
         // Award goal completion badges
         badgeAwardingService.awardGoalCompletionBadges(goal.getUser().getId());
+        
+        notificationService.createNotification(goal.getUser().getId(), "Congratulations! You manually completed your goal: " + goal.getGoalTitle() + ".", "GOAL");
 
         return convertToDTO(updated);
     }
@@ -304,6 +313,11 @@ public class GoalService {
                 goal.getCreatedAt(),
                 goal.getStartDate(),
                 goal.getEndDate(),
+                goal.getCategory(),
+                goal.getTimeframe(),
+                goal.getRecurrence(),
+                goal.getDescription(),
+                goal.getGoalType(),
                 progressPercentage
         );
     }

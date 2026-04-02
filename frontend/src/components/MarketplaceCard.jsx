@@ -1,43 +1,59 @@
 import React from 'react';
-import { Link } from 'react-router-dom';
+import { Recycle, Leaf } from 'lucide-react';
 
-const MarketplaceCard = ({ item }) => {
+const MarketplaceCard = ({ item, onPurchase }) => {
   return (
-    <div className="bg-white rounded-2xl shadow-md overflow-hidden hover:shadow-lg transition-shadow duration-300 flex flex-col h-full border border-green-50">
-      <div className="p-6 flex-grow">
-        <div className="flex justify-between items-start mb-4">
-          <h3 className="text-xl font-bold text-green-900">{item.name}</h3>
-          <span className="bg-green-100 text-green-700 text-xs font-bold px-2.5 py-1 rounded-full uppercase tracking-wider">
-            Eco-Action
-          </span>
-        </div>
-        <p className="text-gray-600 text-sm mb-6 line-clamp-3">
-          {item.description}
-        </p>
-        <div className="space-y-3">
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500 font-medium">Offset Value:</span>
-            <span className="text-green-600 font-bold">{item.carbonOffset} kg CO₂</span>
-          </div>
-          <div className="flex items-center justify-between text-sm">
-            <span className="text-gray-500 font-medium">Price:</span>
-            <span className="text-blue-600 font-bold">₹{item.price}</span>
-          </div>
+    <div className="bg-white rounded-3xl shadow-sm border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300 flex flex-col h-full group">
+      {/* Top Banner with Gradient & Icon */}
+      <div className="h-40 bg-gradient-to-b from-indigo-100 to-purple-100 flex items-center justify-center relative">
+        <div className="p-4 bg-white/50 backdrop-blur-sm rounded-full shadow-sm group-hover:scale-110 transition-transform duration-300">
+          <Recycle className="w-10 h-10 text-green-500" strokeWidth={2.5} />
         </div>
       </div>
-      <div className="p-4 bg-gray-50 border-t border-gray-100 flex gap-2">
-        <Link 
-          to={`/marketplace/${item.id}`}
-          className="flex-1 bg-white hover:bg-gray-100 text-green-700 font-semibold py-2 rounded-xl border border-green-200 text-center transition text-sm"
-        >
-          Details
-        </Link>
-        <Link 
-          to={`/marketplace/${item.id}`}
-          className="flex-1 bg-green-600 hover:bg-green-700 text-white font-semibold py-2 rounded-xl text-center transition shadow-sm text-sm"
-        >
-          Buy Now
-        </Link>
+
+      <div className="p-6 flex flex-col flex-grow">
+        {/* Category */}
+        <div className="flex items-center gap-1 text-xs font-bold text-green-700 uppercase tracking-widest mb-2">
+          <Leaf className="w-3.5 h-3.5" />
+          {item.category || "SUSTAINABLE LIVING"}
+        </div>
+
+        {/* Title & Description */}
+        <h3 className="text-xl font-extrabold text-gray-900 mb-2 leading-tight">
+          {item.itemName || item.name}
+        </h3>
+        <p className="text-sm text-gray-500 mb-6 flex-grow">
+          {item.description}
+        </p>
+
+        {/* Progress Display */}
+        <div className="mb-4">
+          <div className="flex justify-end text-xs font-semibold text-gray-700 mb-1">
+            {item.carbonOffset} kg
+          </div>
+          <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+            <div className="bg-green-500 h-1.5 rounded-full w-full"></div>
+          </div>
+        </div>
+
+        {/* Bottom Section */}
+        <div className="flex items-center justify-between pt-4 border-t border-gray-100 mt-auto">
+          <div className="flex flex-col">
+            <div className="flex items-center gap-1 text-green-700 font-bold text-sm mb-1">
+              <Leaf className="w-4 h-4" />
+              {item.carbonOffset} kg CO₂
+            </div>
+            <div className="text-lg font-extrabold text-gray-900">
+              ₹{item.itemPrice || item.price} <span className="text-xs font-medium text-gray-500">/unit</span>
+            </div>
+          </div>
+          <button 
+            onClick={() => onPurchase(item)}
+            className="bg-green-700 hover:bg-green-800 text-white font-bold py-2.5 px-5 rounded-full transition-colors shadow-sm text-sm"
+          >
+            Purchase
+          </button>
+        </div>
       </div>
     </div>
   );

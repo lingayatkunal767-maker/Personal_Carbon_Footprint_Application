@@ -7,69 +7,61 @@ import com.carbon.carbon.entity.User;
 import com.carbon.carbon.repository.SurveyRepository;
 import org.springframework.stereotype.Service;
 
-import java.math.BigDecimal;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class SurveyService {
 
     private final SurveyRepository surveyRepository;
     private final CarbonCalculationService calculationService;
     private final CarbonLogService carbonLogService;
-    private final BadgeAwardingService badgeAwardingService;
-    private final LeaderboardScoreService leaderboardScoreService;
 
     public SurveyService(SurveyRepository surveyRepository,
                          CarbonCalculationService calculationService,
-                         CarbonLogService carbonLogService,
-                         BadgeAwardingService badgeAwardingService,
-                         LeaderboardScoreService leaderboardScoreService) {
+                         CarbonLogService carbonLogService) {
         this.surveyRepository = surveyRepository;
         this.calculationService = calculationService;
         this.carbonLogService = carbonLogService;
-        this.badgeAwardingService = badgeAwardingService;
-        this.leaderboardScoreService = leaderboardScoreService;
     }
 
     public SurveyResponse processSurvey(User user, SurveyRequest request) {
+        try {
+            double transport = calculationService.calculateTransport(
+                    request.getTransportMode(),
+                    request.getDistance(),
+                    request.getFuelType()
+            );
 
-        double transport = calculationService.calculateTransport(
-                request.getTransportMode(),
-                request.getDistance(),
-                request.getFuelType()
-        );
+            double food = calculationService.calculateFood(
+                    request.getDietType(),
+                    request.getMealsPerDay()
+            );
 
-        double food = calculationService.calculateFood(
-                request.getDietType(),
-                request.getMealsPerDay()
-        );
+            double energy = calculationService.calculateEnergy(
+                    request.getMonthlyKwh(),
+                    request.getRenewable()
+            );
 
-        double energy = calculationService.calculateEnergy(
-                request.getMonthlyKwh(),
-                request.getRenewable()
-        );
+            double total = calculationService.calculateTotal(transport, food, energy);
 
-        double total = calculationService.calculateTotal(transport, food, energy);
+            Survey survey = new Survey();
+            survey.setUser(user);
+            survey.setTransportMode(request.getTransportMode());
+            survey.setDistance(request.getDistance());
+            survey.setFuelType(request.getFuelType());
+            survey.setDietType(request.getDietType());
+            survey.setMealsPerDay(request.getMealsPerDay());
+            survey.setMonthlyKwh(request.getMonthlyKwh());
+            survey.setRenewable(request.getRenewable());
 
-        Survey survey = new Survey();
-        survey.setUser(user);
-        survey.setTransportMode(request.getTransportMode());
-        survey.setDistance(request.getDistance());
-        survey.setFuelType(request.getFuelType());
-        survey.setDietType(request.getDietType());
-        survey.setMealsPerDay(request.getMealsPerDay());
-        survey.setMonthlyKwh(request.getMonthlyKwh());
-        survey.setRenewable(request.getRenewable());
+            surveyRepository.save(survey);
 
-        surveyRepository.save(survey);
+            carbonLogService.createOrUpdateDailyLog(user, transport, food, energy, total);
 
-        carbonLogService.createOrUpdateDailyLog(user, transport, food, energy, total);
-
-        // Check and award badges after survey submission
-        badgeAwardingService.checkAndAwardBadges(user.getId());
-
-        // Update leaderboard score
-        leaderboardScoreService.updateScoreBasedOnEmissions(user.getId(), BigDecimal.valueOf(total));
-
-        return new SurveyResponse(transport, food, energy, total);
+            return new SurveyResponse(transport, food, energy, total);
+        } catch (Exception e) {
+            throw new RuntimeException("Survey processing failed: " + e.getMessage());
+        }
     }
 }

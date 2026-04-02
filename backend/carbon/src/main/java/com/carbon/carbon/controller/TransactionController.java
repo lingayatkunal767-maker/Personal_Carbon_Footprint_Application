@@ -71,6 +71,16 @@ public class TransactionController {
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<?> createTransaction(@RequestBody Map<String, Object> request) {
         try {
+            if (!request.containsKey("userId") || request.get("userId") == null) {
+                throw new IllegalArgumentException("userId is missing");
+            }
+            if (!request.containsKey("marketplaceItemId") || request.get("marketplaceItemId") == null) {
+                throw new IllegalArgumentException("marketplaceItemId is missing");
+            }
+            if (!request.containsKey("amount") || request.get("amount") == null) {
+                throw new IllegalArgumentException("amount is missing");
+            }
+
             Long userId = Long.valueOf(request.get("userId").toString());
             Long marketplaceItemId = Long.valueOf(request.get("marketplaceItemId").toString());
             BigDecimal amount = new BigDecimal(request.get("amount").toString());
@@ -109,6 +119,27 @@ public class TransactionController {
             log.error("Error calculating total transactions", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to calculate total"));
+        }
+    }
+
+    /**
+     * Get marketplace stats for a user (total products, invested, offset)
+     */
+    @GetMapping("/user/{userId}/stats")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<?> getUserMarketplaceStats(@PathVariable Long userId) {
+        try {
+            Map<String, Object> stats = transactionService.getUserMarketplaceStats(userId);
+            stats.put("userId", userId);
+            return ResponseEntity.ok(stats);
+        } catch (IllegalArgumentException e) {
+            log.warn("Invalid user ID: {}", e.getMessage());
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error calculating marketplace stats", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to calculate stats"));
         }
     }
 

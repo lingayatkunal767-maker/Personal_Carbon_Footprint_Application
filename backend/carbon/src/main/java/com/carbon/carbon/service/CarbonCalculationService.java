@@ -1,8 +1,10 @@
 package com.carbon.carbon.service;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@Transactional
 public class CarbonCalculationService {
 
     private static final double PETROL_CAR_FACTOR = 0.21;  // kg CO2 per km
@@ -23,8 +25,9 @@ public class CarbonCalculationService {
     private static final double RENEWABLE_REDUCTION = 0.4; // 40% reduction
 
     public double calculateTransport(String mode,
-                                     double distance,
+                                     Double distance,
                                      String fuelType) {
+        if (distance == null) return 0.0;
 
         double factor = 0;
 
@@ -33,9 +36,11 @@ public class CarbonCalculationService {
                 factor = getCarFuelFactor(fuelType);
                 break;
             case "bike":
+            case "bicycle":
                 factor = BIKE_FACTOR;
                 break;
             case "public transport":
+            case "public transit":
                 factor = PUBLIC_TRANSPORT_FACTOR;
                 break;
             case "walk":
@@ -44,6 +49,8 @@ public class CarbonCalculationService {
             case "wfh":
                 factor = WFH_FACTOR;
                 break;
+            default:
+                factor = 0.0;
         }
 
         return distance * factor;
@@ -70,21 +77,28 @@ public class CarbonCalculationService {
 
         switch (dietType.toLowerCase()) {
             case "non-vegetarian":
+            case "regular meat eater":
+            case "high meat consumption":
+            case "mixed (occasional meat)":
                 base = NON_VEG_FACTOR;
                 break;
             case "vegetarian":
+            case "pescatarian":
                 base = VEG_FACTOR;
                 break;
             case "vegan":
                 base = VEGAN_FACTOR;
                 break;
+            default:
+                base = VEG_FACTOR; // Default to vegetarian if unknown
         }
 
         return base * mealsPerDay;
     }
 
-    public double calculateEnergy(double monthlyKwh,
+    public double calculateEnergy(Double monthlyKwh,
                                   boolean renewable) {
+        if (monthlyKwh == null) return 0.0;
 
         double emission = monthlyKwh * ELECTRICITY_FACTOR;
 

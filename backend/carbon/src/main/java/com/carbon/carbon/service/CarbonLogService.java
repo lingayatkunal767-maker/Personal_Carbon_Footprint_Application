@@ -9,7 +9,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.Optional;
 
+import org.springframework.transaction.annotation.Transactional;
+
 @Service
+@Transactional
 public class CarbonLogService {
 
     private final CarbonLogRepository carbonLogRepository;

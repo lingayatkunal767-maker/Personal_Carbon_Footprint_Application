@@ -24,13 +24,16 @@ public class TransactionService {
     private final TransactionRepository transactionRepository;
     private final UserRepository userRepository;
     private final MarketplaceRepository marketplaceRepository;
+    private final NotificationService notificationService;
 
     public TransactionService(TransactionRepository transactionRepository,
                               UserRepository userRepository,
-                              MarketplaceRepository marketplaceRepository) {
+                              MarketplaceRepository marketplaceRepository,
+                              NotificationService notificationService) {
         this.transactionRepository = transactionRepository;
         this.userRepository = userRepository;
         this.marketplaceRepository = marketplaceRepository;
+        this.notificationService = notificationService;
     }
 
     /**
@@ -106,9 +109,15 @@ public class TransactionService {
         transaction.setUser(user);
         transaction.setMarketplaceItem(marketplace);
         transaction.setAmount(amount);
+        transaction.setQuantity(1);
 
         Transaction saved = transactionRepository.save(transaction);
         log.info("Transaction created with ID: {}", saved.getId());
+        
+        // Dispatch Notification
+        String notifMessage = "Your purchase of " + marketplace.getItemName() + " (₹" + amount + ") has been confirmed.";
+        notificationService.createNotification(userId, notifMessage, "PURCHASE");
+        
         return convertToDTO(saved);
     }
 
@@ -127,6 +136,40 @@ public class TransactionService {
                 .stream()
                 .map(Transaction::getAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
+    /**
+     * Get aggregated marketplace stats for a user
+     */
+    public java.util.Map<String, Object> getUserMarketplaceStats(Long userId) {
+        log.debug("Calculating marketplace stats for user ID: {}", userId);
+
+        if (userId == null) {
+            throw new IllegalArgumentException("User ID is required");
+        }
+
+        List<Transaction> transactions = transactionRepository.findByUserId(userId);
+        
+        long totalProducts = transactions.size();
+        BigDecimal totalInvested = transactions.stream()
+                .map(Transaction::getAmount)
+                .filter(java.util.Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+                
+        long totalOffset = transactions.stream()
+                .map(Transaction::getMarketplaceItem)
+                .filter(java.util.Objects::nonNull)
+                .map(Marketplace::getCarbonOffset)
+                .filter(java.util.Objects::nonNull)
+                .mapToLong(Integer::longValue)
+                .sum();
+
+        java.util.Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("totalProducts", totalProducts);
+        stats.put("totalInvested", totalInvested);
+        stats.put("totalOffset", totalOffset);
+        
+        return stats;
     }
 
     /**
@@ -169,12 +212,17 @@ public class TransactionService {
      * Convert entity to DTO
      */
     private TransactionDTO convertToDTO(Transaction transaction) {
+        Marketplace m = transaction.getMarketplaceItem();
         return new TransactionDTO(
                 transaction.getId(),
-                transaction.getUser().getId(),
-                transaction.getMarketplaceItem().getId(),
-                transaction.getMarketplaceItem().getItemName(),
-                transaction.getAmount(),
+                transaction.getUser() != null ? transaction.getUser().getId() : null,
+                m != null ? m.getId() : null,
+                m != null ? m.getItemName() : "Unknown Item",
+                m != null ? m.getCategory() : "General",
+                m != null ? m.getCarbonOffset() : 0,
+                transaction.getQuantity() != null ? transaction.getQuantity() : 1,
+                transaction.getAmount() != null ? transaction.getAmount() : BigDecimal.ZERO,
+                transaction.getStatus() != null ? transaction.getStatus() : "UNKNOWN",
                 transaction.getCreatedAt()
         );
     }

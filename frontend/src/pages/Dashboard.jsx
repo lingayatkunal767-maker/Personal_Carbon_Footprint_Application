@@ -37,8 +37,8 @@ export default function Dashboard() {
   const [user, setUser] = useState(null);
 
   const latestLog = logs.length > 0 ? logs[0] : null;
-  const chartData = logs.map(log => ({
-    date: new Date(log.createdAt).toLocaleDateString(),
+  const chartData = logs.slice(0, 7).reverse().map(log => ({
+    date: new Date(log.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
     emission: log.totalEmission
   }));
 
@@ -98,7 +98,10 @@ export default function Dashboard() {
 
       } catch (err) {
         if (err.status === 401) navigate('/login');
-        else setError(err.message || 'Could not load dashboard data.');
+        else {
+          console.error("Dashboard data load failed:", err);
+          // Don't set global error for initial background fetches to avoid confusing 'An error occurred' message
+        }
       } finally {
         if (mounted) setLoading(false);
       }
@@ -443,7 +446,21 @@ export default function Dashboard() {
               <svg className="w-5 h-5 text-green-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 4v16m8-8H4"/></svg>
               {editingId ? 'Update Emission' : 'Add New Emission'}
             </h2>
-            {error && <p className="text-red-500 text-sm mb-3 bg-red-50 p-3 rounded-lg">{error}</p>}
+            {error && (
+            <div className="flex items-center gap-3 mb-6 p-4 bg-red-50/80 backdrop-blur-sm border border-red-100 rounded-xl animate-in fade-in slide-in-from-top-2 duration-300">
+              <div className="flex-shrink-0 w-8 h-8 rounded-full bg-red-100 flex items-center justify-center text-red-600">
+                <svg className="w-4.5 h-4.5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+              </div>
+              <p className="text-red-800 text-sm font-medium">{error}</p>
+              <button 
+                onClick={() => setError('')} 
+                className="ml-auto text-red-400 hover:text-red-600 transition-colors"
+                title="Dismiss"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12"/></svg>
+              </button>
+            </div>
+          )}
             <form onSubmit={editingId ? handleUpdateEmission : handleAddEmission} className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>

@@ -19,5 +19,10 @@ public class GoalDTO {
     private LocalDateTime createdAt;
     private LocalDateTime startDate;
     private LocalDateTime endDate;
+    private String category;
+    private String timeframe;
+    private String recurrence;
+    private String description;
+    private String goalType;
     private double progressPercentage;
 }

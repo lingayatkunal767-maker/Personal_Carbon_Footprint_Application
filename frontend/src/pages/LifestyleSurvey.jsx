@@ -2,30 +2,10 @@ import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { apiFetch } from "../utils/api";
 
-const TRANSPORT_MODES = [
-  "Car",
-  "Public Transit",
-  "Bicycle",
-  "Walk",
-  "Mixed Mode",
-];
-
-const DIET_TYPES = [
-  "Vegan",
-  "Vegetarian",
-  "Pescatarian",
-  "Mixed (Occasional Meat)",
-  "Regular Meat Eater",
-  "High Meat Consumption",
-];
-
-const EATING_FREQUENCIES = [
-  "Daily",
-  "3-4 times a week",
-  "2-3 times a week",
-  "Once a week",
-  "Less frequently",
-];
+const TRANSPORT_MODES = ["Car", "Bike", "Public Transport", "Walk", "WFH"];
+const FUEL_TYPES = ["Petrol", "Diesel", "Electric", "Hybrid"];
+const DIET_TYPES = ["Vegetarian", "Non-Vegetarian", "Vegan"];
+const EATING_FREQUENCIES = ["Daily", "3-4 times a week", "Once a week", "Rarely"];
 
 export default function LifestyleSurvey() {
   const navigate = useNavigate();
@@ -33,8 +13,9 @@ export default function LifestyleSurvey() {
   const [formData, setFormData] = useState({
     primaryMode: "",
     averageDailyDistance: "",
+    fuelType: "Petrol",
     dietType: "",
-    mealsPerDay: "",
+    mealsPerDay: "3",
     eatingFrequency: "",
     monthlyElectricity: "",
     renewableEnergy: false,
@@ -96,25 +77,28 @@ export default function LifestyleSurvey() {
     setLoading(true);
 
     try {
+      await apiFetch("/api/survey", {
+        method: "POST",
+        body: JSON.stringify({
+          transportMode: formData.primaryMode,
+          distance: parseFloat(formData.averageDailyDistance),
+          fuelType: formData.primaryMode === 'Car' ? formData.fuelType : 'N/A',
+          dietType: formData.dietType,
+          mealsPerDay: parseInt(formData.mealsPerDay),
+          monthlyKwh: parseFloat(formData.monthlyElectricity),
+          renewable: formData.renewableEnergy
+        })
+      });
 
-  await apiFetch("/api/survey", {
-    method: "POST",
-    body: JSON.stringify({
-      transportMode: formData.primaryMode,
-      distance: parseInt(formData.averageDailyDistance),
-      fuelType: "Petrol",
-      dietType: formData.dietType,
-      mealsPerDay: parseInt(formData.mealsPerDay),
-      monthlyKwh: parseInt(formData.monthlyElectricity),
-      renewable: formData.renewableEnergy
-    })
-  });
-
-  navigate("/dashboard");
+      navigate("/dashboard");
 
 } catch (err) {
   if (err.status === 401) navigate("/login");
-  else setError(err.message || "Failed to calculate footprint.");
+  else {
+    const detail = err.message || "An unexpected error occurred.";
+    setError(detail + " Please check your inputs or try again later.");
+    console.error("Survey submission failure:", err);
+  }
 } finally {
       setLoading(false);
     }
@@ -180,9 +164,30 @@ export default function LifestyleSurvey() {
                   </select>
                 </div>
 
+                {/* Fuel Type (Conditional) */}
+                {formData.primaryMode === "Car" && (
+                  <div className="animate-in fade-in slide-in-from-top-2">
+                    <label className="block text-base font-semibold text-gray-700 mb-3 text-left">
+                      Fuel Type
+                    </label>
+                    <select
+                      name="fuelType"
+                      value={formData.fuelType}
+                      onChange={handleChange}
+                      className="w-full px-5 py-4 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-green-500 focus:ring-2 focus:ring-green-100 transition bg-white text-lg"
+                    >
+                      {FUEL_TYPES.map((type) => (
+                        <option key={type} value={type}>
+                          {type}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+
                 {/* Average Daily Distance */}
                 <div>
-                  <label className="block text-base font-semibold text-gray-700 mb-3">
+                  <label className="block text-base font-semibold text-gray-700 mb-3 text-left">
                     Average Daily Distance
                   </label>
                   <div className="relative">
@@ -198,9 +203,6 @@ export default function LifestyleSurvey() {
                       km
                     </span>
                   </div>
-                  <p className="text-sm text-gray-500 mt-2">
-                    For mixed journeys, calculate combined distance
-                  </p>
                 </div>
               </div>
 

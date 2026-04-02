@@ -12,7 +12,7 @@ public class SurveyRequest {
 
     @NotBlank
     private String transportMode;
-
+    @NotNull
     @Min(0)
     private Double distance;
 
@@ -20,13 +20,12 @@ public class SurveyRequest {
 
     @NotBlank
     private String dietType;
-
     @Min(1)
     private int mealsPerDay;
 
+    @NotNull
     @Min(0)
     private Double monthlyKwh;
-
     @NotNull
     private Boolean renewable;
 

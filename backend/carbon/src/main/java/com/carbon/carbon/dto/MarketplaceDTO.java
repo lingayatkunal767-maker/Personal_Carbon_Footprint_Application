@@ -13,6 +13,8 @@ public class MarketplaceDTO {
     private Long id;
     private String itemName;
     private BigDecimal itemPrice;
+    private String category;
+    private Integer carbonOffset;
     private String description;
     private LocalDateTime createdAt;
 }
