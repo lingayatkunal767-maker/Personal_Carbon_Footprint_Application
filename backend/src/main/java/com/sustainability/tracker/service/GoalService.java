@@ -30,6 +30,7 @@ public class GoalService {
     private final UserRepository userRepository;
     private final CarbonLogRepository carbonLogRepository;
     private final NotificationService notificationService;
+    private final BadgeEarningService badgeEarningService;
 
     public List<GoalResponse> getGoalsByUser(Long userId) {
         return goalRepository.findByUserIdOrderByCreatedAtDesc(userId)
@@ -57,12 +58,41 @@ public class GoalService {
         Long safeId = Objects.requireNonNull(id, "id is required");
         Goal existing = goalRepository.findById(safeId)
                 .orElseThrow(() -> new RuntimeException("Goal not found with id: " + id));
+
+        BigDecimal previousCurrent = existing.getCurrentValue() != null ? existing.getCurrentValue() : BigDecimal.ZERO;
+        BigDecimal previousTarget = existing.getTargetValue() != null ? existing.getTargetValue() : BigDecimal.ZERO;
+        boolean wasCompleted = "completed".equalsIgnoreCase(existing.getStatus());
+
         if (request.getGoalType() != null) existing.setGoalType(request.getGoalType());
         if (request.getTargetValue() != null) existing.setTargetValue(request.getTargetValue());
         if (request.getCurrentValue() != null) existing.setCurrentValue(request.getCurrentValue());
         if (request.getDeadline() != null) existing.setDeadline(request.getDeadline());
         if (request.getStatus() != null) existing.setStatus(request.getStatus());
-        return toResponse(goalRepository.save(existing));
+
+        BigDecimal targetValue = existing.getTargetValue() != null ? existing.getTargetValue() : BigDecimal.ZERO;
+        BigDecimal currentValue = existing.getCurrentValue() != null ? existing.getCurrentValue() : BigDecimal.ZERO;
+
+        if (targetValue.compareTo(BigDecimal.ZERO) > 0 && currentValue.compareTo(targetValue) >= 0) {
+            existing.setStatus("completed");
+        } else if (!"completed".equalsIgnoreCase(existing.getStatus())) {
+            existing.setStatus("active");
+        }
+
+        boolean isCompleted = "completed".equalsIgnoreCase(existing.getStatus());
+        int previousPercentage = calculatePercentage(previousCurrent, previousTarget);
+        int currentPercentage = calculatePercentage(currentValue, targetValue);
+
+        Goal saved = goalRepository.save(existing);
+        Long userId = saved.getUser().getId();
+
+        if (!wasCompleted && isCompleted) {
+            notificationService.notifyGoalCompleted(userId, saved.getGoalType(), saved.getId());
+            badgeEarningService.checkAndAwardBadges(userId);
+        } else if (!isCompleted && shouldNotifyProgress(previousPercentage, currentPercentage)) {
+            notificationService.notifyGoalProgress(userId, saved.getGoalType(), currentPercentage, saved.getId());
+        }
+
+        return toResponse(saved);
     }
 
     public void deleteGoal(Long id) {
@@ -140,6 +170,7 @@ public class GoalService {
                 
                 // Notify user
                 notificationService.notifyGoalCompleted(userId, goal.getGoalType(), goal.getId());
+                badgeEarningService.checkAndAwardBadges(userId);
             }
         } else {
             // Send progress notification at milestone percentages (25%, 50%, 75%)

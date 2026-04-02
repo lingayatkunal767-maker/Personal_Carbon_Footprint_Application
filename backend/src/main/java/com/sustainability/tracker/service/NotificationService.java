@@ -61,10 +61,8 @@ public class NotificationService {
      * Mark all notifications as read for a user
      */
     public void markAllAsRead(Long userId) {
-        List<Notification> notifications = notificationRepository
-                .findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
-        notifications.forEach(Notification::markAsRead);
-        notificationRepository.saveAll(notifications);
+        Long safeUserId = Objects.requireNonNull(userId, "userId is required");
+        notificationRepository.markAllAsReadByUserId(safeUserId);
     }
 
     /**
@@ -212,6 +210,23 @@ public class NotificationService {
                 userId,
                 "MARKETPLACE",
                 "📦 Order Confirmed",
+                message,
+                "HIGH",
+                "Order",
+                orderId
+        );
+    }
+
+    /**
+     * Create order cancellation notification
+     */
+    public void notifyOrderCancelled(Long userId, String orderNumber, Long orderId) {
+        String message = String.format("Your order %s has been cancelled successfully.", orderNumber);
+
+        createNotification(
+                userId,
+                "MARKETPLACE",
+                "❌ Order Cancelled",
                 message,
                 "HIGH",
                 "Order",

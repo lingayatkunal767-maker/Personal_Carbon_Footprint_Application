@@ -1,5 +1,6 @@
 package com.sustainability.tracker.service;
 
+import com.sustainability.tracker.dto.BadgeResponseDTO;
 import com.sustainability.tracker.entity.Badge;
 import com.sustainability.tracker.repository.BadgeRepository;
 import lombok.RequiredArgsConstructor;
@@ -15,7 +16,10 @@ public class BadgeService {
 
     private final BadgeRepository badgeRepository;
 
-    public List<Badge> getBadgesByUser(Long userId) {
-        return badgeRepository.findByUserIdOrderByEarnedDateDesc(userId);
+    public List<BadgeResponseDTO> getBadgesByUser(Long userId) {
+        return badgeRepository.findByUserIdOrderByEarnedDateDesc(userId)
+                .stream()
+                .map(BadgeResponseDTO::from)
+                .toList();
     }
 }

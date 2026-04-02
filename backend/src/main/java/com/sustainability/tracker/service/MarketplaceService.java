@@ -275,6 +275,12 @@ public class MarketplaceService {
         order.setStatus("CANCELLED");
         order.setCancelledAt(LocalDateTime.now());
         orderRepository.save(order);
+
+        notificationService.notifyOrderCancelled(
+            order.getUser().getId(),
+            order.getOrderNumber(),
+            order.getId()
+        );
         
         log.info("❌ Cancelled order {}", order.getOrderNumber());
     }

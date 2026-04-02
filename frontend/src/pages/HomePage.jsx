@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import TopBar from '../components/TopBar';
 import HeroBanner from '../components/HeroBanner';
@@ -53,6 +53,8 @@ const NOTIFICATION_ICONS = {
   MARKETPLACE: '📦',
 };
 
+const POPUP_NOTIFICATION_TYPES = new Set(['BADGE_EARNED', 'GOAL_COMPLETED', 'MARKETPLACE']);
+
 const GOAL_COLORS = [
   'linear-gradient(90deg,var(--g-mid),var(--g-light))',
   'linear-gradient(90deg,#4a90d9,#81c784)',
@@ -72,20 +74,24 @@ function resolveBadgeIcon(badgeType, badgeName = '') {
   return '🏅';
 }
 
+function normalizeBadgeName(value = '') {
+  return value.trim().replace(/\s+/g, ' ').toLowerCase();
+}
+
 function buildBadgeCards(earnedBadges, badgeDefinitions) {
   const safeEarnedBadges = Array.isArray(earnedBadges) ? earnedBadges : [];
   const safeBadgeDefinitions = Array.isArray(badgeDefinitions) ? badgeDefinitions : [];
 
   const earnedBadgeNames = new Set(
     safeEarnedBadges
-      .map((badge) => (badge.badgeName || '').trim().toLowerCase())
+      .map((badge) => normalizeBadgeName(badge.badgeName || ''))
       .filter(Boolean)
   );
 
   if (safeBadgeDefinitions.length > 0) {
-    return safeBadgeDefinitions.map((definition, index) => {
+    const definitionCards = safeBadgeDefinitions.map((definition, index) => {
       const badgeName = definition.badgeName || `Badge ${index + 1}`;
-      const isEarned = earnedBadgeNames.has(badgeName.trim().toLowerCase());
+      const isEarned = earnedBadgeNames.has(normalizeBadgeName(badgeName));
       const threshold = Number(definition.thresholdPercent);
       const hasThreshold = Number.isFinite(threshold);
       return {
@@ -101,6 +107,25 @@ function buildBadgeCards(earnedBadges, badgeDefinitions) {
         locked: !isEarned,
       };
     });
+
+    const definitionNames = new Set(
+      safeBadgeDefinitions
+        .map((definition) => normalizeBadgeName(definition.badgeName || ''))
+        .filter(Boolean)
+    );
+
+    const unmatchedEarnedCards = safeEarnedBadges
+      .filter((badge) => !definitionNames.has(normalizeBadgeName(badge.badgeName || '')))
+      .map((badge, index) => ({
+        id: `badge-earned-extra-${badge.id ?? index}`,
+        icon: resolveBadgeIcon(badge.badgeType, badge.badgeName),
+        label: badge.badgeName || 'Earned Badge',
+        pts: 'Earned',
+        hexClass: BADGE_HEX_CLASSES[index % BADGE_HEX_CLASSES.length],
+        locked: false,
+      }));
+
+    return [...definitionCards, ...unmatchedEarnedCards];
   }
 
   return safeEarnedBadges.map((badge, index) => ({
@@ -274,10 +299,32 @@ function mapNotificationToUI(notification) {
     text: notification.title || 'Notification',
     detail: notification.message || '',
     type: notificationClass(type, notification.priority),
+    notificationType: type,
     isRead: !!notification.isRead,
+    createdAt: notification.createdAt || null,
     localOnly: false,
   };
 }
+
+function popupVariantByType(notificationType) {
+  if (notificationType === 'GOAL_COMPLETED') return 'goal';
+  if (notificationType === 'BADGE_EARNED') return 'badge';
+  if (notificationType === 'MARKETPLACE') return 'marketplace';
+  return 'default';
+}
+
+function shouldTriggerPopup(notification) {
+  if (!notification?.serverId) return false;
+  if (!POPUP_NOTIFICATION_TYPES.has(notification.notificationType)) return false;
+
+  if (notification.notificationType === 'MARKETPLACE') {
+    const text = `${notification.text || ''} ${notification.detail || ''}`.toLowerCase();
+    return text.includes('cancel');
+  }
+
+  return true;
+}
+
 function buildBreakdownFromActivities(rawActivities) {
   const totals = {};
   rawActivities.forEach(a => {
@@ -323,6 +370,29 @@ function buildMonthlyComparisonFromActivities(rawActivities) {
   };
 }
 
+async function fetchUserBadges(userId) {
+  const primaryResponse = await fetch(`${API_BASE}/badges/user/${userId}`);
+  if (primaryResponse.ok) {
+    const primaryData = await primaryResponse.json();
+    return Array.isArray(primaryData) ? primaryData : [];
+  }
+
+  const fallbackResponse = await fetch(`${API_BASE}/badges/${userId}`);
+  if (!fallbackResponse.ok) {
+    return [];
+  }
+
+  const fallbackData = await fallbackResponse.json();
+  if (Array.isArray(fallbackData)) {
+    return fallbackData;
+  }
+  if (Array.isArray(fallbackData?.data)) {
+    return fallbackData.data;
+  }
+
+  return [];
+}
+
 // ─── component ────────────────────────────────────────────────────────────────
 export default function HomePage() {
   const navigate = useNavigate();
@@ -338,6 +408,8 @@ export default function HomePage() {
   const [tips, setTips] = useState([]);
   const [tipsMeta, setTipsMeta] = useState({ datasetConnected: false, datasetRecords: 0 });
   const [notifications, setNotifications] = useState([]);
+  const [notificationPopups, setNotificationPopups] = useState([]);
+  const [activeNotificationPopup, setActiveNotificationPopup] = useState(null);
   const [footprintData, setFootprintData] = useState({ week: { labels: [], data: [] }, month: { labels: [], data: [] }, year: { labels: [], data: [] } });
   const [breakdown, setBreakdown] = useState([]);
   const [monthlyComparison, setMonthlyComparison] = useState({ labels: [], datasets: [] });
@@ -349,6 +421,61 @@ export default function HomePage() {
   const [co2Saved, setCo2Saved] = useState(0);
   const [ecoPoints, setEcoPoints] = useState(0);
   const [streakDays, setStreakDays] = useState(0);
+  const seenServerNotificationIdsRef = useRef(new Set());
+  const hasInitializedNotificationsRef = useRef(false);
+  const popupTimerRef = useRef(null);
+
+  const queueNotificationPopup = useCallback((notification) => {
+    if (!shouldTriggerPopup(notification)) {
+      return;
+    }
+
+    setNotificationPopups((prev) => {
+      if (prev.some((queued) => queued.serverId === notification.serverId)) {
+        return prev;
+      }
+      return [...prev, notification];
+    });
+  }, []);
+
+  useEffect(() => {
+    if (activeNotificationPopup || notificationPopups.length === 0) {
+      return;
+    }
+
+    const [nextPopup, ...remaining] = notificationPopups;
+    setActiveNotificationPopup(nextPopup);
+    setNotificationPopups(remaining);
+  }, [activeNotificationPopup, notificationPopups]);
+
+  useEffect(() => {
+    if (!activeNotificationPopup) {
+      return;
+    }
+
+    if (popupTimerRef.current) {
+      window.clearTimeout(popupTimerRef.current);
+    }
+
+    popupTimerRef.current = window.setTimeout(() => {
+      setActiveNotificationPopup(null);
+      popupTimerRef.current = null;
+    }, 4200);
+
+    return () => {
+      if (popupTimerRef.current) {
+        window.clearTimeout(popupTimerRef.current);
+      }
+    };
+  }, [activeNotificationPopup]);
+
+  useEffect(() => {
+    return () => {
+      if (popupTimerRef.current) {
+        window.clearTimeout(popupTimerRef.current);
+      }
+    };
+  }, []);
 
   const refreshNotifications = useCallback(async () => {
     if (!userId) return;
@@ -361,6 +488,24 @@ export default function HomePage() {
       if (!Array.isArray(data)) return;
 
       const mapped = data.map(mapNotificationToUI);
+
+      if (!hasInitializedNotificationsRef.current) {
+        mapped.forEach((item) => {
+          if (item.serverId) {
+            seenServerNotificationIdsRef.current.add(item.serverId);
+          }
+        });
+        hasInitializedNotificationsRef.current = true;
+      } else {
+        mapped.forEach((item) => {
+          if (!item.serverId) return;
+          if (seenServerNotificationIdsRef.current.has(item.serverId)) return;
+
+          seenServerNotificationIdsRef.current.add(item.serverId);
+          queueNotificationPopup(item);
+        });
+      }
+
       setNotifications((prev) => {
         const localOnly = prev.filter((item) => item.localOnly);
         return [...mapped, ...localOnly];
@@ -368,14 +513,14 @@ export default function HomePage() {
     } catch (err) {
       console.error('Failed to load notifications:', err);
     }
-  }, [userId]);
+  }, [queueNotificationPopup, userId]);
 
   const refreshBadgesAndNotifications = useCallback(async () => {
     if (!userId) return;
 
     try {
       const [badgesRes, badgeDefinitionsRes] = await Promise.allSettled([
-        fetch(`${API_BASE}/badges/user/${userId}`).then((r) => r.json()),
+        fetchUserBadges(userId),
         fetch(`${API_BASE}/admin/badges/definitions`).then((r) => r.json()),
       ]);
 
@@ -462,7 +607,7 @@ export default function HomePage() {
             fetch(`${API_BASE}/stats/user/${userId}`).then(r => r.json()),
             fetch(`${API_BASE}/stats/user/${userId}/breakdown`).then(r => r.json()),
             fetch(`${API_BASE}/stats/user/${userId}/monthly?months=6`).then(r => r.json()),
-            fetch(`${API_BASE}/badges/user/${userId}`).then(r => r.json()),
+            fetchUserBadges(userId),
             fetch(`${API_BASE}/admin/badges/definitions`).then(r => r.json()),
             fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json()),
             fetch(`${API_BASE}/survey/insights/user/${userId}`).then(r => r.json()),
@@ -721,6 +866,8 @@ export default function HomePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+
+      await refreshBadgesAndNotifications();
     } catch (err) {
       console.error('Update goal error:', err);
     }
@@ -802,6 +949,7 @@ export default function HomePage() {
     if (userId) {
       try {
         await fetch(`${API_BASE}/notifications/user/${userId}/read-all`, { method: 'PUT' });
+        await refreshNotifications();
       } catch (err) {
         console.error('Failed to mark all notifications as read:', err);
       }
@@ -809,6 +957,20 @@ export default function HomePage() {
 
     setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
   };
+  const handleCloseNotificationPopup = () => {
+    if (popupTimerRef.current) {
+      window.clearTimeout(popupTimerRef.current);
+      popupTimerRef.current = null;
+    }
+    setActiveNotificationPopup(null);
+  };
+
+  const handleViewBadgeFromPopup = async () => {
+    setNotificationsOpen(true);
+    await refreshNotifications();
+    handleCloseNotificationPopup();
+  };
+
   const handleOpenModal  = () => setModalOpen(true);
   const handleCloseModal = () => setModalOpen(false);
 
@@ -894,6 +1056,33 @@ export default function HomePage() {
       </div>
 
       <NotificationsPanel isOpen={notificationsOpen} onClose={handleCloseNotifications} notifications={notifications} onDismiss={handleDismissNotification} onMarkAllRead={handleMarkAllRead} />
+
+      {activeNotificationPopup && (
+        <div
+          className={`dashboard-toast dashboard-toast--${popupVariantByType(activeNotificationPopup.notificationType)}`}
+          role="status"
+          aria-live="polite"
+        >
+          <div className="dashboard-toast__icon">{activeNotificationPopup.icon || '🔔'}</div>
+          <div className="dashboard-toast__content">
+            <p>{activeNotificationPopup.text}</p>
+            <small>{activeNotificationPopup.detail}</small>
+            {activeNotificationPopup.notificationType === 'BADGE_EARNED' && (
+              <button
+                type="button"
+                className="dashboard-toast__action"
+                onClick={handleViewBadgeFromPopup}
+              >
+                View badge
+              </button>
+            )}
+          </div>
+          <button className="dashboard-toast__close" onClick={handleCloseNotificationPopup} aria-label="Close notification">
+            ×
+          </button>
+        </div>
+      )}
+
       <LogActivityModal isOpen={modalOpen} onClose={handleCloseModal} onSave={handleActivitySave} />
     </div>
   );
