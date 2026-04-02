@@ -50,7 +50,7 @@ function Layout() {
 
   return (
     <div style={{ display: "flex" }}>
-      
+
       {/* 🔥 TOP BAR */}
       <div style={topBar}>
         <button onClick={() => setMobileOpen(true)} style={menuBtn}>☰</button>
@@ -81,6 +81,15 @@ function Layout() {
         {/* Menu */}
         <div style={{ flex: 1 }}>
           {menuItems.map((item) => {
+            // Define who is considered an admin (by email or role)
+            const ADMIN_EMAILS = ["admin@gmail.com"];
+            const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || user.role?.toLowerCase() === "admin");
+
+            // Hide Admin tab for non-admin users
+            if (item.path === "/admin" && !isAdmin) {
+              return null;
+            }
+
             const isActive = location.pathname === item.path;
 
             return (

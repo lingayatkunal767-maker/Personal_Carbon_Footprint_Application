@@ -255,7 +255,7 @@ export default function AdminDashboard() {
     );
   }
 
-  // ── Access check (all authenticated users can access admin panel) ──
+  // ── Access check ──
   if (!user) {
     return (
       <div className="admin-layout">
@@ -265,6 +265,24 @@ export default function AdminDashboard() {
           <p style={{ color: 'rgba(6, 78, 59, 0.7)' }}>Please log in to access the admin panel.</p>
           <button className="btn btn-primary" onClick={() => navigate("/login")} style={{ marginTop: 16 }}>
             Go to Login
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  const ADMIN_EMAILS = ["admin@gmail.com"];
+  const isAdmin = user && (ADMIN_EMAILS.includes(user.email) || user.role?.toLowerCase() === "admin");
+
+  if (!isAdmin) {
+    return (
+      <div className="admin-layout">
+        <div className="admin-denied">
+          <span className="admin-denied-icon">🛡️</span>
+          <h2 style={{ fontSize: '24px', fontWeight: 'bold', color: '#064e3b' }}>Access Denied</h2>
+          <p style={{ color: 'rgba(6, 78, 59, 0.7)' }}>You do not have administrative privileges to view this page.</p>
+          <button className="btn btn-primary" onClick={() => navigate("/dashboard")} style={{ marginTop: 16 }}>
+            Back to Dashboard
           </button>
         </div>
       </div>
