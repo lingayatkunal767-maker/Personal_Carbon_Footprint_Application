@@ -229,6 +229,18 @@ const CarbonCalculatorWidget = ({ userId }) => {
         foodEmission: food,
         energyEmission: energy,
       });
+
+      const snapshot = readLatestCalculationSnapshot(activeUserId);
+      if (snapshot && snapshot.logDate === logDate) {
+        localStorage.setItem(LATEST_CALCULATION_KEY, JSON.stringify({
+          ...snapshot,
+          transportEmission: transport,
+          foodEmission: food,
+          energyEmission: energy,
+          totalEmission: transport + food + energy
+        }));
+      }
+
       handleCancelEdit();
       await loadLogs();
     } catch (err) {
@@ -253,6 +265,10 @@ const CarbonCalculatorWidget = ({ userId }) => {
       await carbonLogAPI.deleteCarbonLogByDate(activeUserId, logDate);
       if (editingDate === logDate) {
         handleCancelEdit();
+      }
+      const snapshot = readLatestCalculationSnapshot(activeUserId);
+      if (snapshot && snapshot.logDate === logDate) {
+        localStorage.removeItem(LATEST_CALCULATION_KEY);
       }
       await loadLogs();
     } catch (err) {
