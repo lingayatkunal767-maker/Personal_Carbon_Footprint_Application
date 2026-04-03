@@ -145,6 +145,7 @@
   line-height: 1.45;
   min-height: 82px;
   display: -webkit-box;
+  line-clamp: 3;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
@@ -249,6 +250,8 @@
 .bill-preview div {
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem;
   margin-bottom: 0.35rem;
 }
 
@@ -276,6 +279,78 @@
   cursor: pointer;
 }
 
+.purchase-header {
+  padding: 1.6rem;
+}
+
+.purchase-orders-grid {
+  grid-template-columns: 1fr;
+}
+
+.purchase-order-card {
+  padding: 1rem;
+}
+
+.purchase-order-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.75rem;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 0.5rem;
+}
+
+.purchase-order-meta {
+  margin-top: 0.75rem;
+  line-height: 1.7;
+  font-size: 0.92rem;
+}
+
+.purchase-order-actions {
+  margin-top: 0.9rem;
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.purchase-cancel-btn {
+  border-color: #d9534f;
+  color: #d9534f;
+}
+
+.purchase-bill-info {
+  margin-bottom: 0.8rem;
+}
+
+.purchase-bill-table-wrap {
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.purchase-bill-table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 460px;
+}
+
+.purchase-bill-table thead tr {
+  border-bottom: 1px solid var(--border);
+  text-align: left;
+}
+
+.purchase-bill-table tbody tr {
+  border-bottom: 1px solid #eee;
+}
+
+.purchase-bill-table th,
+.purchase-bill-table td {
+  padding: 8px;
+  font-size: 0.88rem;
+}
+
+.purchase-checkout-actions {
+  margin-top: 1rem;
+}
+
 @media (max-width: 768px) {
   .marketplace-page {
     padding: 16px 12px 30px;
@@ -283,5 +358,106 @@
 
   .checkout-grid {
     grid-template-columns: 1fr;
+  }
+
+  .purchase-header {
+    padding: 1.2rem 1rem;
+  }
+
+  .purchase-order-head {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .purchase-order-meta {
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+
+  .purchase-order-actions {
+    flex-direction: column;
+  }
+
+  .purchase-order-actions .btn-primary,
+  .purchase-order-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .purchase-bill-table {
+    min-width: 360px;
+  }
+
+  .purchase-bill-table th,
+  .purchase-bill-table td {
+    font-size: 0.8rem;
+    padding: 7px;
+  }
+}
+
+@media (max-width: 520px) {
+  .checkout-modal {
+    padding: 0.95rem;
+  }
+
+  .checkout-actions {
+    flex-direction: column;
+  }
+
+  .checkout-actions .btn-primary,
+  .checkout-actions .btn-secondary {
+    width: 100%;
+  }
+
+  .bill-preview div {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.2rem;
+  }
+
+  .purchase-bill-table {
+    min-width: 100%;
+  }
+
+  .purchase-bill-table thead {
+    display: none;
+  }
+
+  .purchase-bill-table,
+  .purchase-bill-table tbody,
+  .purchase-bill-table tr,
+  .purchase-bill-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .purchase-bill-table tr {
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    margin-bottom: 0.55rem;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .purchase-bill-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 8px 10px;
+    border-bottom: 1px solid #edf4ef;
+    text-align: left;
+  }
+
+  .purchase-bill-table td:last-child {
+    border-bottom: none;
+  }
+
+  .purchase-bill-table td::before {
+    content: attr(data-label);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.02em;
   }
 }

@@ -40,8 +40,11 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .btn-history:hover{border-color:var(--g-mid);color:var(--g-mid);transform:translateY(-1px);box-shadow:0 4px 12px rgba(45,122,79,.15)}
 .btn-survey{background:linear-gradient(135deg,#2e7d32,#43a047);color:#fff;border:none;border-radius:10px;padding:.5rem 1.15rem;font-family:inherit;font-size:.85rem;font-weight:600;cursor:pointer;display:flex;align-items:center;gap:.4rem;transition:all .3s ease;box-shadow:0 3px 10px rgba(46,125,50,.25)}
 .btn-survey:hover{background:linear-gradient(135deg,#43a047,#66bb6a);transform:translateY(-2px);box-shadow:0 6px 16px rgba(46,125,50,.35)}
+.btn-emoji{line-height:1;flex-shrink:0}
+.btn-label{white-space:nowrap}
 .btn-logout{background:none;border:1.5px solid var(--border);color:var(--muted);border-radius:10px;padding:.45rem 1rem;font-family:inherit;font-size:.82rem;font-weight:600;cursor:pointer;transition:all .2s}
 .btn-logout:hover{border-color:var(--g-mid);color:var(--g-mid)}
+.btn-logout-compact{display:flex;align-items:center;gap:.4rem;background:#fff;color:var(--g-dark)}
 
 /* ── HERO ── */
 .hero{
@@ -155,7 +158,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 .profile-input-note{font-size:.7rem;color:#666;margin-top:4px;display:block}
 .profile-edit-actions{margin-top:.6rem}
 .tags{display:flex;gap:.4rem;margin-top:.6rem;flex-wrap:wrap}
-.tag{font-size:.68rem;font-weight:600;padding:.2rem .55rem;border-radius:99px;background:var(--g-pale);color:var(--g-dark)}
+.tag{font-size:.68rem;font-weight:600;padding:.2rem .55rem;border-radius:99px;background:var(--g-pale);color:var(--g-dark);max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
 /* ── GOALS ── */
 .goal-item{margin-bottom:.85rem}
@@ -457,21 +460,184 @@ body{font-family:'DM Sans',sans-serif;background:var(--cream);color:var(--text);
 ::-webkit-scrollbar-thumb{background:var(--border);border-radius:99px}
 
 /* ── RESPONSIVE ── */
+@media(max-width:1100px){
+  .topbar{height:auto;padding:.72rem 1rem;align-items:stretch;gap:.6rem}
+  .topbar-right{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:.45rem;width:100%}
+  .topbar-right .btn-notifications{order:1}
+  .topbar-right .btn-marketplace{order:2}
+  .topbar-right .btn-history-link{order:3}
+  .topbar-right .btn-logout-compact{order:4}
+  .topbar-right .btn-log-activity{order:5}
+  .topbar-right .btn-icon,
+  .topbar-right .btn-history,
+  .topbar-right .btn-primary,
+  .topbar-right .btn-survey,
+  .topbar-right .btn-logout{width:100%;justify-content:center}
+  .topbar-right .btn-log-activity{grid-column:1/-1}
+
+  .hero{padding:1.65rem 1.2rem 4.2rem}
+  .hero h1{font-size:1.78rem}
+  .hero p{font-size:.88rem}
+
+  .stat-row{grid-template-columns:repeat(2,minmax(0,1fr));padding:0 1.2rem;margin-top:-2rem}
+  .stat-card{padding:1rem}
+
+  .grid{padding:1.2rem;gap:1rem}
+  .card{padding:1.15rem 1.1rem}
+  .card-title{gap:.45rem;flex-wrap:wrap}
+
+  .profile{align-items:flex-start}
+  .profile-account-info{width:100%}
+
+  .donut-wrap{flex-direction:column;align-items:flex-start;gap:.95rem}
+  .donut-canvas-wrap{margin:0 auto}
+  .legend{width:100%}
+
+  .compare-wrap{height:210px}
+  .calc-categories{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .badges-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
+
+  .modal{padding:1.2rem 1.05rem}
+  .notif-panel{width:min(360px,90vw)}
+}
+
 @media(max-width:860px){
-  .stat-row{grid-template-columns:1fr 1fr}
+  .topbar-right{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .topbar-right .btn-log-activity{grid-column:1/-1}
+
+  .hero h1{font-size:1.58rem;line-height:1.2}
+  .hero p{font-size:.84rem}
+
+  .stat-row{grid-template-columns:1fr}
   .grid{grid-template-columns:1fr}
   .card.full{grid-column:1}
-  .badges-grid{grid-template-columns:repeat(4,1fr)}
+
+  .profile{flex-direction:column;align-items:center;text-align:center}
+  .profile-info{width:100%}
+  .profile-account-row{justify-content:center}
+
+  .goal-meta{flex-direction:column;align-items:flex-start;gap:.35rem}
+  .goal-header-side{width:100%;justify-content:space-between}
+
+  .form-row{grid-template-columns:1fr}
+  .modal-footer{flex-direction:column}
+  .btn-cancel,.btn-save{width:100%}
+
   .calc-categories{grid-template-columns:1fr}
-  .calc-history-row{flex-direction:column;align-items:flex-start;gap:.4rem}
-  .calc-history-actions{width:100%;justify-content:flex-end}
-  .calc-history-edit-fields{width:100%}
+  .calc-latest{flex-direction:column;align-items:flex-start;gap:.35rem}
+  .calc-history-row{flex-direction:column;align-items:flex-start;gap:.45rem}
+  .calc-history-actions{width:100%;justify-content:flex-start;flex-wrap:wrap}
+  .calc-history-edit-fields{width:100%;flex-wrap:wrap}
+  .calc-edit-field{flex:1;min-width:92px}
+
+  .activity-list{gap:.5rem}
+  .act-item{flex-wrap:wrap;align-items:flex-start}
+  .act-delta{margin-left:auto}
+  .act-item .btn-logout{margin-left:auto}
+
+  .lb-row{flex-wrap:wrap;row-gap:.35rem}
+  .lb-bar-wrap{order:5;width:100%}
+  .lb-score{min-width:0}
+
+  .notif-panel{top:0;height:100vh;width:100vw;max-width:100vw}
+  .notif-header{padding:.95rem 1rem;position:sticky;top:0;background:var(--white);z-index:1}
+
+  .dashboard-toast{top:auto;bottom:14px;right:12px;left:12px;width:auto}
 }
+
 @media(max-width:560px){
-  .stat-row{grid-template-columns:1fr 1fr}
-  .topbar{padding:0 1rem}
-  .grid{padding:1rem 1rem 2rem}
-  .stat-row{padding:0 1rem}
-  .hero{padding:1.5rem 1rem 4rem}
-  .dashboard-toast{top:74px;right:12px;width:calc(100vw - 24px)}
+  .topbar{padding:.65rem .75rem;flex-direction:column;align-items:stretch;gap:.5rem}
+  .logo{justify-content:flex-start}
+  .topbar-right{grid-template-columns:repeat(2,minmax(0,1fr));gap:.42rem}
+  .topbar-right .btn-log-activity{grid-column:1/-1}
+  .logo-text{font-size:1.02rem}
+  .topbar-right .btn-icon,
+  .topbar-right .btn-history,
+  .topbar-right .btn-primary,
+  .topbar-right .btn-survey,
+  .topbar-right .btn-logout{font-size:.74rem;padding:.5rem .5rem;border-radius:9px;min-height:34px;line-height:1.2}
+
+  .hero{padding:1.3rem .8rem 3.45rem}
+  .hero h1{font-size:1.34rem}
+  .hero p{font-size:.78rem}
+
+  .stat-row{padding:0 .8rem;margin-top:-1.65rem}
+  .stat-card{padding:.85rem .8rem}
+  .stat-icon{width:38px;height:38px;font-size:1.02rem}
+  .stat-val{font-size:1.05rem}
+
+  .grid{padding:.9rem .75rem 1.45rem}
+  .card{padding:1rem .88rem}
+  .card-title{font-size:.9rem}
+  .card-action{font-size:.68rem;padding:.2rem .5rem}
+
+  .profile{flex-direction:row;align-items:flex-start;text-align:left;gap:.72rem}
+  .profile-info{text-align:left;min-width:0}
+  .avatar{width:56px;height:56px;font-size:1.4rem;border-width:2px}
+  .avatar-fallback{font-size:1.55rem}
+  .profile-welcome{font-size:.64rem;margin-bottom:4px}
+  .profile-name{font-size:1rem;margin-bottom:3px}
+  .profile-email{font-size:.78rem}
+  .provider-badge{margin-top:7px;font-size:.64rem;padding:3px 9px}
+  .profile-joined{font-size:.7rem;padding:6px 9px;margin-top:9px}
+  .profile-tags{margin-top:9px}
+  .tags{gap:.3rem;justify-content:flex-start}
+  .tag{font-size:.6rem;padding:.18rem .44rem}
+  .profile-account-info{margin-top:10px;padding:9px}
+  .profile-account-row{align-items:flex-start;gap:5px;flex-wrap:wrap;font-size:.67rem}
+
+  .chart-tabs{overflow-x:auto;padding-bottom:.1rem}
+  .ctab{white-space:nowrap}
+  .big-num{font-size:1.7rem}
+  .big-num small{display:block;margin-top:.1rem}
+  .chart-wrap{height:138px}
+
+  .donut-canvas-wrap{width:118px;height:118px}
+  .dc-val{font-size:1.03rem}
+
+  .badges-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:.62rem}
+  .badge-hex{width:52px;height:52px;font-size:1.2rem}
+  .badge-label{font-size:.64rem}
+
+  .goal-edit-row{flex-direction:column;align-items:stretch}
+  .goal-edit-input{width:100%}
+
+  .modal{width:100%;max-width:100vw;border-radius:14px;padding:.95rem .8rem}
+  .modal h3{font-size:1.1rem}
+
+  .dashboard-toast{bottom:10px;left:10px;right:10px;padding:.8rem .78rem}
 }
+
+@media(max-width:375px){
+  .hero h1{line-height:1.24;letter-spacing:.01em}
+  .hero p{line-height:1.52;letter-spacing:.004em}
+  .card-title{line-height:1.34}
+  .stat-lbl,.stat-change{line-height:1.34;letter-spacing:.004em}
+
+  .topbar-right{grid-template-columns:repeat(4,minmax(0,1fr));gap:.36rem}
+  .topbar-right .btn-notifications,
+  .topbar-right .btn-marketplace,
+  .topbar-right .btn-history-link,
+  .topbar-right .btn-logout-compact{min-height:34px;padding:.42rem;border-radius:8px}
+  .topbar-right .btn-marketplace .btn-label,
+  .topbar-right .btn-history-link .btn-label,
+  .topbar-right .btn-logout-compact .btn-label{display:none}
+  .topbar-right .btn-marketplace,
+  .topbar-right .btn-history-link,
+  .topbar-right .btn-logout-compact{justify-content:center}
+  .topbar-right .btn-log-activity{grid-column:1/-1;min-height:34px;padding:.42rem .5rem;line-height:1.15;letter-spacing:.01em}
+  .topbar-right .btn-icon,
+  .topbar-right .btn-history,
+  .topbar-right .btn-primary,
+  .topbar-right .btn-survey,
+  .topbar-right .btn-logout{font-size:.7rem;padding:.46rem .42rem}
+
+  .profile{gap:.62rem}
+  .avatar{width:50px;height:50px}
+  .profile-name{font-size:.94rem;line-height:1.24;letter-spacing:.006em}
+  .profile-email{font-size:.74rem;line-height:1.38;letter-spacing:.003em}
+  .profile-account-row{font-size:.64rem}
+  .goal-name{line-height:1.28}
+  .tag{font-size:.58rem;letter-spacing:.004em}
+}
+

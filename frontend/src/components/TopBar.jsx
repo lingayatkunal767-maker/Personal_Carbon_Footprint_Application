@@ -14,18 +14,51 @@ const TopBar = ({ onLogout, onOpenModal, onOpenNotifications, unreadCount }) => 
         </svg>
         <span className="logo-text">Carbon<em>Calc</em></span>
       </div>
+
       <div className="topbar-right">
-        <button className="btn-icon" onClick={onOpenNotifications} title="Notifications">
+        <button
+          className="btn-icon btn-notifications"
+          onClick={onOpenNotifications}
+          title="Notifications"
+          aria-label="Notifications"
+        >
           🔔{unreadCount > 0 && <span className="notif-dot"></span>}
         </button>
-        <button className="btn-history" onClick={() => navigate('/marketplace')} title="Eco Marketplace" style={{ marginLeft: '10px' }}>
-          🛒 Marketplace
+
+        <button
+          className="btn-history btn-marketplace"
+          onClick={() => navigate('/marketplace')}
+          title="Eco Marketplace"
+          aria-label="Eco Marketplace"
+        >
+          <span className="btn-emoji" aria-hidden="true">🛒</span>
+          <span className="btn-label">Marketplace</span>
         </button>
-        <button className="btn-history" onClick={() => navigate('/history')} title="Open Carbon History">
-          📜 Carbon History
+
+        <button
+          className="btn-history btn-history-link"
+          onClick={() => navigate('/history')}
+          title="Open Carbon History"
+          aria-label="Open Carbon History"
+        >
+          <span className="btn-emoji" aria-hidden="true">📜</span>
+          <span className="btn-label">Carbon History</span>
         </button>
-        <button className="btn-primary" onClick={onOpenModal}>＋ Log Activity</button>
-        <button className="btn-logout" onClick={onLogout}>Logout</button>
+
+        <button
+          className="btn-logout btn-logout-compact"
+          onClick={onLogout}
+          title="Logout"
+          aria-label="Logout"
+        >
+          <span className="btn-emoji" aria-hidden="true">↪</span>
+          <span className="btn-label">Logout</span>
+        </button>
+
+        <button className="btn-primary btn-log-activity" onClick={onOpenModal} aria-label="Log activity">
+          <span className="btn-emoji" aria-hidden="true">＋</span>
+          <span className="btn-label">Log Activity</span>
+        </button>
       </div>
     </div>
   );

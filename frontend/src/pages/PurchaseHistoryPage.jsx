@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import '../styles/Marketplace.css';
+import '../styles/Dashboard.css';
 
 const PurchaseHistoryPage = () => {
   const navigate = useNavigate();
@@ -66,7 +67,7 @@ const PurchaseHistoryPage = () => {
       </div>
 
       <div className="marketplace-container">
-        <header className="marketplace-header" style={{ padding: '1.6rem' }}>
+        <header className="marketplace-header purchase-header">
           <h1>Purchase History</h1>
           <p>All successful payments and bills are stored here from PostgreSQL orders.</p>
         </header>
@@ -76,15 +77,15 @@ const PurchaseHistoryPage = () => {
         ) : orders.length === 0 ? (
           <div className="loading-skeleton">No purchases found.</div>
         ) : (
-          <div className="products-grid" style={{ gridTemplateColumns: '1fr' }}>
+          <div className="products-grid purchase-orders-grid">
             {orders.map((order) => (
-              <div key={order.id} className="product-card" style={{ padding: '1rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px solid var(--border)', paddingBottom: '0.5rem' }}>
+              <div key={order.id} className="product-card purchase-order-card">
+                <div className="purchase-order-head">
                   <strong>Order #{order.orderNumber}</strong>
                   <strong>{order.status}</strong>
                 </div>
 
-                <div style={{ marginTop: '0.75rem', lineHeight: 1.7 }}>
+                <div className="purchase-order-meta">
                   <div><strong>Date:</strong> {formatDate(order.createdAt)}</div>
                   <div><strong>Total Paid:</strong> ₹ {order.totalAmount}</div>
                   <div><strong>Discount (Eco Points):</strong> {order.ecoPointsUsed || 0}</div>
@@ -93,13 +94,12 @@ const PurchaseHistoryPage = () => {
                   <div><strong>Phone:</strong> {order.contactPhone || '-'}</div>
                 </div>
 
-                <div style={{ marginTop: '0.9rem', display: 'flex', gap: '0.6rem' }}>
+                <div className="purchase-order-actions">
                   <button className="btn-primary" onClick={() => setSelectedBill(order)}>View Bill</button>
                   {order.status === 'PENDING' || order.status === 'CONFIRMED' ? (
                     <button
-                      className="btn-secondary"
+                      className="btn-secondary purchase-cancel-btn"
                       onClick={() => handleCancelOrder(order.id)}
-                      style={{ borderColor: '#d9534f', color: '#d9534f' }}
                     >
                       Cancel Order
                     </button>
@@ -117,33 +117,35 @@ const PurchaseHistoryPage = () => {
             <h2>Invoice / Bill</h2>
             <p className="checkout-subtitle">Order #{selectedBill.orderNumber}</p>
 
-            <div className="bill-preview" style={{ marginBottom: '0.8rem' }}>
+            <div className="bill-preview purchase-bill-info">
               <div><span>Order Date</span><strong>{formatDate(selectedBill.createdAt)}</strong></div>
               <div><span>Payment Mode</span><strong>{selectedBill.paymentMethod || '-'}</strong></div>
               <div><span>Shipping Address</span><strong>{selectedBill.shippingAddress || '-'}</strong></div>
               <div><span>Contact Phone</span><strong>{selectedBill.contactPhone || '-'}</strong></div>
             </div>
 
-            <table style={{ width: '100%', borderCollapse: 'collapse', marginBottom: '1rem' }}>
-              <thead>
-                <tr style={{ borderBottom: '1px solid var(--border)', textAlign: 'left' }}>
-                  <th style={{ padding: '8px' }}>Item</th>
-                  <th style={{ padding: '8px' }}>Qty</th>
-                  <th style={{ padding: '8px' }}>Unit Price</th>
-                  <th style={{ padding: '8px' }}>Subtotal</th>
-                </tr>
-              </thead>
-              <tbody>
-                {(selectedBill.items || []).map((item) => (
-                  <tr key={item.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '8px' }}>{item.productName || 'Product'}</td>
-                    <td style={{ padding: '8px' }}>{item.quantity}</td>
-                    <td style={{ padding: '8px' }}>₹ {item.unitPrice}</td>
-                    <td style={{ padding: '8px' }}>₹ {item.subtotal}</td>
+            <div className="purchase-bill-table-wrap">
+              <table className="purchase-bill-table">
+                <thead>
+                  <tr>
+                    <th>Item</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Subtotal</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
+                </thead>
+                <tbody>
+                  {(selectedBill.items || []).map((item) => (
+                    <tr key={item.id}>
+                      <td data-label="Item">{item.productName || 'Product'}</td>
+                      <td data-label="Qty">{item.quantity}</td>
+                      <td data-label="Unit Price">₹ {item.unitPrice}</td>
+                      <td data-label="Subtotal">₹ {item.subtotal}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
 
             <div className="bill-preview">
               <div><span>Gross & Notes</span><strong>{selectedBill.notes || '-'}</strong></div>
@@ -151,7 +153,7 @@ const PurchaseHistoryPage = () => {
               <div className="bill-total"><span>Final Paid Amount</span><strong>₹ {selectedBill.totalAmount}</strong></div>
             </div>
 
-            <div className="checkout-actions" style={{ marginTop: '1rem' }}>
+            <div className="checkout-actions purchase-checkout-actions">
               <button className="btn-primary" onClick={() => setSelectedBill(null)}>Close</button>
             </div>
           </div>

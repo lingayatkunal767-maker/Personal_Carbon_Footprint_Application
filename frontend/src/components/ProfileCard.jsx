@@ -128,7 +128,7 @@ const ProfileCard = ({ profile, onSave, className }) => {
   };
 
   return (
-    <div className={`card${className ? ` ${className}` : ''}`}>
+    <div id="profile-card" className={`card${className ? ` ${className}` : ''}`}>
       <div className="card-title">
         My Profile
         <button type="button" className="card-action" onClick={() => setIsEditing((prev) => !prev)}>

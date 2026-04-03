@@ -61,3 +61,31 @@ Result:
 - Backend tests: PASS
 - Frontend build: PASS
 - Vite large chunk warning: RESOLVED with manual chunk split
+
+## Quick Responsive QA Checklist (Auth Pages, 320-375px + Landscape)
+
+Device target:
+1. Width 320px and 375px in browser device emulation.
+2. Height around 640-812px.
+3. Landscape 667x320 (or similar low-height mobile landscape).
+
+Pages to verify:
+1. `/login`
+2. `/signup`
+3. `/admin/login`
+4. `/admin/signup`
+5. `/auth/callback`
+
+Checks:
+1. No horizontal scroll at page level.
+2. Headings and helper text stay readable without clipping.
+3. Inputs, primary buttons, and secondary actions are fully visible and tappable.
+4. Link rows do not overlap; they stack cleanly on narrow screens.
+5. Toast/alert messages wrap inside viewport and do not overflow.
+6. Password visibility toggle remains reachable and does not overlap input text.
+7. Loading states (spinner + text) remain centered and readable.
+8. Focus styles are visible for keyboard navigation.
+9. In landscape 667x320, auth forms remain fully usable without clipped primary actions.
+
+Expected outcome:
+1. Auth flows are usable end-to-end on 320px, 375px, and 667x320 landscape with no clipped text, no overlapping actions, and no horizontal scrolling.

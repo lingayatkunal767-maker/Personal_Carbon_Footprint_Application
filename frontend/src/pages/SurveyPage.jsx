@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { surveyAPI } from '../services/api';
 import '../styles/Survey.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const EATING_OUT_NON_VEG_RATIO = {
   Never: 0.35,

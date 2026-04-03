@@ -216,6 +216,10 @@
   width: 120px;
 }
 
+.admin-threshold-input {
+  max-width: 170px;
+}
+
 .admin-table-wrap {
   overflow-x: auto;
   border: 1px solid var(--border);
@@ -225,7 +229,7 @@
 .admin-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 760px;
+  min-width: 680px;
 }
 
 .admin-table th,
@@ -468,5 +472,44 @@
   .admin-chart-canvas-line,
   .admin-chart-canvas-bar {
     height: 260px;
+  }
+
+  .admin-table {
+    min-width: 620px;
+  }
+
+  .admin-input-sm {
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 560px) {
+  .admin-topbar {
+    height: auto;
+    padding: 10px 12px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+
+  .admin-topbar-actions {
+    width: 100%;
+  }
+
+  .admin-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-toolbar .admin-btn,
+  .admin-toolbar .admin-input,
+  .admin-toolbar .admin-select,
+  .admin-toolbar .admin-textarea {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .admin-table {
+    min-width: 500px;
   }
 }

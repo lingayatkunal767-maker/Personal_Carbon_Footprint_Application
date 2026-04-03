@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "421764128567-r2p83571fkfforlcfms7066e9chbh0cn.apps.googleusercontent.com";
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const FACTS = [
   "Global ocean temperatures rise ~0.13°F per decade since 1901.",
@@ -469,9 +469,73 @@ export default function SignUpPage() {
           .sp-shell { grid-template-columns: 1fr; }
           .sp-hero  { padding: 2rem 1.5rem; }
         }
+
+        @media (orientation: landscape) and (max-height: 430px) and (max-width: 900px) {
+          .sp-shell { grid-template-columns: 1fr; }
+          .sp-hero { display: none; }
+          .sp-pane { padding: 0.8rem 1rem; align-items: flex-start; }
+          .sp-card { max-width: 100%; padding: 0.88rem 1rem; border-radius: 12px; }
+          .sp-card-badge { margin-bottom: 0.5rem; }
+          .sp-card h2 { font-size: 1.08rem; }
+          .sp-card-sub { font-size: 0.71rem; margin-bottom: 0.58rem; }
+          .sp-field { margin-bottom: 0.45rem; }
+          .sp-label { font-size: 0.69rem; margin-bottom: 0.22rem; }
+          .sp-input { font-size: 0.77rem; padding: 7px 9px; }
+          .sp-strength { margin-top: 4px; }
+          .sp-strength-bar-bg { height: 3px; }
+          .sp-strength-label { font-size: 0.66rem; margin-top: 2px; }
+          .sp-btn-primary,
+          .sp-btn-google { height: 34px; font-size: 0.73rem; }
+          .sp-divider { gap: 6px; margin: 0.4rem 0; font-size: 0.64rem; }
+          .sp-login-link { margin-top: 0.52rem; padding-top: 0.45rem; font-size: 0.69rem; }
+          .sp-admin-link { margin-top: 0.2rem; font-size: 0.67rem; }
+          .sp-toast {
+            top: 8px;
+            left: 10px;
+            right: 10px;
+            transform: none;
+            white-space: normal;
+            text-align: center;
+            font-size: 0.72rem;
+            padding: 8px 10px;
+          }
+        }
         @media (max-width: 560px) {
           .sp-hero { display: none; }
-          .sp-pane { padding: 2.5rem 1.25rem; align-items: flex-start; padding-top: 3.5rem; }
+          .sp-pane { padding: 1.8rem 0.95rem; align-items: flex-start; padding-top: 2rem; }
+          .sp-card { padding: 1.12rem 1rem; border-radius: 14px; }
+          .sp-card h2 { font-size: 1.34rem; }
+          .sp-card-sub { font-size: 0.78rem; margin-bottom: 0.95rem; }
+          .sp-input { font-size: 0.84rem; padding: 8px 10px; }
+          .sp-btn-primary,
+          .sp-btn-google { height: 40px; font-size: 0.81rem; }
+          .sp-login-link,
+          .sp-admin-link { font-size: 0.76rem; }
+          .sp-toast {
+            left: 12px;
+            right: 12px;
+            transform: none;
+            max-width: none;
+            white-space: normal;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 10px 12px;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .sp-pane { padding: 1.1rem 0.65rem; padding-top: 1.2rem; }
+          .sp-card { padding: 0.92rem 0.8rem; border-radius: 12px; }
+          .sp-card-badge { font-size: 0.67rem; padding: 3px 8px; margin-bottom: 0.68rem; }
+          .sp-card h2 { font-size: 1.18rem; }
+          .sp-card-sub { font-size: 0.74rem; margin-bottom: 0.8rem; }
+          .sp-label { font-size: 0.72rem; }
+          .sp-input { font-size: 0.8rem; }
+          .sp-btn-primary,
+          .sp-btn-google { height: 38px; font-size: 0.77rem; }
+          .sp-divider { gap: 8px; margin: 0.55rem 0; font-size: 0.68rem; }
+          .sp-login-link,
+          .sp-admin-link { font-size: 0.72rem; }
         }
       `}</style>
 

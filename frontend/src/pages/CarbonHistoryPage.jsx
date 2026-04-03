@@ -16,7 +16,7 @@ import '../styles/CarbonHistory.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const PAGE_SIZE = 5;
 const CATEGORY_FILTERS = ['all', 'transport', 'food', 'energy'];
 
@@ -581,12 +581,12 @@ export default function CarbonHistoryPage() {
                         return (
                           <React.Fragment key={log.logDate}>
                             <tr>
-                              <td>{formatDate(log.logDate)}</td>
-                              <td>{formatNumber(log.transportEmission)}</td>
-                              <td>{formatNumber(log.foodEmission)}</td>
-                              <td>{formatNumber(log.energyEmission)}</td>
-                              <td className="total-cell">{formatNumber(log.totalEmission)}</td>
-                              <td>
+                              <td data-label="Date">{formatDate(log.logDate)}</td>
+                              <td data-label="Transport (kg)">{formatNumber(log.transportEmission)}</td>
+                              <td data-label="Food (kg)">{formatNumber(log.foodEmission)}</td>
+                              <td data-label="Energy (kg)">{formatNumber(log.energyEmission)}</td>
+                              <td data-label="Total (kg)" className="total-cell">{formatNumber(log.totalEmission)}</td>
+                              <td data-label="Actions">
                                 <button
                                   type="button"
                                   className="history-link-btn"

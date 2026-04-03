@@ -340,6 +340,31 @@ psql -U tracker_user -d sustainability_tracker -f schema.sql
 
 ---
 
+## Quick Responsive QA Checklist (Auth Pages)
+
+Target viewport sizes:
+- [ ] 320px width
+- [ ] 375px width
+- [ ] 667x320 landscape
+
+Target routes:
+- [ ] `/login`
+- [ ] `/signup`
+- [ ] `/admin/login`
+- [ ] `/admin/signup`
+- [ ] `/auth/callback`
+
+Checks:
+- [ ] No horizontal scrolling on page
+- [ ] Text remains readable (no clipping/truncation)
+- [ ] Inputs and buttons are fully visible and easy to tap
+- [ ] Action links stack cleanly on tiny screens
+- [ ] Toast messages stay inside viewport and wrap correctly
+- [ ] Loading states remain centered and readable
+- [ ] In 667x320 landscape, primary auth actions remain visible without clipping
+
+---
+
 ## 🎉 Success Criteria
 
 If all tests pass, you should see:

@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
   '245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com';
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const FACTS = [
   'Global ocean temperatures have risen ~0.13°F per decade since 1901.',
@@ -261,7 +261,13 @@ export default function LoginPage() {
       showToast(data.message || 'Welcome back! 🌿', 'success');
       setTimeout(() => setSessionAndNavigate(data), 600);
     } catch (error) {
-      showToast(error.message || 'Cannot reach backend server.', 'error');
+      const message = String(error?.message || '');
+      const isNetworkFailure = /failed to fetch|networkerror|load failed/i.test(message);
+      if (isNetworkFailure) {
+        showToast('Cannot reach backend server. Start backend and try again.', 'error');
+      } else {
+        showToast(error.message || 'Login failed. Please try again.', 'error');
+      }
     } finally {
       setEmailLoading(false);
     }
@@ -647,9 +653,75 @@ export default function LoginPage() {
           .lp-shell { grid-template-columns: 1fr; }
           .lp-hero { padding: 2rem 1.5rem; }
         }
+
+        @media (orientation: landscape) and (max-height: 430px) and (max-width: 900px) {
+          .lp-shell { grid-template-columns: 1fr; }
+          .lp-hero { display: none; }
+          .lp-pane { padding: 0.8rem 1rem; align-items: flex-start; }
+          .lp-card { max-width: 100%; padding: 0.9rem 1rem; border-radius: 12px; }
+          .lp-card-badge { margin-bottom: 0.5rem; }
+          .lp-card h2 { font-size: 1.1rem; }
+          .lp-card-sub { font-size: 0.72rem; margin-bottom: 0.65rem; }
+          .lp-field { margin-bottom: 0.5rem; }
+          .lp-label { font-size: 0.7rem; }
+          .lp-input { font-size: 0.78rem; padding: 7px 9px; }
+          .lp-btn-primary,
+          .lp-btn-google { height: 34px; font-size: 0.74rem; }
+          .lp-divider { gap: 6px; margin: 0.45rem 0; font-size: 0.65rem; }
+          .lp-links {
+            margin-top: 0.55rem;
+            padding-top: 0.5rem;
+            font-size: 0.7rem;
+            flex-direction: row;
+            justify-content: space-between;
+            align-items: center;
+            gap: 0.4rem;
+          }
+          .lp-toast {
+            top: 8px;
+            left: 10px;
+            right: 10px;
+            transform: none;
+            white-space: normal;
+            text-align: center;
+            font-size: 0.72rem;
+            padding: 8px 10px;
+          }
+        }
         @media (max-width: 560px) {
           .lp-hero { display: none; }
-          .lp-pane { padding: 2.5rem 1.25rem; align-items: flex-start; padding-top: 3.5rem; }
+          .lp-pane { padding: 1.8rem 0.95rem; align-items: flex-start; padding-top: 2rem; }
+          .lp-card { padding: 1.15rem 1rem; border-radius: 14px; }
+          .lp-card h2 { font-size: 1.35rem; }
+          .lp-card-sub { font-size: 0.79rem; margin-bottom: 1rem; }
+          .lp-input { font-size: 0.86rem; padding: 8px 10px; }
+          .lp-btn-primary,
+          .lp-btn-google { height: 40px; font-size: 0.82rem; }
+          .lp-links { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+          .lp-toast {
+            left: 12px;
+            right: 12px;
+            transform: none;
+            max-width: none;
+            white-space: normal;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 10px 12px;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .lp-pane { padding: 1.1rem 0.65rem; padding-top: 1.2rem; }
+          .lp-card { padding: 0.95rem 0.8rem; border-radius: 12px; }
+          .lp-card-badge { font-size: 0.68rem; padding: 3px 8px; margin-bottom: 0.7rem; }
+          .lp-card h2 { font-size: 1.2rem; }
+          .lp-card-sub { font-size: 0.75rem; margin-bottom: 0.85rem; }
+          .lp-label { font-size: 0.73rem; }
+          .lp-input { font-size: 0.82rem; }
+          .lp-btn-primary,
+          .lp-btn-google { height: 38px; font-size: 0.78rem; }
+          .lp-divider { gap: 8px; margin: 0.6rem 0; font-size: 0.68rem; }
+          .lp-links { font-size: 0.74rem; }
         }
       `}</style>
 

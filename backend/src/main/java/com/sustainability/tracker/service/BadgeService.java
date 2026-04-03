@@ -1,7 +1,6 @@
 package com.sustainability.tracker.service;
 
 import com.sustainability.tracker.dto.BadgeResponseDTO;
-import com.sustainability.tracker.entity.Badge;
 import com.sustainability.tracker.repository.BadgeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

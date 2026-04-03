@@ -119,6 +119,24 @@ const EmissionsBreakdown = ({ breakdown }) => {
         .breakdown-percent { color: #5f8169; font-size: 0.9rem; font-weight: 600; }
         .breakdown-track { margin-top: 0.34rem; height: 7px; border-radius: 999px; background: rgba(36,95,63,0.15); overflow: hidden; }
         .breakdown-fill { height: 100%; border-radius: inherit; transition: width 1.15s cubic-bezier(.42,0,.58,1); }
+
+        @media (max-width: 860px) {
+          .breakdown-total { font-size: 1.65rem; }
+          .breakdown-total-label { font-size: 0.8rem; }
+          .breakdown-row-top { align-items: flex-start; }
+          .breakdown-name { white-space: normal; line-height: 1.2; }
+          .breakdown-metrics { flex-direction: column; align-items: flex-end; gap: 0.1rem; }
+          .breakdown-value { font-size: 0.95rem; }
+          .breakdown-percent { font-size: 0.78rem; }
+        }
+
+        @media (max-width: 560px) {
+          .breakdown-total { font-size: 1.35rem; }
+          .dc-unit { font-size: 0.82rem; }
+          .breakdown-icon { font-size: 0.82rem; }
+          .breakdown-name { font-size: 0.82rem; }
+          .breakdown-track { height: 6px; }
+        }
       `}</style>
     </div>
   );

@@ -2,7 +2,7 @@
     "java.configuration.updateBuildConfiguration": "automatic",
     "java.compile.nullAnalysis.mode": "automatic",
     "terminal.integrated.env.windows": {
-        "JAVA_HOME": "C:\\Users\\DELL\\.jdk\\jdk-21.0.8",
-        "Path": "C:\\Users\\DELL\\.jdk\\jdk-21.0.8\\bin;C:\\maven\\apache-maven-3.9.6\\bin;${env:Path}"
+        "JAVA_HOME": "${env:JAVA_HOME}",
+        "Path": "${env:JAVA_HOME}\\bin;${env:Path}"
     }
 }

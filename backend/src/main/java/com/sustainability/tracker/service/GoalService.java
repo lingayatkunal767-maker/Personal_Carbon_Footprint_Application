@@ -34,7 +34,7 @@ public class GoalService {
 
     public List<GoalResponse> getGoalsByUser(Long userId) {
         return goalRepository.findByUserIdOrderByCreatedAtDesc(userId)
-                .stream().map(this::toResponse).collect(Collectors.toList());
+                .stream().map(this::toResponse).toList();
     }
 
     public GoalResponse createGoal(GoalRequest request) {
@@ -44,16 +44,15 @@ public class GoalService {
 
         Goal goal = new Goal();
         goal.setUser(user);
-        goal.setGoalType(request.getGoalType());
+        goal.setGoalType(normalizeGoalType(request.getGoalType()));
         goal.setTargetValue(request.getTargetValue() != null ? request.getTargetValue() : BigDecimal.valueOf(100));
         goal.setCurrentValue(request.getCurrentValue() != null ? request.getCurrentValue() : BigDecimal.ZERO);
         goal.setDeadline(request.getDeadline());
-        goal.setStatus(request.getStatus() != null ? request.getStatus() : "active");
+        goal.setStatus(normalizeStatus(request.getStatus()));
 
         return toResponse(goalRepository.save(goal));
     }
 
-    @SuppressWarnings("null")
     public GoalResponse updateGoal(Long id, GoalRequest request) {
         Long safeId = Objects.requireNonNull(id, "id is required");
         Goal existing = goalRepository.findById(safeId)
@@ -63,11 +62,11 @@ public class GoalService {
         BigDecimal previousTarget = existing.getTargetValue() != null ? existing.getTargetValue() : BigDecimal.ZERO;
         boolean wasCompleted = "completed".equalsIgnoreCase(existing.getStatus());
 
-        if (request.getGoalType() != null) existing.setGoalType(request.getGoalType());
+        if (request.getGoalType() != null) existing.setGoalType(normalizeGoalType(request.getGoalType()));
         if (request.getTargetValue() != null) existing.setTargetValue(request.getTargetValue());
         if (request.getCurrentValue() != null) existing.setCurrentValue(request.getCurrentValue());
         if (request.getDeadline() != null) existing.setDeadline(request.getDeadline());
-        if (request.getStatus() != null) existing.setStatus(request.getStatus());
+        if (request.getStatus() != null) existing.setStatus(normalizeStatus(request.getStatus()));
 
         BigDecimal targetValue = existing.getTargetValue() != null ? existing.getTargetValue() : BigDecimal.ZERO;
         BigDecimal currentValue = existing.getCurrentValue() != null ? existing.getCurrentValue() : BigDecimal.ZERO;
@@ -108,7 +107,15 @@ public class GoalService {
      * This is called automatically when new carbon logs are created
      */
     public void updateGoalProgress(Long userId) {
-        List<Goal> activeGoals = goalRepository.findByUserIdAndStatus(userId, "active");
+        if (userId == null) {
+            log.warn("Skipping goal progress update because userId is null");
+            return;
+        }
+
+        List<Goal> activeGoals = goalRepository.findByUserIdOrderByCreatedAtDesc(userId)
+                .stream()
+                .filter(goal -> "active".equalsIgnoreCase(goal.getStatus()))
+                .toList();
         
         for (Goal goal : activeGoals) {
             updateSingleGoalProgress(goal);
@@ -119,9 +126,14 @@ public class GoalService {
      * Update a single goal's progress
      */
     private void updateSingleGoalProgress(Goal goal) {
+        if (goal.getUser() == null || goal.getUser().getId() == null) {
+            log.warn("Skipping goal progress update for goal {} because user reference is missing", goal.getId());
+            return;
+        }
+
         Long userId = goal.getUser().getId();
-        LocalDate goalStart = goal.getCreatedAt().toLocalDate();
         LocalDate now = LocalDate.now();
+        LocalDate goalStart = goal.getCreatedAt() != null ? goal.getCreatedAt().toLocalDate() : now.minusDays(30);
 
         List<CarbonLog> logs = carbonLogRepository.findByUserIdAndLogDateBetweenOrderByLogDate(
                 userId, goalStart, now
@@ -133,9 +145,11 @@ public class GoalService {
 
         BigDecimal currentProgress = BigDecimal.ZERO;
         BigDecimal previousProgress = goal.getCurrentValue() != null ? goal.getCurrentValue() : BigDecimal.ZERO;
+        BigDecimal targetValue = safe(goal.getTargetValue());
+        String goalType = normalizeGoalType(goal.getGoalType());
 
         // Calculate progress based on goal type
-        switch (goal.getGoalType().toLowerCase()) {
+        switch (goalType) {
             case "reduce_transport":
                 currentProgress = calculateCategoryReduction(logs, "transport");
                 break;
@@ -163,7 +177,7 @@ public class GoalService {
         goal.setCurrentValue(currentProgress);
 
         // Check if goal is completed
-        if (currentProgress.compareTo(goal.getTargetValue()) >= 0) {
+        if (targetValue.compareTo(BigDecimal.ZERO) > 0 && currentProgress.compareTo(targetValue) >= 0) {
             if (!"completed".equals(goal.getStatus())) {
                 goal.setStatus("completed");
                 log.info("🎉 Goal {} completed for user {}", goal.getId(), userId);
@@ -174,8 +188,8 @@ public class GoalService {
             }
         } else {
             // Send progress notification at milestone percentages (25%, 50%, 75%)
-            int previousPercentage = calculatePercentage(previousProgress, goal.getTargetValue());
-            int currentPercentage = calculatePercentage(currentProgress, goal.getTargetValue());
+            int previousPercentage = calculatePercentage(previousProgress, targetValue);
+            int currentPercentage = calculatePercentage(currentProgress, targetValue);
             
             if (shouldNotifyProgress(previousPercentage, currentPercentage)) {
                 notificationService.notifyGoalProgress(userId, goal.getGoalType(), currentPercentage, goal.getId());
@@ -290,9 +304,9 @@ public class GoalService {
      * Calculate percentage
      */
     private int calculatePercentage(BigDecimal current, BigDecimal target) {
-        if (target.compareTo(BigDecimal.ZERO) == 0) return 0;
+        if (target == null || target.compareTo(BigDecimal.ZERO) == 0) return 0;
         
-        return current.multiply(new BigDecimal("100"))
+        return safe(current).multiply(new BigDecimal("100"))
                 .divide(target, 0, RoundingMode.HALF_UP)
                 .intValue();
     }
@@ -323,5 +337,23 @@ public class GoalService {
                 g.getStatus(),
                 g.getCreatedAt()
         );
+    }
+
+    private BigDecimal safe(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private String normalizeStatus(String status) {
+        if (status == null || status.isBlank()) {
+            return "active";
+        }
+        return status.trim().toLowerCase();
+    }
+
+    private String normalizeGoalType(String goalType) {
+        if (goalType == null || goalType.isBlank()) {
+            return "overall_reduction";
+        }
+        return goalType.trim().toLowerCase();
     }
 }

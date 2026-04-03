@@ -69,7 +69,12 @@ function ProtectedRoute({ children, requiredRole }) {
 
 function App() {
   return (
-    <BrowserRouter>
+    <BrowserRouter
+      future={{
+        v7_startTransition: true,
+        v7_relativeSplatPath: true,
+      }}
+    >
       <Routes>
         {/* Redirect root based on session */}
         <Route path="/" element={<RootRedirect />} />

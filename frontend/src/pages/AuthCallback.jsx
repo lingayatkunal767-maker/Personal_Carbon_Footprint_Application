@@ -1,7 +1,7 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -149,6 +149,65 @@ export default function AuthCallback() {
         .auth-icon {
           font-size: 3rem;
           margin-bottom: 1rem;
+        }
+
+        @media (orientation: landscape) and (max-height: 430px) and (max-width: 900px) {
+          .auth-callback-container {
+            padding: 0.75rem 1rem;
+          }
+
+          .spinner-large {
+            width: 36px;
+            height: 36px;
+            border-width: 3px;
+            margin-bottom: 0.6rem;
+          }
+
+          .auth-icon {
+            font-size: 1.6rem;
+            margin-bottom: 0.35rem;
+          }
+
+          .auth-message {
+            font-size: 0.8rem;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .auth-callback-container {
+            padding: 1rem;
+          }
+
+          .spinner-large {
+            width: 48px;
+            height: 48px;
+            margin-bottom: 1.2rem;
+          }
+
+          .auth-icon {
+            font-size: 2.4rem;
+            margin-bottom: 0.75rem;
+          }
+
+          .auth-message {
+            font-size: 1rem;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .spinner-large {
+            width: 42px;
+            height: 42px;
+            border-width: 3px;
+          }
+
+          .auth-icon {
+            font-size: 2rem;
+          }
+
+          .auth-message {
+            font-size: 0.88rem;
+          }
         }
       `}</style>
 

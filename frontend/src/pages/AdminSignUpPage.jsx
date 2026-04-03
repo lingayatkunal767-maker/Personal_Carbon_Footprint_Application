@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 export default function AdminSignUpPage() {
   const navigate = useNavigate();
@@ -218,6 +218,150 @@ export default function AdminSignUpPage() {
           border-radius: 10px;
           font-size: 0.85rem;
           z-index: 999;
+        }
+
+        @media (orientation: landscape) and (max-height: 430px) and (max-width: 900px) {
+          .admin-auth-shell {
+            padding: 10px;
+            place-items: start center;
+          }
+
+          .admin-auth-card {
+            max-width: 680px;
+            padding: 12px 14px;
+            border-radius: 12px;
+          }
+
+          .admin-auth-title {
+            font-size: 1.08rem;
+          }
+
+          .admin-auth-sub {
+            font-size: 0.73rem;
+            margin-top: 4px;
+          }
+
+          .admin-auth-form {
+            margin-top: 10px;
+            gap: 8px;
+          }
+
+          .admin-auth-label {
+            font-size: 0.72rem;
+            margin-bottom: 3px;
+          }
+
+          .admin-auth-input {
+            font-size: 0.8rem;
+            padding: 8px 9px;
+          }
+
+          .admin-auth-btn {
+            margin-top: 4px;
+            height: 36px;
+            font-size: 0.78rem;
+          }
+
+          .admin-auth-links {
+            margin-top: 8px;
+            font-size: 0.72rem;
+            gap: 8px;
+          }
+
+          .admin-toast {
+            top: 8px;
+            left: 10px;
+            right: 10px;
+            transform: none;
+            text-align: center;
+            white-space: normal;
+            font-size: 0.74rem;
+            padding: 8px 10px;
+          }
+        }
+
+        @media (max-width: 560px) {
+          .admin-auth-shell {
+            padding: 14px;
+          }
+
+          .admin-auth-card {
+            padding: 18px;
+            border-radius: 14px;
+          }
+
+          .admin-auth-title {
+            font-size: 1.3rem;
+          }
+
+          .admin-auth-sub {
+            font-size: 0.82rem;
+          }
+
+          .admin-auth-form {
+            gap: 10px;
+          }
+
+          .admin-auth-input {
+            padding: 10px;
+            font-size: 0.85rem;
+          }
+
+          .admin-auth-btn {
+            height: 42px;
+            font-size: 0.84rem;
+          }
+
+          .admin-auth-links {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 7px;
+            font-size: 0.78rem;
+          }
+
+          .admin-toast {
+            left: 12px;
+            right: 12px;
+            transform: none;
+            text-align: center;
+            font-size: 0.8rem;
+            padding: 9px 12px;
+          }
+        }
+
+        @media (max-width: 375px) {
+          .admin-auth-shell {
+            padding: 10px;
+          }
+
+          .admin-auth-card {
+            padding: 14px;
+            border-radius: 12px;
+          }
+
+          .admin-auth-title {
+            font-size: 1.16rem;
+          }
+
+          .admin-auth-sub {
+            font-size: 0.75rem;
+          }
+
+          .admin-auth-label {
+            font-size: 0.73rem;
+          }
+
+          .admin-auth-input {
+            font-size: 0.8rem;
+          }
+
+          .admin-auth-btn {
+            font-size: 0.8rem;
+          }
+
+          .admin-auth-links {
+            font-size: 0.74rem;
+          }
         }
       `}</style>
 

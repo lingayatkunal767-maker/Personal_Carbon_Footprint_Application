@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../services/api';
 import '../styles/Marketplace.css';
+import '../styles/Dashboard.css';
 
 const CATEGORY_OPTIONS = [
   { id: null, name: 'All Items' },

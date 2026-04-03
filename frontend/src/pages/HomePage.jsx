@@ -17,7 +17,7 @@ import NotificationsPanel from '../components/NotificationsPanel';
 import LogActivityModal from '../components/LogActivityModal';
 import '../styles/Dashboard.css';
 
-const API_BASE = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const DEFAULT_TAGS = [];
@@ -1022,7 +1022,12 @@ export default function HomePage() {
 
   return (
     <div className="dashboard-page">
-      <TopBar onLogout={handleLogout} onOpenModal={handleOpenModal} onOpenNotifications={handleToggleNotifications} unreadCount={unreadNotifications} />
+      <TopBar
+        onLogout={handleLogout}
+        onOpenModal={handleOpenModal}
+        onOpenNotifications={handleToggleNotifications}
+        unreadCount={unreadNotifications}
+      />
       <HeroBanner userName={profile.name} />
       <StatSummaryRow stats={stats} />
 

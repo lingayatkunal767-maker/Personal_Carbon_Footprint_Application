@@ -16,7 +16,7 @@ import '../styles/AdminDashboard.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend);
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8081/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const TABS = [
   { id: 'users', label: 'User Management' },
@@ -895,14 +895,13 @@ export default function AdminHomePage() {
           <div className="admin-toolbar">
             <button className="admin-btn admin-btn-primary" onClick={handleAssignBadge}>Assign Badge</button>
             <input
-              className="admin-input admin-input-sm"
+              className="admin-input admin-input-sm admin-threshold-input"
               type="number"
               min="0"
               step="1"
               value={performanceThreshold}
               onChange={(e) => setPerformanceThreshold(e.target.value)}
               placeholder="Good score threshold %"
-              style={{ maxWidth: 170 }}
             />
             <button className="admin-btn" onClick={handleAssignByPerformance}>Assign by Good Score</button>
           </div>

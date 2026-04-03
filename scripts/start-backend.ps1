@@ -55,8 +55,15 @@ function Get-JavaMajorVersion {
     }
 
     try {
-        $versionOutput = & $JavaExePath -version 2>&1 | Select-Object -First 1
-        if ($versionOutput -match '"(?<major>\d+)') {
+        $previousPreference = $ErrorActionPreference
+        $ErrorActionPreference = 'Continue'
+        try {
+            $versionOutput = (& $JavaExePath -version 2>&1 | Out-String)
+        } finally {
+            $ErrorActionPreference = $previousPreference
+        }
+
+        if ($versionOutput -match 'version\s+"(?<major>\d+)') {
             return [int]$Matches.major
         }
     } catch {
@@ -112,8 +119,13 @@ function Get-RealMavenCommand {
         }
     }
 
-    if (Test-Path 'C:\maven\apache-maven-3.9.6\bin\mvn.cmd') {
-        return 'C:\maven\apache-maven-3.9.6\bin\mvn.cmd'
+    foreach ($mavenHomeVar in @($env:MAVEN_HOME, $env:M2_HOME)) {
+        if (-not [string]::IsNullOrWhiteSpace($mavenHomeVar)) {
+            $candidate = Join-Path $mavenHomeVar 'bin\mvn.cmd'
+            if (Test-Path $candidate) {
+                return $candidate
+            }
+        }
     }
 
     return $null

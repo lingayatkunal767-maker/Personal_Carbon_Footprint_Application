@@ -402,7 +402,7 @@
 .history-table {
   width: 100%;
   border-collapse: collapse;
-  min-width: 750px;
+  min-width: 640px;
 }
 
 .history-table th,
@@ -631,6 +631,63 @@
 
   .history-action-group {
     grid-template-columns: 1fr;
+  }
+
+  .history-table {
+    min-width: 100%;
+  }
+
+  .history-table thead {
+    display: none;
+  }
+
+  .history-table,
+  .history-table tbody,
+  .history-table tr,
+  .history-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .history-table tr {
+    border: 1px solid var(--history-border);
+    border-radius: 12px;
+    margin-bottom: 0.62rem;
+    background: #fff;
+    overflow: hidden;
+  }
+
+  .history-table td {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 9px 10px;
+    border-bottom: 1px solid #edf1ee;
+    font-size: 12px;
+    text-align: left;
+  }
+
+  .history-table td:last-child {
+    border-bottom: none;
+  }
+
+  .history-table td::before {
+    content: attr(data-label);
+    font-size: 10px;
+    font-weight: 700;
+    color: #516458;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    flex-shrink: 0;
+  }
+
+  .history-details-row td {
+    display: block;
+  }
+
+  .history-details-row td::before {
+    content: none;
   }
 
   .history-details-grid {
