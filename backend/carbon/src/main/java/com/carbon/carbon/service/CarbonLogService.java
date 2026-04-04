@@ -18,13 +18,16 @@ public class CarbonLogService {
     private final CarbonLogRepository carbonLogRepository;
     private final BadgeAwardingService badgeAwardingService;
     private final LeaderboardScoreService leaderboardScoreService;
+    private final GoalEmissionSyncService goalEmissionSyncService;
 
     public CarbonLogService(CarbonLogRepository carbonLogRepository,
                             BadgeAwardingService badgeAwardingService,
-                            LeaderboardScoreService leaderboardScoreService) {
+                            LeaderboardScoreService leaderboardScoreService,
+                            GoalEmissionSyncService goalEmissionSyncService) {
         this.carbonLogRepository = carbonLogRepository;
         this.badgeAwardingService = badgeAwardingService;
         this.leaderboardScoreService = leaderboardScoreService;
+        this.goalEmissionSyncService = goalEmissionSyncService;
     }
 
     public void createOrUpdateDailyLog(User user,
@@ -48,6 +51,9 @@ public class CarbonLogService {
         log.setTotalEmission(total);
 
         carbonLogRepository.save(log);
+
+        // Sync with goals
+        goalEmissionSyncService.syncEmissionWithGoals(user.getId(), BigDecimal.valueOf(total), today);
 
         // Check and award badges after logging emissions
         badgeAwardingService.checkAndAwardBadges(user.getId());

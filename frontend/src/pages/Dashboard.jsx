@@ -326,19 +326,21 @@ export default function Dashboard() {
                 <h2 className="text-lg font-bold text-green-900 flex items-center gap-2">
                   <span className="text-xl">🎯</span> Active Goals
                 </h2>
-                <Link to="/create-goal" className="text-xs font-bold text-green-600 hover:underline">View All</Link>
+                <Link to="/goals" className="text-xs font-bold text-green-600 hover:underline">View All</Link>
               </div>
               {goals.length === 0 ? (
                 <p className="text-gray-400 text-sm italic">No active goals. Start one to track your progress!</p>
               ) : (
                 <div className="space-y-4">
                   {goals.slice(0, 2).map(goal => {
-                    const progress = goal.targetEmission > 0 ? Math.min(100, Math.round((goal.currentEmission / goal.targetEmission) * 100)) : 0;
+                    // Update to match requested formula: progress = (target - current) / target * 100
+                    const rawProgress = goal.targetEmission > 0 ? ((goal.targetEmission - goal.currentEmission) / goal.targetEmission) * 100 : 0;
+                    const progress = Math.max(0, Math.min(100, Math.round(rawProgress)));
                     return (
                       <div key={goal.id} className="p-4 bg-green-50/50 rounded-xl border border-green-100">
                         <div className="flex justify-between items-center mb-2">
                           <span className="font-semibold text-green-900">{goal.goalTitle}</span>
-                          <span className="text-xs font-bold text-green-600">{progress}%</span>
+                          <span className="text-xs font-bold text-green-600">{progress}% buffer left</span>
                         </div>
                         <div className="w-full bg-gray-200 rounded-full h-1.5">
                           <div className="bg-green-500 h-1.5 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />

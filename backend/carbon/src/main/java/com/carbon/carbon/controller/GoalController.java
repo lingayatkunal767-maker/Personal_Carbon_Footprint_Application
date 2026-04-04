@@ -8,6 +8,9 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
+import org.springframework.security.core.Authentication;
+import com.carbon.carbon.repository.UserRepository;
+import com.carbon.carbon.entity.User;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.OffsetDateTime;
@@ -22,14 +25,31 @@ import java.util.Map;
 public class GoalController {
 
     private final GoalService goalService;
+    private final UserRepository userRepository;
 
-    public GoalController(GoalService goalService) {
+    public GoalController(GoalService goalService, UserRepository userRepository) {
         this.goalService = goalService;
+        this.userRepository = userRepository;
     }
 
     /**
-     * Get all goals for a user
+     * Get all goals for the authenticated user
      */
+    @GetMapping
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<?> getMyGoals(Authentication authentication) {
+        try {
+            String email = authentication.getName();
+            User user = userRepository.findByEmail(email)
+                    .orElseThrow(() -> new RuntimeException("User not found"));
+            List<GoalDTO> goals = goalService.getUserGoals(user.getId());
+            return ResponseEntity.ok(goals);
+        } catch (Exception e) {
+            log.error("Error fetching my goals", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to fetch goals"));
+        }
+    }
     @GetMapping("/user/{userId}")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<?> getUserGoals(@PathVariable Long userId) {
@@ -91,17 +111,29 @@ public class GoalController {
      */
     @PostMapping
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
-    public ResponseEntity<?> createGoal(@RequestBody Map<String, Object> request) {
+    public ResponseEntity<?> createGoal(@RequestBody Map<String, Object> request, Authentication authentication) {
         try {
-            Long userId = Long.valueOf(request.get("userId").toString());
-            String goalTitle = request.get("goalTitle").toString();
-            BigDecimal targetEmission = new BigDecimal(request.get("targetEmission").toString());
-            LocalDateTime startDate = request.get("startDate") != null ? parseDate(request.get("startDate").toString()) : null;
-            LocalDateTime endDate = request.get("endDate") != null ? parseDate(request.get("endDate").toString()) : null;
-            String category = request.get("category") != null ? request.get("category").toString() : null;
-            String timeframe = request.get("timeframe") != null ? request.get("timeframe").toString() : null;
-            String recurrence = request.get("recurrence") != null ? request.get("recurrence").toString() : null;
-            String description = request.get("description") != null ? request.get("description").toString() : null;
+            Long userId = request.get("userId") != null ? Long.valueOf(request.get("userId").toString()) : null;
+            
+            // If userId is missing in request, get from authentication
+            if (userId == null && authentication != null) {
+                String email = authentication.getName();
+                User user = userRepository.findByEmail(email)
+                        .orElseThrow(() -> new RuntimeException("User not found"));
+                userId = user.getId();
+            }
+
+            if (userId == null) {
+                return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(Map.of("message", "User ID is required"));
+            }
+            String goalTitle = request.get("goalTitle") != null ? request.get("goalTitle").toString() : "My Goal";
+            BigDecimal targetEmission = request.get("targetEmission") != null ? new BigDecimal(request.get("targetEmission").toString()) : BigDecimal.ZERO;
+            LocalDateTime startDate = request.get("startDate") != null ? parseDate(request.get("startDate").toString()) : LocalDateTime.now();
+            LocalDateTime endDate = request.get("endDate") != null ? parseDate(request.get("endDate").toString()) : LocalDateTime.now().plusMonths(1);
+            String category = request.get("category") != null ? request.get("category").toString() : "General";
+            String timeframe = request.get("timeframe") != null ? request.get("timeframe").toString() : "Custom";
+            String recurrence = request.get("recurrence") != null ? request.get("recurrence").toString() : "one time";
+            String description = request.get("description") != null ? request.get("description").toString() : "";
 
             GoalDTO goal = goalService.createGoal(userId, goalTitle, targetEmission, startDate, endDate, category, timeframe, recurrence, description);
             return ResponseEntity.status(HttpStatus.CREATED).body(goal);
@@ -150,7 +182,8 @@ public class GoalController {
     /**
      * Complete a goal
      */
-    @PutMapping("/{goalId}/complete")
+     @PutMapping("/{goalId}/complete")
+    @PostMapping("/{goalId}/complete")
     @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
     public ResponseEntity<?> completeGoal(@PathVariable Long goalId) {
         try {
@@ -184,6 +217,26 @@ public class GoalController {
             log.error("Error abandoning goal", e);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(Map.of("message", "Failed to abandon goal"));
+        }
+    }
+
+    /**
+     * Delete a goal
+     */
+    @DeleteMapping("/{goalId}")
+    @PreAuthorize("hasAnyRole('USER', 'ADMIN')")
+    public ResponseEntity<?> deleteGoal(@PathVariable Long goalId) {
+        try {
+            goalService.deleteGoal(goalId);
+            return ResponseEntity.ok(Map.of("message", "Goal deleted successfully"));
+        } catch (RuntimeException e) {
+            log.warn("Error deleting goal {}: {}", goalId, e.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(Map.of("message", e.getMessage()));
+        } catch (Exception e) {
+            log.error("Error deleting goal", e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("message", "Failed to delete goal"));
         }
     }
 

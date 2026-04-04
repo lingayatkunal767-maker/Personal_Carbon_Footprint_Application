@@ -90,7 +90,7 @@ public class BadgeAwardingService {
             long completedGoals = goalRepository.countByUserIdAndStatus(userId, "completed");
 
             if (completedGoals >= 1) {
-                awardIfAbsent(user, "Goal Achiever", "Completed your first carbon reduction goal");
+                awardIfAbsent(user, "Green Achiever", "Completed your first carbon reduction goal");
             }
             if (completedGoals >= 5) {
                 awardIfAbsent(user, "Goal Champion", "Completed 5 carbon reduction goals");

@@ -22,13 +22,15 @@ public class GoalEmissionSyncService {
 
     /**
      * Update user's goals based on new emission recorded
-     * Called when a new emission record is created
+     * @param userId User ID
+     * @param emissionAmount Amount to add
+     * @param date Date of the emission
      */
-    public void syncEmissionWithGoals(Long userId, BigDecimal emissionAmount) {
-        log.debug("Syncing emission with goals for user ID: {} with emission: {}", userId, emissionAmount);
+    public void syncEmissionWithGoals(Long userId, BigDecimal emissionAmount, java.time.LocalDate date) {
+        log.debug("Syncing emission with goals for user ID: {} with emission: {} on date: {}", userId, emissionAmount, date);
 
-        if (userId == null || emissionAmount == null || emissionAmount.compareTo(BigDecimal.ZERO) < 0) {
-            log.warn("Invalid parameters for goal sync: userId={}, emissionAmount={}", userId, emissionAmount);
+        if (userId == null || emissionAmount == null || date == null) {
+            log.warn("Invalid parameters for goal sync: userId={}, emissionAmount={}, date={}", userId, emissionAmount, date);
             return;
         }
 
@@ -41,22 +43,35 @@ public class GoalEmissionSyncService {
                 return;
             }
 
-            // Update each active goal with the new emission
-            for (Goal goal : activeGoals) {
-                BigDecimal oldEmission = goal.getCurrentEmission();
-                BigDecimal newEmission = oldEmission.add(emissionAmount);
-                goal.setCurrentEmission(newEmission);
+            // Convert LocalDate to LocalDateTime for comparison
+            java.time.LocalDateTime emissionTime = date.atStartOfDay();
 
-                // Check if goal is now completed
-                if (newEmission.compareTo(goal.getTargetEmission()) >= 0) {
-                    goal.setStatus("completed");
-                    log.info("Goal ID: {} reached target for user ID: {}", goal.getId(), userId);
+            // Update each active goal with the new emission if it falls within the goal's range
+            for (Goal goal : activeGoals) {
+                // Check if emission date is within goal range
+                boolean isInRange = true;
+                if (goal.getStartDate() != null && emissionTime.isBefore(goal.getStartDate())) {
+                    isInRange = false;
+                }
+                if (goal.getEndDate() != null && emissionTime.isAfter(goal.getEndDate())) {
+                    isInRange = false;
                 }
 
-                goalRepository.save(goal);
+                if (isInRange) {
+                    BigDecimal oldEmission = goal.getCurrentEmission() != null ? goal.getCurrentEmission() : BigDecimal.ZERO;
+                    BigDecimal newEmission = oldEmission.add(emissionAmount);
+                    goal.setCurrentEmission(newEmission);
+                    
+                    // Note: Completion logic for REDUCTION goals is usually time-based, 
+                    // but we'll leave this status update if it exceeds target for now
+                    // OR we just track it. The request formula implies we just track progress.
+                    
+                    goalRepository.save(goal);
+                    log.info("Goal ID: {} updated for user ID: {} (new emission: {})", goal.getId(), userId, newEmission);
+                }
             }
 
-            log.info("Successfully synced {} active goals for user ID: {}", activeGoals.size(), userId);
+            log.info("Checked {} active goals for user ID: {}", activeGoals.size(), userId);
         } catch (Exception e) {
             log.error("Error syncing emission with goals for user ID: {}", userId, e);
         }

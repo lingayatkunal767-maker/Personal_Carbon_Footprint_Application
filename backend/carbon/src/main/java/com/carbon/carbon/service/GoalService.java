@@ -22,17 +22,18 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 public class GoalService {
 
-    private final GoalRepository goalRepository;
-    private final UserRepository userRepository;
     private final BadgeAwardingService badgeAwardingService;
     private final NotificationService notificationService;
+    private final LeaderboardScoreService leaderboardScoreService;
 
     public GoalService(GoalRepository goalRepository, UserRepository userRepository,
-                       BadgeAwardingService badgeAwardingService, NotificationService notificationService) {
+                       BadgeAwardingService badgeAwardingService, NotificationService notificationService,
+                       LeaderboardScoreService leaderboardScoreService) {
         this.goalRepository = goalRepository;
         this.userRepository = userRepository;
         this.badgeAwardingService = badgeAwardingService;
         this.notificationService = notificationService;
+        this.leaderboardScoreService = leaderboardScoreService;
     }
 
     /**
@@ -46,7 +47,7 @@ public class GoalService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        return goalRepository.findByUserId(userId)
+        return goalRepository.findByUserIdOrderByCreatedAtDesc(userId)
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -63,7 +64,7 @@ public class GoalService {
             throw new IllegalArgumentException("User ID is required");
         }
 
-        return goalRepository.findByUserIdAndStatus(userId, "active")
+        return goalRepository.findByUserIdAndStatusOrderByCreatedAtDesc(userId, "active")
                 .stream()
                 .map(this::convertToDTO)
                 .collect(Collectors.toList());
@@ -160,9 +161,14 @@ public class GoalService {
 
         // Check if goal is completed
         if (newEmission.compareTo(goal.getTargetEmission()) >= 0) {
-            goal.setStatus("completed");
-            log.info("Goal ID: {} has been completed", goalId);
+            log.info("Goal ID: {} has been completed automatically", goalId);
             notificationService.createNotification(goal.getUser().getId(), "Congratulations! You completed your goal: " + goal.getGoalTitle() + ".", "GOAL");
+            
+            // Award points based on progress
+            leaderboardScoreService.awardGoalCompletionBonus(goal.getUser().getId(), goal.getCurrentEmission());
+            
+            // Award goal completion badges
+            badgeAwardingService.awardGoalCompletionBadges(goal.getUser().getId());
         }
 
         Goal updated = goalRepository.save(goal);
@@ -184,7 +190,10 @@ public class GoalService {
 
         goal.setStatus("completed");
         Goal updated = goalRepository.save(goal);
-        log.info("Goal completed successfully");
+        log.info("Goal completed successfully manually");
+
+        // Award points based on progress
+        leaderboardScoreService.awardGoalCompletionBonus(goal.getUser().getId(), goal.getCurrentEmission());
 
         // Award goal completion badges
         badgeAwardingService.awardGoalCompletionBadges(goal.getUser().getId());
@@ -211,6 +220,19 @@ public class GoalService {
         Goal updated = goalRepository.save(goal);
         log.info("Goal abandoned successfully");
         return convertToDTO(updated);
+    }
+
+    /**
+     * Delete a goal
+     */
+    @Transactional
+    public void deleteGoal(Long goalId) {
+        log.info("Deleting goal ID: {}", goalId);
+        if (!goalRepository.existsById(goalId)) {
+            throw new RuntimeException("Goal not found");
+        }
+        goalRepository.deleteById(goalId);
+        log.info("Goal deleted successfully");
     }
 
     /**
@@ -298,9 +320,13 @@ public class GoalService {
      */
     private GoalDTO convertToDTO(Goal goal) {
         double progressPercentage = 0;
-        if (goal.getTargetEmission().compareTo(BigDecimal.ZERO) > 0) {
-            progressPercentage = (goal.getCurrentEmission().doubleValue() / goal.getTargetEmission().doubleValue()) * 100;
-            progressPercentage = Math.min(progressPercentage, 100); // Cap at 100%
+        BigDecimal target = goal.getTargetEmission();
+        BigDecimal current = goal.getCurrentEmission();
+
+        if (target != null && target.compareTo(BigDecimal.ZERO) > 0) {
+            // Formula from request: progress = (targetEmission - currentEmission) / targetEmission * 100
+            double progress = (target.subtract(current).doubleValue() / target.doubleValue()) * 100;
+            progressPercentage = Math.max(0, Math.min(progress, 100)); // Clamp between 0 and 100
         }
 
         return new GoalDTO(

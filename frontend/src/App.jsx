@@ -18,6 +18,7 @@ import PurchaseSuccess from "./pages/PurchaseSuccess";
 import Notifications from "./pages/Notifications";
 import AdminDashboard from "./pages/AdminDashboard";
 import Transactions from "./pages/Transactions";
+import Goals from "./pages/Goals";
 
 function App() {
   return (
@@ -44,6 +45,7 @@ function App() {
           <Route path="marketplace/:id" element={<MarketplaceDetails />} />
           <Route path="purchase-success" element={<PurchaseSuccess />} />
           <Route path="transactions" element={<Transactions />} />
+          <Route path="goals" element={<Goals />} />
           <Route path="notifications" element={<Notifications />} />
         </Route>
 
