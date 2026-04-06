@@ -120,11 +120,12 @@ class GoalServiceTest {
     }
 
     @Test
+    @SuppressWarnings("null")
     void updateGoalProgressReturnsEarlyWhenUserIdIsNull() {
         assertDoesNotThrow(() -> goalService.updateGoalProgress(null));
 
         verify(goalRepository, never()).findByUserIdOrderByCreatedAtDesc(any());
-        verify(goalRepository, never()).save(any());
+        verify(goalRepository, never()).save(any(Goal.class));
         verify(carbonLogRepository, never())
                 .findByUserIdAndLogDateBetweenOrderByLogDate(any(), any(), any());
     }
