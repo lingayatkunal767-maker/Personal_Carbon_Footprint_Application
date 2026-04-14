@@ -1,9 +1,8 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { carbonLogAPI } from '../services/api';
+import { carbonLogAPI, userAPI } from '../services/api';
 
 const LATEST_CALCULATION_KEY = 'latest_carbon_calculation';
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 function parseLog(log) {
   return {
@@ -85,10 +84,7 @@ async function resolveUserId(initialUserId) {
     }
 
     if (session?.email) {
-      const response = await fetch(`${API_BASE}/users/email/${encodeURIComponent(session.email)}`);
-      if (!response.ok) return null;
-
-      const user = await response.json();
+      const user = await userAPI.getUserByEmail(session.email);
       const normalizedFetchedId = normalizeUserId(user?.id);
       if (!normalizedFetchedId) return null;
 

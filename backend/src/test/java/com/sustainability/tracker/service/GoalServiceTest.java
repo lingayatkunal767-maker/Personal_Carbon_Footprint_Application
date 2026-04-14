@@ -52,7 +52,6 @@ class GoalServiceTest {
     private GoalService goalService;
 
     @Test
-    @SuppressWarnings("null")
     void createGoalNormalizesStatusAndGoalTypeAndAppliesNumericDefaults() {
         GoalRequest request = new GoalRequest();
         request.setUserId(1L);
@@ -85,7 +84,6 @@ class GoalServiceTest {
     }
 
     @Test
-    @SuppressWarnings("null")
     void updateGoalNormalizesStatusAndTriggersProgressNotificationAtMilestone() {
         User user = new User();
         user.setId(7L);
@@ -120,7 +118,6 @@ class GoalServiceTest {
     }
 
     @Test
-    @SuppressWarnings("null")
     void updateGoalProgressReturnsEarlyWhenUserIdIsNull() {
         assertDoesNotThrow(() -> goalService.updateGoalProgress(null));
 
@@ -131,7 +128,6 @@ class GoalServiceTest {
     }
 
     @Test
-    @SuppressWarnings("null")
     void updateGoalProgressSkipsGoalWhenUserReferenceIsMissing() {
         Goal malformedGoal = new Goal();
         malformedGoal.setId(999L);
@@ -148,7 +144,6 @@ class GoalServiceTest {
     }
 
     @Test
-    @SuppressWarnings("null")
     void updateGoalProgressHandlesNullCreatedAtAndGoalTypeWithoutCrash() {
         User user = new User();
         user.setId(11L);

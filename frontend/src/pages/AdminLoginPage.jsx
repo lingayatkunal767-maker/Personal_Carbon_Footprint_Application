@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { authAPI, extractApiErrorMessage } from '../services/api';
 
 export default function AdminLoginPage() {
   const navigate = useNavigate();
@@ -50,18 +49,7 @@ export default function AdminLoginPage() {
     setLoading(true);
 
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/admin/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: normalizedEmail, password }),
-      });
-
-      const data = await response.json();
-      if (!data.success) {
-        showToast(data.message || 'Admin login failed');
-        setLoading(false);
-        return;
-      }
+      const data = await authAPI.adminLogin({ email: normalizedEmail, password });
 
       const session = {
         id: data.userId,
@@ -78,7 +66,7 @@ export default function AdminLoginPage() {
 
       setTimeout(() => navigate('/admin/home'), 700);
     } catch (error) {
-      showToast('Cannot reach backend server');
+      showToast(extractApiErrorMessage(error, 'Admin login failed'));
     } finally {
       setLoading(false);
     }

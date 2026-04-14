@@ -1,39 +1,170 @@
 // API Service for Backend Communication
 // Base URL - update this when deploying to production
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
-// Helper function for API calls
-const fetchAPI = async (endpoint, options = {}) => {
+export class ApiClientError extends Error {
+  constructor({ message, status = 0, error = '', path = '', errors = {} }) {
+    super(message || 'Request failed');
+    this.name = 'ApiClientError';
+    this.status = status;
+    this.error = error;
+    this.path = path;
+    this.errors = errors;
+  }
+}
+
+function isJsonContentType(contentType) {
+  return typeof contentType === 'string' && contentType.toLowerCase().includes('application/json');
+}
+
+function normalizeErrorsMap(rawErrors) {
+  if (!rawErrors || typeof rawErrors !== 'object' || Array.isArray(rawErrors)) {
+    return {};
+  }
+
+  const output = {};
+  Object.entries(rawErrors).forEach(([key, value]) => {
+    if (value == null) return;
+    output[String(key)] = String(value);
+  });
+  return output;
+}
+
+function deriveMessageFromErrors(errorsMap) {
+  const entries = Object.entries(errorsMap);
+  if (entries.length === 0) return '';
+  const [field, message] = entries[0];
+  return field && field !== 'request' ? `${field}: ${message}` : message;
+}
+
+function buildApiErrorPayload(payload, status = 0, statusText = 'Request failed', fallbackPath = '') {
+  const errors = normalizeErrorsMap(payload?.errors);
+  const message =
+    payload?.message ||
+    deriveMessageFromErrors(errors) ||
+    payload?.error ||
+    statusText ||
+    'Request failed';
+
+  return {
+    message: String(message),
+    status: Number(status) || 0,
+    error: String(payload?.error || statusText || 'Request failed'),
+    path: String(payload?.path || fallbackPath || ''),
+    errors,
+  };
+}
+
+function isNetworkFailure(error) {
+  const message = String(error?.message || '');
+  return /failed to fetch|networkerror|load failed|network request failed/i.test(message);
+}
+
+export function extractApiErrorMessage(error, fallback = 'Request failed') {
+  if (error instanceof ApiClientError && error.message) {
+    return error.message;
+  }
+
+  const status = Number(error?.response?.status || 0);
+  const responseData = error?.response?.data;
+  if (status && responseData && typeof responseData === 'object') {
+    const parsed = buildApiErrorPayload(responseData, status, error?.response?.statusText || '', '');
+    if (parsed.message) return parsed.message;
+  }
+
+  if (isNetworkFailure(error)) {
+    return 'Cannot reach backend server. Start backend and try again.';
+  }
+
+  if (error?.message) {
+    return String(error.message);
+  }
+
+  return fallback;
+}
+
+export const fetchAPI = async (endpoint, options = {}) => {
+  const {
+    parseAs = 'json',
+    treatSuccessFalseAsError = true,
+    ...fetchOptions
+  } = options;
+
   const defaultHeaders = {
     'Content-Type': 'application/json',
   };
 
+  const isFormDataBody = typeof FormData !== 'undefined' && fetchOptions.body instanceof FormData;
+  const mergedHeaders = {
+    ...defaultHeaders,
+    ...fetchOptions.headers,
+  };
+  if (isFormDataBody) {
+    delete mergedHeaders['Content-Type'];
+  }
+
   const config = {
-    ...options,
-    headers: {
-      ...defaultHeaders,
-      ...options.headers,
-    },
+    ...fetchOptions,
+    headers: mergedHeaders,
   };
 
+  const url = `${API_BASE_URL}${endpoint}`;
+
   try {
-    const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
-    
+    const response = await fetch(url, config);
+
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Request failed' }));
-      throw new Error(error.message || `HTTP error! status: ${response.status}`);
+      const contentType = response.headers.get('content-type') || '';
+      let payload = null;
+
+      if (isJsonContentType(contentType)) {
+        payload = await response.json().catch(() => null);
+      } else {
+        const textBody = await response.text().catch(() => '');
+        payload = textBody ? { message: textBody } : null;
+      }
+
+      throw new ApiClientError(
+        buildApiErrorPayload(payload, response.status, response.statusText, endpoint)
+      );
     }
 
-    // Handle empty responses (like DELETE)
-    if (response.status === 204) {
-      return null;
+    if (parseAs === 'raw') return response;
+    if (response.status === 204 || parseAs === 'none') return null;
+    if (parseAs === 'text') return await response.text();
+    if (parseAs === 'blob') return await response.blob();
+
+    const data = await response.json();
+    if (treatSuccessFalseAsError && data && typeof data === 'object' && data.success === false) {
+      throw new ApiClientError(
+        buildApiErrorPayload(data, response.status, response.statusText, endpoint)
+      );
     }
 
-    return await response.json();
+    return data;
   } catch (error) {
-    console.error('API Error:', error);
-    throw error;
+    if (error instanceof ApiClientError) {
+      throw error;
+    }
+
+    if (isNetworkFailure(error)) {
+      throw new ApiClientError({
+        message: 'Cannot reach backend server. Start backend and try again.',
+        status: 0,
+        error: 'Network Error',
+        path: endpoint,
+        errors: {},
+      });
+    }
+
+    throw new ApiClientError({
+      message: extractApiErrorMessage(error, 'Request failed'),
+      status: Number(error?.status || 0),
+      error: 'Request Error',
+      path: endpoint,
+      errors: {},
+    });
   }
 };
 
@@ -261,7 +392,12 @@ export const adminAPI = {
   }),
   getSurveyMonitoring: async () => fetchAPI('/admin/surveys/monitor'),
   getCarbonLogs: async () => fetchAPI('/admin/carbon-logs'),
+  exportCarbonLogs: async () => fetchAPI('/admin/carbon-logs/export', { parseAs: 'text' }),
   deleteCarbonLog: async (logId) => fetchAPI(`/admin/carbon-logs/${logId}`, { method: 'DELETE' }),
+  updateCarbonLog: async (logId, payload) => fetchAPI(`/admin/carbon-logs/${logId}`, {
+    method: 'PUT',
+    body: JSON.stringify(payload),
+  }),
   getEmissionFactors: async () => fetchAPI('/admin/emission-factors'),
   upsertEmissionFactor: async (payload) => fetchAPI('/admin/emission-factors', {
     method: 'PUT',

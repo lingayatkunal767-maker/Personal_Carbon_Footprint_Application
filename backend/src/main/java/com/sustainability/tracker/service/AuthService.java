@@ -3,6 +3,7 @@ package com.sustainability.tracker.service;
 import com.sustainability.tracker.dto.AuthRequest;
 import com.sustainability.tracker.dto.AuthResponse;
 import com.sustainability.tracker.dto.GoogleAuthRequest;
+import com.sustainability.tracker.service.GoogleIdTokenVerifierService.VerifiedGoogleClaims;
 import com.sustainability.tracker.entity.AdminProfile;
 import com.sustainability.tracker.entity.User;
 import com.sustainability.tracker.repository.AdminProfileRepository;
@@ -27,6 +28,7 @@ public class AuthService {
 
     private final UserRepository userRepository;
     private final AdminProfileRepository adminProfileRepository;
+    private final GoogleIdTokenVerifierService googleIdTokenVerifierService;
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     public AuthResponse register(AuthRequest request) {
@@ -131,8 +133,22 @@ public class AuthService {
 
     public AuthResponse googleLogin(GoogleAuthRequest request) {
 
-        String normalizedEmail = normalizeEmail(request.getEmail());
-        String normalizedName = normalizeName(request.getName());
+        if (!googleIdTokenVerifierService.isConfigured()) {
+            return new AuthResponse(false, "Google OAuth is not configured on the server", null, null, null, null);
+        }
+
+        VerifiedGoogleClaims claims = googleIdTokenVerifierService.verify(request.getIdToken());
+        if (claims == null) {
+            return new AuthResponse(false, "Invalid or expired Google token", null, null, null, null);
+        }
+
+        if (!claims.emailVerified()) {
+            return new AuthResponse(false, "Google account email is not verified", null, null, null, null);
+        }
+
+        String normalizedEmail = normalizeEmail(claims.email());
+        String normalizedName = normalizeName(claims.name());
+        String normalizedGoogleId = claims.googleId().trim();
 
         User user = userRepository.findByEmailIgnoreCase(normalizedEmail).orElse(null);
 
@@ -141,8 +157,8 @@ public class AuthService {
             user.setName(normalizedName.isBlank() ? "Google User" : normalizedName);
             user.setEmail(normalizedEmail);
             user.setOauthProvider(OAUTH_GOOGLE);
-            user.setOauthId(request.getGoogleId());
-            user.setProfilePicture(request.getProfilePicture());
+            user.setOauthId(normalizedGoogleId);
+            user.setProfilePicture(claims.profilePicture());
             user.setRole(ROLE_USER);
             user.setIsActive(true);
         } else {
@@ -150,11 +166,22 @@ public class AuthService {
                 return new AuthResponse(false, "Your account has been deactivated by admin", null, null, null, null);
             }
 
-            if (user.getOauthProvider() == null || !user.getOauthProvider().equals(OAUTH_GOOGLE)) {
-                user.setOauthProvider(OAUTH_GOOGLE);
+            if (!OAUTH_GOOGLE.equalsIgnoreCase(user.getOauthProvider())) {
+                if (ROLE_ADMIN.equalsIgnoreCase(user.getRole())) {
+                    return new AuthResponse(false, "Admin accounts cannot use Google login unless explicitly linked", null, null, null, null);
+                }
+                return new AuthResponse(false, "This account uses password login. Link Google first before using Google login", null, null, null, null);
             }
-            if (user.getOauthId() == null) user.setOauthId(request.getGoogleId());
-            if (request.getProfilePicture() != null) user.setProfilePicture(request.getProfilePicture());
+
+            if (user.getOauthId() == null || user.getOauthId().isBlank()) {
+                user.setOauthId(normalizedGoogleId);
+            } else if (!normalizedGoogleId.equals(user.getOauthId())) {
+                return new AuthResponse(false, "Google account does not match the linked account", null, null, null, null);
+            }
+
+            if (claims.profilePicture() != null && !claims.profilePicture().isBlank()) {
+                user.setProfilePicture(claims.profilePicture());
+            }
             if (!normalizedName.isBlank()) user.setName(normalizedName);
             if (user.getRole() == null || user.getRole().isBlank()) {
                 user.setRole(ROLE_USER);
@@ -193,7 +220,6 @@ public class AuthService {
         return name.trim().replaceAll("\\s+", " ");
     }
 
-    @SuppressWarnings("null")
     private void ensureAdminProfile(User user) {
         adminProfileRepository.findByUser_Id(user.getId())
                 .orElseGet(() -> adminProfileRepository.save(buildAdminProfile(user)));

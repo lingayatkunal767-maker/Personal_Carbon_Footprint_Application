@@ -29,14 +29,16 @@ public class NotificationService {
      * Get all notifications for a user
      */
     public List<Notification> getUserNotifications(Long userId) {
-        return notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        List<Notification> notifications = notificationRepository.findByUserIdOrderByCreatedAtDesc(userId);
+        return normalizeLegacyNotificationText(notifications);
     }
 
     /**
      * Get unread notifications for a user
      */
     public List<Notification> getUnreadNotifications(Long userId) {
-        return notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
+        List<Notification> notifications = notificationRepository.findByUserIdAndIsReadOrderByCreatedAtDesc(userId, false);
+        return normalizeLegacyNotificationText(notifications);
     }
 
     /**
@@ -77,8 +79,8 @@ public class NotificationService {
         Notification notification = new Notification();
         notification.setUser(user);
         notification.setNotificationType(type);
-        notification.setTitle(title);
-        notification.setMessage(message);
+        notification.setTitle(normalizeTitle(type, title));
+        notification.setMessage(normalizeMessage(message));
         notification.setPriority(priority);
         notification.setRelatedEntityType(relatedEntityType);
         notification.setRelatedEntityId(relatedEntityId);
@@ -120,6 +122,9 @@ public class NotificationService {
         }
 
         if (reason != null && !reason.isBlank()) {
+            if (!messageBuilder.toString().matches(".*[.!?]\\s*$")) {
+                messageBuilder.append('.');
+            }
             messageBuilder.append(" Reason: ").append(reason.trim());
         }
 
@@ -232,5 +237,117 @@ public class NotificationService {
                 "Order",
                 orderId
         );
+    }
+
+    private List<Notification> normalizeLegacyNotificationText(List<Notification> notifications) {
+        boolean changed = false;
+
+        for (Notification notification : notifications) {
+            String normalizedTitle = normalizeTitle(notification.getNotificationType(), notification.getTitle());
+            String normalizedMessage = normalizeMessage(notification.getMessage());
+
+            if (!Objects.equals(notification.getTitle(), normalizedTitle)) {
+                notification.setTitle(normalizedTitle);
+                changed = true;
+            }
+            if (!Objects.equals(notification.getMessage(), normalizedMessage)) {
+                notification.setMessage(normalizedMessage);
+                changed = true;
+            }
+        }
+
+        if (changed) {
+            notificationRepository.saveAll(notifications);
+        }
+
+        return notifications;
+    }
+
+    private String normalizeTitle(String notificationType, String title) {
+        String safeTitle = normalizeText(title);
+        String lower = safeTitle.toLowerCase();
+
+        if ("BADGE_EARNED".equalsIgnoreCase(notificationType)
+                && (lower.contains("badge earned") || lower.contains("badge assigned"))) {
+            return "Badge Earned";
+        }
+        if ("MARKETPLACE".equalsIgnoreCase(notificationType) && lower.contains("order cancelled")) {
+            return "Order Cancelled";
+        }
+        if ("MARKETPLACE".equalsIgnoreCase(notificationType) && lower.contains("order confirmed")) {
+            return "Order Confirmed";
+        }
+
+        return safeTitle.isBlank() ? "Notification" : safeTitle;
+    }
+
+    private String normalizeMessage(String message) {
+        String safeMessage = normalizeText(message);
+        if (safeMessage.isBlank()) {
+            return "Notification update.";
+        }
+
+        String normalized = safeMessage
+                .replaceAll("\\s+", " ")
+                .replaceAll("\\s+([,.;:!?])", "$1")
+                .replaceAll("([^.!?])\\s+Reason:", "$1. Reason:")
+            .replaceAll("([.!?])[.!?]+", "$1")
+                .trim();
+
+        normalized = capitalizeLeadingLetter(normalized);
+        normalized = movePeriodBeforeTrailingEmoji(normalized);
+
+        if (normalized.matches(".*\\p{So}$") && !normalized.matches(".*[.!?]\\s*\\p{So}$")) {
+            normalized = normalized.replaceAll("(\\p{So})$", ". $1");
+        }
+
+        normalized = normalized
+                .replaceAll("\\s+([,.;:!?])", "$1")
+            .replaceAll("([.!?])[.!?]+", "$1")
+                .replaceAll("([.!?])([\\p{So}])$", "$1 $2");
+
+        if (!normalized.matches(".*[.!?]$") && !normalized.matches(".*\\p{So}$")) {
+            normalized = normalized + ".";
+        }
+
+        return normalized;
+    }
+
+    private String normalizeText(String value) {
+        if (value == null) {
+            return "";
+        }
+
+        String normalized = value
+                .replace("\u00A0", " ")
+                .replace("\u009D", "")
+                .replace("\u008C", "")
+                .trim();
+
+        return normalized;
+    }
+
+    private String capitalizeLeadingLetter(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+
+        char[] chars = text.toCharArray();
+        for (int i = 0; i < chars.length; i++) {
+            if (Character.isLetter(chars[i])) {
+                chars[i] = Character.toUpperCase(chars[i]);
+                return new String(chars);
+            }
+        }
+
+        return text;
+    }
+
+    private String movePeriodBeforeTrailingEmoji(String text) {
+        if (text == null || text.isBlank()) {
+            return "";
+        }
+
+        return text.replaceAll("(\\p{So})\\.$", ". $1");
     }
 }

@@ -11,12 +11,11 @@ import {
   Legend,
   Filler,
 } from 'chart.js';
-import { carbonLogAPI } from '../services/api';
+import { carbonLogAPI, userAPI } from '../services/api';
 import '../styles/CarbonHistory.css';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Tooltip, Legend, Filler);
 
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 const PAGE_SIZE = 5;
 const CATEGORY_FILTERS = ['all', 'transport', 'food', 'energy'];
 
@@ -162,8 +161,7 @@ export default function CarbonHistoryPage() {
     }
 
     if (session?.email) {
-      fetch(`${API_BASE}/users/email/${encodeURIComponent(session.email)}`)
-        .then((response) => (response.ok ? response.json() : null))
+      userAPI.getUserByEmail(session.email)
         .then((data) => {
           if (data?.id) {
             const updated = { ...session, id: data.id };

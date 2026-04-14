@@ -37,7 +37,7 @@ public class AuthController {
 
     // ✅ FIX: this compiles now because AuthService has googleLogin()
     @PostMapping("/google")
-    public AuthResponse googleLogin(@RequestBody GoogleAuthRequest request) {
+    public AuthResponse googleLogin(@Valid @RequestBody GoogleAuthRequest request) {
         return authService.googleLogin(request);
     }
 }

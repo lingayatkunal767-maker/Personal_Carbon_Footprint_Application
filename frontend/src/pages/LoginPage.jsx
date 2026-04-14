@@ -1,10 +1,10 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI, extractApiErrorMessage } from '../services/api';
 
 const GOOGLE_CLIENT_ID =
   import.meta.env.VITE_GOOGLE_CLIENT_ID ||
-  '245883591621-7shq6c72ddodeq09k62pk034jogjtbtt.apps.googleusercontent.com';
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+  '421764128567-r2p83571fkfforlcfms7066e9chbh0cn.apps.googleusercontent.com';
 
 const FACTS = [
   'Global ocean temperatures have risen ~0.13°F per decade since 1901.',
@@ -178,27 +178,12 @@ export default function LoginPage() {
     setGoogleLoading(true);
 
     try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      const result = await fetch(`${API_BASE_URL}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: payload.name || payload.given_name || 'Google User',
-          email: payload.email,
-          googleId: payload.sub,
-          profilePicture: payload.picture || null
-        })
-      });
-
-      const data = await result.json();
-      if (!result.ok || !data.success) {
-        throw new Error(data.message || 'Google login failed');
-      }
+      const data = await authAPI.googleAuth({ idToken: response.credential });
 
       showToast(`Welcome back, ${data.name || 'there'}! 🌿`, 'success');
       setTimeout(() => setSessionAndNavigate(data), 600);
     } catch (error) {
-      showToast(`Google login failed: ${error.message}`, 'error');
+      showToast(`Google login failed: ${extractApiErrorMessage(error, 'Google login failed')}`, 'error');
     } finally {
       setGoogleLoading(false);
     }
@@ -244,29 +229,20 @@ export default function LoginPage() {
     setEmailLoading(true);
 
     try {
-      const result = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          email: normalizedEmail,
-          password
-        })
+      const data = await authAPI.login({
+        email: normalizedEmail,
+        password,
       });
-
-      const data = await result.json();
-      if (!result.ok || !data.success) {
-        throw new Error(data.message || 'Login failed');
-      }
 
       showToast(data.message || 'Welcome back! 🌿', 'success');
       setTimeout(() => setSessionAndNavigate(data), 600);
     } catch (error) {
-      const message = String(error?.message || '');
+      const message = extractApiErrorMessage(error, 'Login failed. Please try again.');
       const isNetworkFailure = /failed to fetch|networkerror|load failed/i.test(message);
       if (isNetworkFailure) {
         showToast('Cannot reach backend server. Start backend and try again.', 'error');
       } else {
-        showToast(error.message || 'Login failed. Please try again.', 'error');
+        showToast(message, 'error');
       }
     } finally {
       setEmailLoading(false);

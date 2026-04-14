@@ -6,6 +6,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Data
 @NoArgsConstructor
@@ -21,9 +22,22 @@ public class BadgeResponseDTO {
         return new BadgeResponseDTO(
                 badge.getId(),
                 badge.getBadgeName(),
-                badge.getBadgeType(),
+                normalizeBadgeType(badge.getBadgeType()),
                 badge.getEarnedDate(),
                 badge.getDescription()
         );
+    }
+
+    private static String normalizeBadgeType(String badgeType) {
+        if (badgeType == null || badgeType.isBlank()) {
+            return "ACHIEVEMENT";
+        }
+
+        String normalized = badgeType.trim().toUpperCase(Locale.ROOT);
+        return switch (normalized) {
+            case "BEGINNER", "STREAK" -> "MILESTONE";
+            case "TRANSPORT", "SOCIAL" -> "CATEGORY";
+            default -> normalized;
+        };
     }
 }

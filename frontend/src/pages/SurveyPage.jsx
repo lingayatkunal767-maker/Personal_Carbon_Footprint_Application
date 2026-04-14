@@ -1,9 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { surveyAPI } from '../services/api';
+import { surveyAPI, userAPI } from '../services/api';
 import '../styles/Survey.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 const EATING_OUT_NON_VEG_RATIO = {
   Never: 0.35,
@@ -30,15 +28,12 @@ async function resolveUserIdFromSession() {
       }
 
       if (session?.email) {
-        const response = await fetch(`${API_BASE}/users/email/${encodeURIComponent(session.email)}`);
-        if (response.ok) {
-          const data = await response.json();
-          const normalizedFetchedId = normalizeUserId(data?.id);
-          if (normalizedFetchedId) {
-            const merged = { ...session, id: normalizedFetchedId };
-            localStorage.setItem('current_user', JSON.stringify(merged));
-            return normalizedFetchedId;
-          }
+        const data = await userAPI.getUserByEmail(session.email);
+        const normalizedFetchedId = normalizeUserId(data?.id);
+        if (normalizedFetchedId) {
+          const merged = { ...session, id: normalizedFetchedId };
+          localStorage.setItem('current_user', JSON.stringify(merged));
+          return normalizedFetchedId;
         }
       }
     } catch {

@@ -15,9 +15,18 @@ import EcoBadgesCard from '../components/EcoBadgesCard';
 import CarbonCalculatorWidget from '../components/CarbonCalculatorWidget';
 import NotificationsPanel from '../components/NotificationsPanel';
 import LogActivityModal from '../components/LogActivityModal';
+import {
+  activityAPI,
+  adminAPI,
+  badgeAPI,
+  fetchAPI,
+  goalAPI,
+  leaderboardAPI,
+  statsAPI,
+  surveyAPI,
+  userAPI,
+} from '../services/api';
 import '../styles/Dashboard.css';
-
-const API_BASE = import.meta.env.VITE_API_URL || '/api';
 
 // ─── helpers ──────────────────────────────────────────────────────────────────
 const DEFAULT_TAGS = [];
@@ -290,13 +299,38 @@ function notificationClass(notificationType, priority) {
   return '';
 }
 
+function sanitizeNotificationTitle(notificationType, rawTitle) {
+  const title = String(rawTitle || '').trim();
+
+  if (!title) {
+    if (notificationType === 'MARKETPLACE') return 'Order Update';
+    return 'Notification';
+  }
+
+  const withoutLeadingSymbols = title
+    .replace(/^[^\p{L}\p{N}]+/u, '')
+    .trim();
+
+  if (notificationType === 'MARKETPLACE') {
+    if (/order\s+cancelled/i.test(withoutLeadingSymbols)) return 'Order Cancelled';
+    if (/order\s+confirmed/i.test(withoutLeadingSymbols)) return 'Order Confirmed';
+  }
+
+  if (notificationType === 'BADGE_EARNED') {
+    if (/badge\s+(assigned|earned)/i.test(withoutLeadingSymbols)) return 'Badge Earned';
+  }
+
+  return withoutLeadingSymbols || title;
+}
+
 function mapNotificationToUI(notification) {
   const type = (notification.notificationType || '').toUpperCase();
+  const title = sanitizeNotificationTitle(type, notification.title);
   return {
     id: `api-${notification.id}`,
     serverId: notification.id,
     icon: NOTIFICATION_ICONS[type] || '🔔',
-    text: notification.title || 'Notification',
+    text: title,
     detail: notification.message || '',
     type: notificationClass(type, notification.priority),
     notificationType: type,
@@ -371,23 +405,25 @@ function buildMonthlyComparisonFromActivities(rawActivities) {
 }
 
 async function fetchUserBadges(userId) {
-  const primaryResponse = await fetch(`${API_BASE}/badges/user/${userId}`);
-  if (primaryResponse.ok) {
-    const primaryData = await primaryResponse.json();
-    return Array.isArray(primaryData) ? primaryData : [];
+  try {
+    const primaryData = await badgeAPI.getUserBadges(userId);
+    if (Array.isArray(primaryData)) {
+      return primaryData;
+    }
+  } catch {
+    // Try fallback route below.
   }
 
-  const fallbackResponse = await fetch(`${API_BASE}/badges/${userId}`);
-  if (!fallbackResponse.ok) {
+  try {
+    const fallbackData = await fetchAPI(`/badges/${userId}`);
+    if (Array.isArray(fallbackData)) {
+      return fallbackData;
+    }
+    if (Array.isArray(fallbackData?.data)) {
+      return fallbackData.data;
+    }
+  } catch {
     return [];
-  }
-
-  const fallbackData = await fallbackResponse.json();
-  if (Array.isArray(fallbackData)) {
-    return fallbackData;
-  }
-  if (Array.isArray(fallbackData?.data)) {
-    return fallbackData.data;
   }
 
   return [];
@@ -481,10 +517,7 @@ export default function HomePage() {
     if (!userId) return;
 
     try {
-      const response = await fetch(`${API_BASE}/notifications/user/${userId}`);
-      if (!response.ok) return;
-
-      const data = await response.json();
+      const data = await fetchAPI(`/notifications/user/${userId}`);
       if (!Array.isArray(data)) return;
 
       const mapped = data.map(mapNotificationToUI);
@@ -521,7 +554,7 @@ export default function HomePage() {
     try {
       const [badgesRes, badgeDefinitionsRes] = await Promise.allSettled([
         fetchUserBadges(userId),
-        fetch(`${API_BASE}/admin/badges/definitions`).then((r) => r.json()),
+        adminAPI.getBadgeDefinitions(),
       ]);
 
       const earnedBadges = badgesRes.status === 'fulfilled' && Array.isArray(badgesRes.value)
@@ -567,8 +600,7 @@ export default function HomePage() {
       setUserId(parsedSessionId);
     } else {
       // No id stored — try fetching from backend by email
-      fetch(`${API_BASE}/users/email/${encodeURIComponent(user.email)}`)
-        .then(r => r.ok ? r.json() : null)
+      userAPI.getUserByEmail(user.email)
         .then(data => {
           const parsedFetchedId = Number(data?.id);
           if (Number.isFinite(parsedFetchedId) && parsedFetchedId > 0) {
@@ -602,15 +634,15 @@ export default function HomePage() {
           tipsRes,
         ] =
           await Promise.allSettled([
-            fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json()),
-            fetch(`${API_BASE}/goals/user/${userId}`).then(r => r.json()),
-            fetch(`${API_BASE}/stats/user/${userId}`).then(r => r.json()),
-            fetch(`${API_BASE}/stats/user/${userId}/breakdown`).then(r => r.json()),
-            fetch(`${API_BASE}/stats/user/${userId}/monthly?months=6`).then(r => r.json()),
+            activityAPI.getUserActivities(userId),
+            goalAPI.getUserGoals(userId),
+            statsAPI.getUserStats(userId),
+            statsAPI.getEmissionsBreakdown(userId),
+            statsAPI.getMonthlyComparison(userId, 6),
             fetchUserBadges(userId),
-            fetch(`${API_BASE}/admin/badges/definitions`).then(r => r.json()),
-            fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json()),
-            fetch(`${API_BASE}/survey/insights/user/${userId}`).then(r => r.json()),
+            adminAPI.getBadgeDefinitions(),
+            leaderboardAPI.getLeaderboard(10),
+            surveyAPI.getDatasetInsights(userId),
           ]);
 
         // Activities
@@ -734,10 +766,10 @@ export default function HomePage() {
 
     if (userId) {
       try {
-        await fetch(`${API_BASE}/users/${userId}/profile`, {
+        await fetchAPI(`/users/${userId}/profile`, {
           method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ name: updatedProfile.name, profilePicture: updatedProfile.profilePicture }),
+          parseAs: 'none',
         });
       } catch (err) {
         console.error('Profile save error:', err);
@@ -771,17 +803,12 @@ export default function HomePage() {
         activityDate: today,
         description: '',
       };
-      const res = await fetch(`${API_BASE}/activities`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const saved = await res.json();
+      const saved = await activityAPI.createActivity(payload);
+      if (saved) {
         // Replace temp entry with real DB entry
         setActivities(prev => prev.map(a => a.id === tempId ? mapActivityToUI(saved) : a));
         // Update footprint chart with latest activities
-        const freshActivities = await fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json());
+        const freshActivities = await activityAPI.getUserActivities(userId);
         if (Array.isArray(freshActivities)) {
           setFootprintData(buildFootprintFromActivities(freshActivities));
           setBreakdown(buildBreakdownFromActivities(freshActivities));
@@ -798,8 +825,8 @@ export default function HomePage() {
     // Delete from backend (only if it's a real DB id — not temp)
     if (userId && typeof activityId === 'number') {
       try {
-        await fetch(`${API_BASE}/activities/${activityId}`, { method: 'DELETE' });
-        const freshActivities = await fetch(`${API_BASE}/activities/user/${userId}`).then(r => r.json());
+        await activityAPI.deleteActivity(activityId);
+        const freshActivities = await activityAPI.getUserActivities(userId);
         if (Array.isArray(freshActivities)) {
           setBreakdown(buildBreakdownFromActivities(freshActivities));
           setMonthlyComparison(buildMonthlyComparisonFromActivities(freshActivities));
@@ -822,13 +849,8 @@ export default function HomePage() {
         deadline: goal.deadline || null,
         status: 'active',
       };
-      const res = await fetch(`${API_BASE}/goals`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (res.ok) {
-        const saved = await res.json();
+      const saved = await goalAPI.createGoal(payload);
+      if (saved) {
         setGoals(prev => [...prev, mapGoalToUI({ ...saved, deadline: goal.deadline }, prev.length)]);
       } else {
         setGoals(prev => [...prev, goal]);
@@ -861,11 +883,7 @@ export default function HomePage() {
         currentValue: newCurrentValue,
         status: newProgress >= 100 ? 'completed' : 'active',
       };
-      await fetch(`${API_BASE}/goals/${goalId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
+      await goalAPI.updateGoal(goalId, payload);
 
       await refreshBadgesAndNotifications();
     } catch (err) {
@@ -877,7 +895,7 @@ export default function HomePage() {
     setGoals(prev => prev.filter(g => g.id !== goalId));
     if (!userId || typeof goalId !== 'number') return;
     try {
-      await fetch(`${API_BASE}/goals/${goalId}`, { method: 'DELETE' });
+      await goalAPI.deleteGoal(goalId);
     } catch (err) {
       console.error('Delete goal error:', err);
     }
@@ -907,10 +925,7 @@ export default function HomePage() {
   const handleRefreshTips = async () => {
     if (!userId) return;
     try {
-      const response = await fetch(`${API_BASE}/survey/insights/user/${userId}`);
-      if (!response.ok) return;
-
-      const data = await response.json();
+      const data = await surveyAPI.getDatasetInsights(userId);
       if (Array.isArray(data?.tips)) {
         setTips(data.tips);
         setTipsMeta({
@@ -936,7 +951,7 @@ export default function HomePage() {
 
     if (!target.localOnly && target.serverId && userId) {
       try {
-        await fetch(`${API_BASE}/notifications/${target.serverId}/read`, { method: 'PUT' });
+        await fetchAPI(`/notifications/${target.serverId}/read`, { method: 'PUT', parseAs: 'none' });
       } catch (err) {
         console.error('Failed to mark notification as read:', err);
       }
@@ -948,7 +963,7 @@ export default function HomePage() {
   const handleMarkAllRead = async () => {
     if (userId) {
       try {
-        await fetch(`${API_BASE}/notifications/user/${userId}/read-all`, { method: 'PUT' });
+        await fetchAPI(`/notifications/user/${userId}/read-all`, { method: 'PUT', parseAs: 'none' });
         await refreshNotifications();
       } catch (err) {
         console.error('Failed to mark all notifications as read:', err);
@@ -977,7 +992,7 @@ export default function HomePage() {
   const handleRefreshLeaderboard = async () => {
     setLeaderboardLoading(true);
     try {
-      const data = await fetch(`${API_BASE}/leaderboard?limit=10`).then(r => r.json());
+      const data = await leaderboardAPI.getLeaderboard(10);
       if (Array.isArray(data)) setLeaderboardEntries(data.map(mapLeaderboardToUI));
     } catch (err) {
       console.error('Refresh leaderboard error:', err);

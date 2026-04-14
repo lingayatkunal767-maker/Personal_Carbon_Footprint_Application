@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { authAPI, extractApiErrorMessage } from '../services/api';
 
 export default function AdminSignUpPage() {
   const navigate = useNavigate();
@@ -66,18 +65,7 @@ export default function AdminSignUpPage() {
 
     setLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/admin/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: normalizedName, email: normalizedEmail, password }),
-      });
-
-      const data = await response.json();
-      if (!data.success) {
-        showToast(data.message || 'Admin signup failed');
-        setLoading(false);
-        return;
-      }
+      const data = await authAPI.adminRegister({ name: normalizedName, email: normalizedEmail, password });
 
       localStorage.setItem('auth_token', 'authenticated');
       localStorage.setItem('current_user', JSON.stringify({
@@ -92,7 +80,7 @@ export default function AdminSignUpPage() {
       showToast('Admin account created');
       setTimeout(() => navigate('/admin/home'), 700);
     } catch (error) {
-      showToast('Cannot reach backend server');
+      showToast(extractApiErrorMessage(error, 'Admin signup failed'));
     } finally {
       setLoading(false);
     }

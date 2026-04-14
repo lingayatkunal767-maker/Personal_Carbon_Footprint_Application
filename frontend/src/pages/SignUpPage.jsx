@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { authAPI, extractApiErrorMessage } from '../services/api';
 
 const GOOGLE_CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID || "421764128567-r2p83571fkfforlcfms7066e9chbh0cn.apps.googleusercontent.com";
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const FACTS = [
   "Global ocean temperatures rise ~0.13°F per decade since 1901.",
@@ -145,23 +145,8 @@ export default function SignUpPage() {
 
   const handleCredentialResponse = async (response) => {
     try {
-      const payload = JSON.parse(atob(response.credential.split('.')[1]));
-      const firstName = payload.given_name || 'there';
-      const res = await fetch(`${API_BASE_URL}/auth/google`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: payload.name || firstName,
-          email: payload.email,
-          googleId: payload.sub,
-          profilePicture: payload.picture || null,
-        }),
-      });
-      const data = await res.json();
-      if (!data.success) {
-        showToast(data.message || 'Sign up failed.', 'error');
-        return;
-      }
+      const data = await authAPI.googleAuth({ idToken: response.credential });
+      const firstName = (data.name || 'there').split(' ')[0];
       const role   = data.role || 'USER';
       const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
       localStorage.setItem('current_user', JSON.stringify({
@@ -171,8 +156,8 @@ export default function SignUpPage() {
       localStorage.setItem('auth_token', 'authenticated');
       showToast(`Welcome, ${firstName}! Your account is ready. 🌿`, 'success');
       setTimeout(() => navigate(target), 1200);
-    } catch {
-      showToast('Sign up failed. Please try again.', 'error');
+    } catch (error) {
+      showToast(extractApiErrorMessage(error, 'Sign up failed. Please try again.'), 'error');
     }
   };
 
@@ -203,30 +188,18 @@ export default function SignUpPage() {
     }
     setEmailLoading(true);
     try {
-      const response = await fetch(`${API_BASE_URL}/auth/register`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name: normalizedName, email: normalizedEmail, password }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        const role   = data.role || 'USER';
-        const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
-        localStorage.setItem('current_user', JSON.stringify({
-          id: data.userId, name: data.name, email: data.email,
-          profilePicture: data.profilePicture, role, active: data.active !== false,
-        }));
-        localStorage.setItem('auth_token', 'authenticated');
-        showToast(data.message || 'Account created! Welcome aboard 🌿', 'success');
-        setTimeout(() => navigate(target), 1200);
-      } else {
-        showToast(data.message || 'Sign up failed. Try again.', 'error');
-      }
+      const data = await authAPI.register({ name: normalizedName, email: normalizedEmail, password });
+      const role   = data.role || 'USER';
+      const target = role.toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+      localStorage.setItem('current_user', JSON.stringify({
+        id: data.userId, name: data.name, email: data.email,
+        profilePicture: data.profilePicture, role, active: data.active !== false,
+      }));
+      localStorage.setItem('auth_token', 'authenticated');
+      showToast(data.message || 'Account created! Welcome aboard 🌿', 'success');
+      setTimeout(() => navigate(target), 1200);
     } catch (err) {
-      const msg = err instanceof TypeError
-        ? 'Cannot reach server. Is the backend running?'
-        : `Sign up error: ${err.message}`;
-      showToast(msg, 'error');
+      showToast(extractApiErrorMessage(err, 'Sign up failed. Try again.'), 'error');
     } finally {
       setEmailLoading(false);
     }

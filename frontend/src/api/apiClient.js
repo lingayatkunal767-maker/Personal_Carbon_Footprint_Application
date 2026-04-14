@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { ApiClientError, extractApiErrorMessage } from '../services/api';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
@@ -21,8 +22,8 @@ apiClient.interceptors.request.use(
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
-    const originalRequest = error.config;
-    if (error.response.status === 401 && !originalRequest._retry) {
+    const originalRequest = error.config || {};
+    if (error.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
         const refreshToken = localStorage.getItem('refreshToken');
@@ -38,7 +39,18 @@ apiClient.interceptors.response.use(
         return Promise.reject(refreshError);
       }
     }
-    return Promise.reject(error);
+
+    const normalized = new ApiClientError({
+      message: extractApiErrorMessage(error, 'Request failed'),
+      status: Number(error?.response?.status || 0),
+      error: String(error?.response?.data?.error || 'Request Error'),
+      path: String(error?.response?.data?.path || originalRequest?.url || ''),
+      errors: (error?.response?.data?.errors && typeof error.response.data.errors === 'object')
+        ? error.response.data.errors
+        : {},
+    });
+
+    return Promise.reject(normalized);
   }
 );
 

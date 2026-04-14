@@ -68,7 +68,6 @@ public class UserService {
         return userRepository.save(existing);
     }
 
-    @SuppressWarnings("null")
     public User updateProfile(Long id, UserProfileRequest req) {
         User existing = getUserById(id);
         if (req.getName() != null && !req.getName().isBlank()) {

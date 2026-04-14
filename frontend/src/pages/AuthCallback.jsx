@@ -1,7 +1,6 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+import { authAPI, extractApiErrorMessage } from '../services/api';
 
 export default function AuthCallback() {
   const navigate = useNavigate();
@@ -11,84 +10,40 @@ export default function AuthCallback() {
     console.log('   Current URL:', window.location.href);
     console.log('   Hash:', window.location.hash);
     
-    // Handle OAuth redirect (when Google One Tap is skipped)
+    // Handle OAuth redirect callback.
     const hash = window.location.hash;
-    
-    if (hash.includes('access_token')) {
+
+    if (hash.includes('id_token')) {
       try {
-        // Extract access token from URL hash
         const params = new URLSearchParams(hash.substring(1));
-        const accessToken = params.get('access_token');
-        
-        console.log('✅ Access token found');
-        
-        if (accessToken) {
-          // Store token (in production, send to backend for validation)
-          localStorage.setItem('auth_token', accessToken);
-          
-          // Fetch user info from Google
-          console.log('📡 Fetching user info from Google...');
-          fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
-            headers: {
-              'Authorization': `Bearer ${accessToken}`
-            }
-          })
-            .then(res => {
-              if (!res.ok) {
-                throw new Error(`HTTP error! status: ${res.status}`);
-              }
-              return res.json();
-            })
-            .then(userInfo => {
-              console.log('✅ User info received:', userInfo.email);
+        const idToken = params.get('id_token');
 
-              // Save user to PostgreSQL via backend
-              return fetch(`${API_BASE_URL}/auth/google`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                  name: userInfo.name || userInfo.given_name || 'User',
-                  email: userInfo.email,
-                  googleId: userInfo.id,
-                  profilePicture: userInfo.picture || null,
-                }),
-              })
-                .then(r => r.json())
-                .then(data => {
-                  // Use backend-assigned id (or fall back to Google info)
-                  const session = data.success
-                    ? {
-                        id: data.userId,
-                        name: data.name,
-                        email: data.email,
-                        profilePicture: data.profilePicture,
-                        role: data.role || 'USER',
-                        active: data.active !== false,
-                      }
-                    : {
-                        name: userInfo.name || 'User',
-                        email: userInfo.email,
-                        profilePicture: userInfo.picture || null,
-                        role: 'USER',
-                        active: true,
-                      };
+        if (idToken) {
+          authAPI.googleAuth({ idToken })
+            .then((data) => {
+              const session = {
+                id: data.userId,
+                name: data.name,
+                email: data.email,
+                profilePicture: data.profilePicture,
+                role: data.role || 'USER',
+                active: data.active !== false,
+              };
 
-                  localStorage.setItem('current_user', JSON.stringify(session));
-                  localStorage.setItem('auth_token', 'authenticated');
+              localStorage.setItem('current_user', JSON.stringify(session));
+              localStorage.setItem('auth_token', 'authenticated');
 
-                  const target = (session.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
-                  console.log('✅ Authentication successful, redirecting to dashboard...');
-                  navigate(target);
-                });
+              const target = (session.role || '').toUpperCase() === 'ADMIN' ? '/admin/home' : '/home';
+              navigate(target);
             })
             .catch(error => {
-              console.error('❌ Error fetching user info:', error);
-              alert('Authentication failed: Unable to fetch user information. Please try again.');
+              console.error('❌ Authentication error:', error);
+              alert(`Authentication failed: ${extractApiErrorMessage(error, 'Google login failed')}`);
               navigate('/login');
             });
         } else {
-          console.error('❌ No access token found in URL');
-          alert('Authentication failed: No access token received. Please try again.');
+          console.error('❌ No ID token found in URL');
+          alert('Authentication failed: No ID token received. Please try again.');
           navigate('/login');
         }
       } catch (error) {
@@ -96,6 +51,9 @@ export default function AuthCallback() {
         alert('Authentication failed: ' + error.message);
         navigate('/login');
       }
+    } else if (hash.includes('access_token')) {
+      alert('Google redirect flow returned only access token. Please use the main Google Sign-In button again.');
+      navigate('/login');
     } else if (hash.includes('error')) {
       // Handle OAuth errors
       const params = new URLSearchParams(hash.substring(1));

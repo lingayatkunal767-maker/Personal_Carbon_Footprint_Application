@@ -54,7 +54,6 @@ class CarbonCalculationServiceTest {
     }
 
     @Test
-    @SuppressWarnings("null")
     void testCalculateAndLogEmissions() {
         // Given
         LifestyleSurvey survey = new LifestyleSurvey();

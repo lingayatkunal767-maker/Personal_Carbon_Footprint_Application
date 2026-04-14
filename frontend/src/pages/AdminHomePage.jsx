@@ -13,10 +13,9 @@ import {
   Legend,
 } from 'chart.js';
 import '../styles/AdminDashboard.css';
+import { adminAPI, extractApiErrorMessage } from '../services/api';
 
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, BarElement, ArcElement, Tooltip, Legend);
-
-const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 const TABS = [
   { id: 'users', label: 'User Management' },
@@ -114,12 +113,12 @@ export default function AdminHomePage() {
     setLoading(true);
     try {
       const [analyticsRes, usersRes, surveysRes, logsRes, factorsRes, badgeDefsRes] = await Promise.all([
-        fetch(`${API_BASE_URL}/admin/analytics?months=6`).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/users`).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/surveys/monitor`).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/carbon-logs`).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/emission-factors`).then((r) => r.json()),
-        fetch(`${API_BASE_URL}/admin/badges/definitions`).then((r) => r.json()),
+        adminAPI.getAnalytics(6),
+        adminAPI.getUsers(),
+        adminAPI.getSurveyMonitoring(),
+        adminAPI.getCarbonLogs(),
+        adminAPI.getEmissionFactors(),
+        adminAPI.getBadgeDefinitions(),
       ]);
 
       setAnalytics(analyticsRes);
@@ -129,7 +128,7 @@ export default function AdminHomePage() {
       setFactors(Array.isArray(factorsRes) ? factorsRes : []);
       setBadgeDefs(Array.isArray(badgeDefsRes) ? badgeDefsRes : []);
     } catch (error) {
-      notify('Failed to load admin data');
+      notify(extractApiErrorMessage(error, 'Failed to load admin data'));
     } finally {
       setLoading(false);
     }
@@ -197,40 +196,31 @@ export default function AdminHomePage() {
 
   const handleUserStatus = async (userId, active) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/users/${userId}/status`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ active }),
-      });
-      if (!res.ok) throw new Error('status update failed');
-      const updated = await res.json();
+      const updated = await adminAPI.updateUserStatus(userId, active);
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
       notify(`User ${active ? 'activated' : 'deactivated'}`);
-    } catch {
-      notify('Failed to update user status');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to update user status'));
     }
   };
 
   const handleExportLogs = async () => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/carbon-logs/export`);
-      if (!res.ok) throw new Error('export failed');
-      const csv = await res.text();
+      const csv = await adminAPI.exportCarbonLogs();
       csvDownload(csv, `admin-carbon-logs-${new Date().toISOString().slice(0, 10)}.csv`);
       notify('Carbon logs exported');
-    } catch {
-      notify('Export failed');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Export failed'));
     }
   };
 
   const handleDeleteLog = async (logId) => {
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/carbon-logs/${logId}`, { method: 'DELETE' });
-      if (!res.ok) throw new Error('delete failed');
+      await adminAPI.deleteCarbonLog(logId);
       setCarbonLogs((prev) => prev.filter((log) => log.id !== logId));
       notify('Carbon log deleted');
-    } catch {
-      notify('Failed to delete log');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to delete log'));
     }
   };
 
@@ -259,24 +249,17 @@ export default function AdminHomePage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/carbon-logs/${logId}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          transportEmission: transport,
-          foodEmission: food,
-          energyEmission: energy,
-        }),
+      const updated = await adminAPI.updateCarbonLog(logId, {
+        transportEmission: transport,
+        foodEmission: food,
+        energyEmission: energy,
       });
-
-      if (!res.ok) throw new Error('update failed');
-      const updated = await res.json();
 
       setCarbonLogs((prev) => prev.map((log) => (log.id === updated.id ? updated : log)));
       cancelEditLog();
       notify('Carbon log updated');
-    } catch {
-      notify('Failed to update carbon log');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to update carbon log'));
     }
   };
 
@@ -296,18 +279,13 @@ export default function AdminHomePage() {
     };
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/emission-factors`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      if (!res.ok) throw new Error('save failed');
+      await adminAPI.upsertEmissionFactor(payload);
       notify('Emission factor saved');
       setFactorForm({ category: 'transport', factorKey: '', factorValue: '', unit: 'kg CO2e/km', description: '' });
-      const all = await fetch(`${API_BASE_URL}/admin/emission-factors`).then((r) => r.json());
+      const all = await adminAPI.getEmissionFactors();
       setFactors(Array.isArray(all) ? all : []);
-    } catch {
-      notify('Failed to save factor');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to save factor'));
     }
   };
 
@@ -319,25 +297,20 @@ export default function AdminHomePage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/badges/definitions`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: badgeForm.id,
-          badgeName: badgeForm.badgeName,
-          badgeType: badgeForm.badgeType,
-          description: badgeForm.description,
-          thresholdPercent: badgeForm.thresholdPercent === '' ? null : Number(badgeForm.thresholdPercent),
-          active: !!badgeForm.active,
-        }),
+      await adminAPI.upsertBadgeDefinition({
+        id: badgeForm.id,
+        badgeName: badgeForm.badgeName,
+        badgeType: badgeForm.badgeType,
+        description: badgeForm.description,
+        thresholdPercent: badgeForm.thresholdPercent === '' ? null : Number(badgeForm.thresholdPercent),
+        active: !!badgeForm.active,
       });
-      if (!res.ok) throw new Error('save failed');
       notify('Badge definition saved');
       setBadgeForm({ id: null, badgeName: '', badgeType: 'ACHIEVEMENT', description: '', thresholdPercent: '', active: true });
-      const all = await fetch(`${API_BASE_URL}/admin/badges/definitions`).then((r) => r.json());
+      const all = await adminAPI.getBadgeDefinitions();
       setBadgeDefs(Array.isArray(all) ? all : []);
-    } catch {
-      notify('Failed to save badge definition');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to save badge definition'));
     }
   };
 
@@ -348,21 +321,15 @@ export default function AdminHomePage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/badges/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          userId: Number(assignForm.userId),
-          badgeDefinitionId: Number(assignForm.badgeDefinitionId),
-          reason: assignForm.reason,
-        }),
+      const data = await adminAPI.assignBadge({
+        userId: Number(assignForm.userId),
+        badgeDefinitionId: Number(assignForm.badgeDefinitionId),
+        reason: assignForm.reason,
       });
-      if (!res.ok) throw new Error('assign failed');
-      const data = await res.json();
       notify(data?.message || 'Badge assigned');
       setAssignForm({ userId: '', badgeDefinitionId: '', reason: '' });
-    } catch {
-      notify('Failed to assign badge');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to assign badge'));
     }
   };
 
@@ -374,14 +341,10 @@ export default function AdminHomePage() {
     }
 
     try {
-      const res = await fetch(`${API_BASE_URL}/admin/badges/assign-by-performance?minReductionPercent=${minReduction}`, {
-        method: 'POST',
-      });
-      if (!res.ok) throw new Error('auto assignment failed');
-      const data = await res.json();
+      const data = await adminAPI.assignByPerformance(minReduction);
       notify(`Good-score assignment done (${data.assignedCount || 0} assigned)`);
-    } catch {
-      notify('Failed to run performance assignment');
+    } catch (error) {
+      notify(extractApiErrorMessage(error, 'Failed to run performance assignment'));
     }
   };
 

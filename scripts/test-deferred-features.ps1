@@ -1,31 +1,33 @@
 # Test Script for Deferred Features
-# Run this script to test all newly implemented features
+# Run this script to validate deferred feature APIs.
 
-Write-Host "🧪 Testing Deferred Features Implementation" -ForegroundColor Cyan
-Write-Host "============================================`n" -ForegroundColor Cyan
+$ErrorActionPreference = "Stop"
 
-$baseUrl = "http://localhost:8081"
-$userId = 1
+Write-Host "DEFERRED FEATURES TESTER" -ForegroundColor Cyan
+Write-Host "========================`n" -ForegroundColor Cyan
 
-# Function to display results
+$BaseUrl = "http://localhost:8081"
+$UserId = 1
+
 function Show-Result {
-    param($response, $description)
-    Write-Host "✅ $description" -ForegroundColor Green
-    $response | ConvertTo-Json -Depth 5 | Write-Host
+    param(
+        [Parameter(Mandatory = $true)]$Response,
+        [Parameter(Mandatory = $true)][string]$Description
+    )
+    Write-Host ("OK {0}" -f $Description) -ForegroundColor Green
+    $Response | ConvertTo-Json -Depth 6 | Write-Host
     Write-Host ""
 }
 
-# Test 1: Submit multiple surveys to trigger badge earning
-Write-Host "`n📊 Test 1: Submitting surveys to earn badges..." -ForegroundColor Yellow
-
+Write-Host "[1] Submitting surveys to trigger badges" -ForegroundColor Yellow
 for ($i = 0; $i -lt 7; $i++) {
     $date = (Get-Date).AddDays(-$i).ToString("yyyy-MM-dd")
     $survey = @{
-        userId = $userId
+        userId = $UserId
         surveyDate = $date
-        transportMode = "Bicycle"
+        transportMode = "BIKE"
         distanceKmPerDay = 10
-        fuelType = "None"
+        fuelType = "NA"
         mealsVegPerWeek = 18
         mealsNonVegPerWeek = 3
         electricityKwhPerMonth = 120
@@ -33,37 +35,32 @@ for ($i = 0; $i -lt 7; $i++) {
     } | ConvertTo-Json
 
     try {
-        $response = Invoke-RestMethod -Uri "$baseUrl/api/survey" -Method POST -Body $survey -ContentType "application/json"
-        Write-Host "  ✓ Survey submitted for $date - Total Emission: $($response.totalEmission) kg CO2e" -ForegroundColor Gray
+        $response = Invoke-RestMethod -Uri "$BaseUrl/api/survey" -Method Post -Body $survey -ContentType "application/json"
+        Write-Host ("   OK Survey submitted for {0} (totalEmission={1})" -f $date, $response.totalEmission) -ForegroundColor Gray
     } catch {
-        Write-Host "  ✗ Error submitting survey for $date" -ForegroundColor Red
+        Write-Host ("   ERROR Survey submit failed for {0}: {1}" -f $date, $_.Exception.Message) -ForegroundColor Red
     }
 }
 
-Start-Sleep -Seconds 2
-
-# Test 2: Check earned badges
-Write-Host "`n🏆 Test 2: Checking earned badges..." -ForegroundColor Yellow
+Write-Host "[2] Checking earned badges" -ForegroundColor Yellow
 try {
-    $badges = Invoke-RestMethod -Uri "$baseUrl/api/badges/user/$userId" -Method GET
-    Show-Result $badges "Earned Badges (should include 'First Step' and 'Week Warrior'):"
+    $badges = Invoke-RestMethod -Uri "$BaseUrl/api/badges/user/$UserId" -Method Get
+    Show-Result -Response $badges -Description "Earned badges"
 } catch {
-    Write-Host "✗ Error fetching badges" -ForegroundColor Red
+    Write-Host ("ERROR Fetching badges failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 3: Create goals
-Write-Host "`n🎯 Test 3: Creating carbon reduction goals..." -ForegroundColor Yellow
-
+Write-Host "[3] Creating reduction goals" -ForegroundColor Yellow
 $goals = @(
     @{
-        userId = $userId
+        userId = $UserId
         goalType = "reduce_transport"
         targetValue = 5.0
         deadline = (Get-Date).AddDays(30).ToString("yyyy-MM-dd")
         status = "active"
     },
     @{
-        userId = $userId
+        userId = $UserId
         goalType = "weekly_target"
         targetValue = 100.0
         deadline = (Get-Date).AddDays(7).ToString("yyyy-MM-dd")
@@ -74,145 +71,127 @@ $goals = @(
 foreach ($goal in $goals) {
     try {
         $goalJson = $goal | ConvertTo-Json
-        $response = Invoke-RestMethod -Uri "$baseUrl/api/goals" -Method POST -Body $goalJson -ContentType "application/json"
-        Write-Host "  ✓ Created goal: $($response.goalType)" -ForegroundColor Gray
+        $response = Invoke-RestMethod -Uri "$BaseUrl/api/goals" -Method Post -Body $goalJson -ContentType "application/json"
+        Write-Host ("   OK Created goal: {0}" -f $response.goalType) -ForegroundColor Gray
     } catch {
-        Write-Host "  ✗ Error creating goal: $($goal.goalType)" -ForegroundColor Red
+        Write-Host ("   ERROR Creating goal {0}: {1}" -f $goal.goalType, $_.Exception.Message) -ForegroundColor Red
     }
 }
 
-Start-Sleep -Seconds 1
-
-# Test 4: Check goal progress
-Write-Host "`n📈 Test 4: Checking goal progress (should auto-update from surveys)..." -ForegroundColor Yellow
+Write-Host "[4] Reading goal progress" -ForegroundColor Yellow
 try {
-    $userGoals = Invoke-RestMethod -Uri "$baseUrl/api/goals/user/$userId" -Method GET
-    Show-Result $userGoals "User Goals with Progress:"
+    $userGoals = Invoke-RestMethod -Uri "$BaseUrl/api/goals/user/$UserId" -Method Get
+    Show-Result -Response $userGoals -Description "User goals with progress"
 } catch {
-    Write-Host "✗ Error fetching goals" -ForegroundColor Red
+    Write-Host ("ERROR Fetching goals failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 5: Check notifications
-Write-Host "`n📬 Test 5: Checking notifications..." -ForegroundColor Yellow
+Write-Host "[5] Reading notifications" -ForegroundColor Yellow
 try {
-    $notifications = Invoke-RestMethod -Uri "$baseUrl/api/notifications/user/$userId" -Method GET
-    Show-Result $notifications "Notifications (badges earned, goal progress):"
-    
-    $unreadCount = Invoke-RestMethod -Uri "$baseUrl/api/notifications/user/$userId/unread/count" -Method GET
-    Write-Host "Unread notifications: $($unreadCount.unreadCount)" -ForegroundColor Cyan
+    $notifications = Invoke-RestMethod -Uri "$BaseUrl/api/notifications/user/$UserId" -Method Get
+    Show-Result -Response $notifications -Description "Notifications"
+
+    $unreadCount = Invoke-RestMethod -Uri "$BaseUrl/api/notifications/user/$UserId/unread/count" -Method Get
+    Write-Host ("Unread notifications: {0}" -f $unreadCount.unreadCount) -ForegroundColor Cyan
 } catch {
-    Write-Host "✗ Error fetching notifications" -ForegroundColor Red
+    Write-Host ("ERROR Fetching notifications failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 6: Get marketplace products
-Write-Host "`n🛒 Test 6: Fetching marketplace products..." -ForegroundColor Yellow
+Write-Host "[6] Fetching marketplace products" -ForegroundColor Yellow
 try {
-    $products = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/products" -Method GET
-    Write-Host "✅ Found $($products.Count) products in marketplace" -ForegroundColor Green
-    
-    if ($products.Count -gt 0) {
-        $product = $products[0]
-        Write-Host "`nSample Product:" -ForegroundColor Cyan
-        Write-Host "  Name: $($product.name)" -ForegroundColor Gray
-        Write-Host "  Category: $($product.category)" -ForegroundColor Gray
-        Write-Host "  Price: `$$($product.price)" -ForegroundColor Gray
-        Write-Host "  Carbon Saving: $($product.carbonSaving) kg CO2e/year" -ForegroundColor Gray
+    $products = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/products" -Method Get
+    $count = @($products).Count
+    Write-Host ("OK Found {0} products" -f $count) -ForegroundColor Green
+
+    if ($count -gt 0) {
+        $product = @($products)[0]
+        Write-Host ("   Name: {0}" -f $product.name) -ForegroundColor Gray
+        Write-Host ("   Category: {0}" -f $product.category) -ForegroundColor Gray
+        Write-Host ("   Price: {0}" -f $product.price) -ForegroundColor Gray
+        Write-Host ("   Carbon Saving: {0} kg CO2e/year" -f $product.carbonSaving) -ForegroundColor Gray
     }
 } catch {
-    Write-Host "✗ Error fetching products" -ForegroundColor Red
+    Write-Host ("ERROR Fetching products failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 7: Get products by category
-Write-Host "`n📦 Test 7: Fetching products by category (REUSABLE)..." -ForegroundColor Yellow
+Write-Host "[7] Fetching reusable products" -ForegroundColor Yellow
 try {
-    $reusableProducts = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/products/category/REUSABLE" -Method GET
-    Write-Host "✅ Found $($reusableProducts.Count) reusable products" -ForegroundColor Green
+    $reusableProducts = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/products/category/REUSABLE" -Method Get
+    Write-Host ("OK Found {0} reusable products" -f @($reusableProducts).Count) -ForegroundColor Green
 } catch {
-    Write-Host "✗ Error fetching category products" -ForegroundColor Red
+    Write-Host ("ERROR Fetching reusable products failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 8: Create an order
-Write-Host "`n🛍️ Test 8: Creating a marketplace order..." -ForegroundColor Yellow
+Write-Host "[8] Creating and confirming an order" -ForegroundColor Yellow
 try {
-    $allProducts = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/products" -Method GET
-    if ($allProducts.Count -ge 2) {
+    $allProducts = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/products" -Method Get
+    $productsArr = @($allProducts)
+
+    if ($productsArr.Count -ge 2) {
         $order = @{
-            userId = $userId
+            userId = $UserId
             items = @{
-                "$($allProducts[0].id)" = 1
-                "$($allProducts[1].id)" = 2
+                "$($productsArr[0].id)" = 1
+                "$($productsArr[1].id)" = 2
             }
             shippingAddress = "123 Green Street, EcoCity, EC 12345"
             contactPhone = "+1234567890"
-            useEcoPoints = $false
-        } | ConvertTo-Json
+            paymentMethod = "COD"
+            ecoPointsUsed = 0
+        } | ConvertTo-Json -Depth 5
 
-        $orderResponse = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/orders" -Method POST -Body $order -ContentType "application/json"
-        Show-Result $orderResponse "Created Order:"
-        
+        $orderResponse = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/orders" -Method Post -Body $order -ContentType "application/json"
+        Show-Result -Response $orderResponse -Description "Created order"
+
         $orderId = $orderResponse.id
-        
-        # Test 9: Confirm the order
-        Write-Host "`n✔️ Test 9: Confirming order..." -ForegroundColor Yellow
-        $confirmResponse = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/orders/$orderId/confirm" -Method PUT
-        Write-Host "✅ Order confirmed: $($confirmResponse.message)" -ForegroundColor Green
+        $confirmResponse = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/orders/$orderId/confirm" -Method Put
+        Write-Host ("OK Order confirmed: {0}" -f $confirmResponse.message) -ForegroundColor Green
     } else {
-        Write-Host "⚠️ Not enough products in marketplace to create order. Run seed-marketplace.sql first." -ForegroundColor Yellow
+        Write-Host "WARN Not enough products to create an order. Load seed data first." -ForegroundColor Yellow
     }
 } catch {
-    Write-Host "✗ Error creating/confirming order: $($_.Exception.Message)" -ForegroundColor Red
+    Write-Host ("ERROR Creating/confirming order failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 10: Get user orders
-Write-Host "`n📋 Test 10: Fetching user orders..." -ForegroundColor Yellow
+Write-Host "[9] Fetching user orders" -ForegroundColor Yellow
 try {
-    $orders = Invoke-RestMethod -Uri "$baseUrl/api/marketplace/orders/user/$userId" -Method GET
-    Show-Result $orders "User Orders:"
+    $orders = Invoke-RestMethod -Uri "$BaseUrl/api/marketplace/orders/user/$UserId" -Method Get
+    Show-Result -Response $orders -Description "User orders"
 } catch {
-    Write-Host "✗ Error fetching orders" -ForegroundColor Red
+    Write-Host ("ERROR Fetching orders failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 11: Mark notification as read
-Write-Host "`n✅ Test 11: Marking notifications as read..." -ForegroundColor Yellow
+Write-Host "[10] Marking first notification as read" -ForegroundColor Yellow
 try {
-    $allNotifications = Invoke-RestMethod -Uri "$baseUrl/api/notifications/user/$userId" -Method GET
-    if ($allNotifications.Count -gt 0) {
-        $firstNotificationId = $allNotifications[0].id
-        $markReadResponse = Invoke-RestMethod -Uri "$baseUrl/api/notifications/$firstNotificationId/read" -Method PUT
-        Write-Host "✅ $($markReadResponse.message)" -ForegroundColor Green
+    $allNotifications = Invoke-RestMethod -Uri "$BaseUrl/api/notifications/user/$UserId" -Method Get
+    $allNotificationsArr = @($allNotifications)
+    if ($allNotificationsArr.Count -gt 0) {
+        $firstNotificationId = $allNotificationsArr[0].id
+        $markReadResponse = Invoke-RestMethod -Uri "$BaseUrl/api/notifications/$firstNotificationId/read" -Method Put
+        Write-Host ("OK {0}" -f $markReadResponse.message) -ForegroundColor Green
     } else {
-        Write-Host "⚠️ No notifications to mark as read" -ForegroundColor Yellow
+        Write-Host "WARN No notifications to mark as read" -ForegroundColor Yellow
     }
 } catch {
-    Write-Host "✗ Error marking notification as read" -ForegroundColor Red
+    Write-Host ("ERROR Marking notification failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 12: Get dashboard data
-Write-Host "`n📊 Test 12: Fetching dashboard data..." -ForegroundColor Yellow
+Write-Host "[11] Fetching dashboard data" -ForegroundColor Yellow
 try {
-    $dashboard = Invoke-RestMethod -Uri "$baseUrl/api/dashboard/user/$userId" -Method GET
-    Show-Result $dashboard "Dashboard Summary:"
+    $dashboard = Invoke-RestMethod -Uri "$BaseUrl/api/dashboard/user/$UserId" -Method Get
+    Show-Result -Response $dashboard -Description "Dashboard summary"
 } catch {
-    Write-Host "✗ Error fetching dashboard (Note: DashboardService needs to be implemented if missing)" -ForegroundColor Red
+    Write-Host ("ERROR Fetching dashboard failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-# Test 13: Get leaderboard
-Write-Host "`n🏅 Test 13: Fetching leaderboard..." -ForegroundColor Yellow
+Write-Host "[12] Fetching leaderboard" -ForegroundColor Yellow
 try {
-    $leaderboard = Invoke-RestMethod -Uri "$baseUrl/api/leaderboard/top?limit=10" -Method GET
-    Show-Result $leaderboard "Top 10 Leaderboard:"
+    $leaderboard = Invoke-RestMethod -Uri "$BaseUrl/api/leaderboard?limit=10" -Method Get
+    Show-Result -Response $leaderboard -Description "Top 10 leaderboard"
 } catch {
-    Write-Host "✗ Error fetching leaderboard" -ForegroundColor Red
+    Write-Host ("ERROR Fetching leaderboard failed: {0}" -f $_.Exception.Message) -ForegroundColor Red
 }
 
-Write-Host "`n============================================" -ForegroundColor Cyan
-Write-Host "✅ Testing Complete!" -ForegroundColor Green
-Write-Host "`nSummary of Tested Features:" -ForegroundColor Cyan
-Write-Host "  ✓ Badge auto-awarding" -ForegroundColor Gray
-Write-Host "  ✓ Goal progress tracking" -ForegroundColor Gray
-Write-Host "  ✓ Notifications system" -ForegroundColor Gray
-Write-Host "  ✓ Marketplace products" -ForegroundColor Gray
-Write-Host "  ✓ Order creation and management" -ForegroundColor Gray
-Write-Host "  ✓ Dashboard integration" -ForegroundColor Gray
-Write-Host "  ✓ Leaderboard rankings" -ForegroundColor Gray
-Write-Host "`n" -ForegroundColor Cyan
+Write-Host "`n========================" -ForegroundColor Cyan
+Write-Host "DEFERRED TEST COMPLETE" -ForegroundColor Green
+Write-Host "========================" -ForegroundColor Cyan

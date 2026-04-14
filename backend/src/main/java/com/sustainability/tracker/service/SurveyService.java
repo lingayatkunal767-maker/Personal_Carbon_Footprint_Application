@@ -33,7 +33,6 @@ public class SurveyService {
     private final BadgeEarningService badgeEarningService;
     private final GoalService goalService;
 
-    @SuppressWarnings("null")
     public SurveyResponse processSurvey(SurveyRequest request) {
         Long userId = Objects.requireNonNull(request.getUserId(), "request.userId is required");
 
