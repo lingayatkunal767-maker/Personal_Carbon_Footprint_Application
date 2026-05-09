@@ -1,8 +1,3 @@
 {
-    "java.configuration.updateBuildConfiguration": "automatic",
-    "java.compile.nullAnalysis.mode": "automatic",
-    "terminal.integrated.env.windows": {
-        "JAVA_HOME": "${env:JAVA_HOME}",
-        "Path": "${env:JAVA_HOME}\\bin;${env:Path}"
-    }
+    "java.compile.nullAnalysis.mode": "disabled"
 }
