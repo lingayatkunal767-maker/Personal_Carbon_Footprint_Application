@@ -143,7 +143,7 @@ export default function SignUpPage() {
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, []);
 
-  const handleCredentialResponse = async (response) => {
+  async function handleCredentialResponse(response) {
     try {
       const data = await authAPI.googleAuth({ idToken: response.credential });
       const firstName = (data.name || 'there').split(' ')[0];
@@ -167,7 +167,7 @@ export default function SignUpPage() {
     toastTimerRef.current = setTimeout(() => setToast({ msg: '', type: 'default', show: false }), 3500);
   };
 
-  const handleEmailSignUp = async (e) => {
+  async function handleEmailSignUp(e) {
     e.preventDefault();
     const normalizedName  = name.trim().replace(/\s+/g, ' ');
     const normalizedEmail = email.trim().toLowerCase();

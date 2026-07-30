@@ -169,7 +169,7 @@ export default function LoginPage() {
     navigate(target, { replace: true });
   };
 
-  const handleCredentialResponse = async (response) => {
+  async function handleCredentialResponse(response) {
     if (!response?.credential) {
       showToast('Authentication failed. No Google credential received.');
       return;
@@ -211,7 +211,7 @@ export default function LoginPage() {
     });
   };
 
-  const handleEmailLogin = async (event) => {
+  async function handleEmailLogin(event) {
     event.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();

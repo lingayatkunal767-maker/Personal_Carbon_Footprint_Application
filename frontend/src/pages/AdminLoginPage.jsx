@@ -30,7 +30,7 @@ export default function AdminLoginPage() {
     setTimeout(() => setToast(''), 3000);
   };
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     const normalizedEmail = email.trim().toLowerCase();

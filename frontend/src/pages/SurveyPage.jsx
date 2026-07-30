@@ -235,7 +235,7 @@ const SurveyPage = () => {
   };
 
   // Handle form submission
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
     setError('');
     setResult(null);

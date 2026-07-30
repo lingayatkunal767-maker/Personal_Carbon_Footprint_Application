@@ -194,7 +194,7 @@ export default function AdminHomePage() {
   const isLargeViewport = typeof window !== 'undefined'
     && window.matchMedia('(min-width: 1600px)').matches;
 
-  const handleUserStatus = async (userId, active) => {
+  async function handleUserStatus(userId, active) {
     try {
       const updated = await adminAPI.updateUserStatus(userId, active);
       setUsers((prev) => prev.map((u) => (u.id === updated.id ? updated : u)));
@@ -204,7 +204,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleExportLogs = async () => {
+  async function handleExportLogs() {
     try {
       const csv = await adminAPI.exportCarbonLogs();
       csvDownload(csv, `admin-carbon-logs-${new Date().toISOString().slice(0, 10)}.csv`);
@@ -214,7 +214,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleDeleteLog = async (logId) => {
+  async function handleDeleteLog(logId) {
     try {
       await adminAPI.deleteCarbonLog(logId);
       setCarbonLogs((prev) => prev.filter((log) => log.id !== logId));
@@ -238,7 +238,7 @@ export default function AdminHomePage() {
     setLogEdit({ transportEmission: '', foodEmission: '', energyEmission: '' });
   };
 
-  const saveLogUpdate = async (logId) => {
+  async function saveLogUpdate(logId) {
     const transport = Number(logEdit.transportEmission);
     const food = Number(logEdit.foodEmission);
     const energy = Number(logEdit.energyEmission);
@@ -263,7 +263,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleFactorUpsert = async (e) => {
+  async function handleFactorUpsert(e) {
     e.preventDefault();
     if (!factorForm.factorKey || !factorForm.factorValue) {
       notify('Factor key and value are required');
@@ -289,7 +289,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleBadgeSave = async (e) => {
+  async function handleBadgeSave(e) {
     e.preventDefault();
     if (!badgeForm.badgeName || !badgeForm.badgeType) {
       notify('Badge name and type are required');
@@ -314,7 +314,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleAssignBadge = async () => {
+  async function handleAssignBadge() {
     if (!assignForm.userId || !assignForm.badgeDefinitionId) {
       notify('Select user and badge definition');
       return;
@@ -333,7 +333,7 @@ export default function AdminHomePage() {
     }
   };
 
-  const handleAssignByPerformance = async () => {
+  async function handleAssignByPerformance() {
     const minReduction = Number(performanceThreshold);
     if (Number.isNaN(minReduction) || minReduction < 0) {
       notify('Good score threshold must be a valid non-negative number');

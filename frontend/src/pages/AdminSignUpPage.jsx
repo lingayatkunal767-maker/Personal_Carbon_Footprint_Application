@@ -31,7 +31,7 @@ export default function AdminSignUpPage() {
     setTimeout(() => setToast(''), 3000);
   };
 
-  const handleSubmit = async (e) => {
+  async function handleSubmit(e) {
     e.preventDefault();
 
     const normalizedName = name.trim().replace(/\s+/g, ' ');

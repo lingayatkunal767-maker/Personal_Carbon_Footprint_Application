@@ -181,7 +181,7 @@ export default function CarbonHistoryPage() {
   useEffect(() => {
     if (!userId) return;
 
-    const fetchLogs = async () => {
+    async function fetchLogs() {
       setLoading(true);
       setError('');
       setExpandedLogDate(null);

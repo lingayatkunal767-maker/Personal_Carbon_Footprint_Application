@@ -17,7 +17,7 @@ const PurchaseHistoryPage = () => {
     loadOrders();
   }, []);
 
-  const loadOrders = async () => {
+  async function loadOrders() {
     setLoading(true);
     try {
       const data = await api.marketplace.getUserOrders(userId);
@@ -30,7 +30,7 @@ const PurchaseHistoryPage = () => {
     }
   };
 
-  const handleCancelOrder = async (orderId) => {
+  async function handleCancelOrder(orderId) {
     if (!window.confirm('Cancel this order?')) {
       return;
     }

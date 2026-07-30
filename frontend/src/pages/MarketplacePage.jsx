@@ -48,7 +48,7 @@ const MarketplacePage = () => {
       .catch(() => setUserPoints(0));
   }, [userId]);
 
-  const loadProducts = async (category) => {
+  async function loadProducts(category) {
     setLoading(true);
     try {
       const data = category
@@ -102,7 +102,7 @@ const MarketplacePage = () => {
   const discountInInr = Math.floor(redeemablePoints / 10);
   const finalPayableAmount = Math.max(0, grossAmount - discountInInr);
 
-  const handlePurchaseSubmit = async (event) => {
+  async function handlePurchaseSubmit(event) {
     event.preventDefault();
 
     if (!checkoutProduct) {

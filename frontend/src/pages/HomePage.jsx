@@ -619,7 +619,7 @@ export default function HomePage() {
   useEffect(() => {
     if (!userId) return;
 
-    const loadAll = async () => {
+    async function loadAll() {
       setLoading(true);
       try {
         const [
@@ -751,7 +751,7 @@ export default function HomePage() {
     navigate('/login', { replace: true });
   };
 
-  const handleProfileSave = async (updatedProfile) => {
+  async function handleProfileSave(updatedProfile) {
     setProfile(updatedProfile);
     const stored = JSON.parse(localStorage.getItem('current_user') || '{}');
     const merged = {
@@ -777,7 +777,7 @@ export default function HomePage() {
     }
   };
 
-  const handleActivitySave = async (activity) => {
+  async function handleActivitySave(activity) {
     // Optimistically add to UI immediately
     const tempId = `temp-${Date.now()}`;
     const uiActivity = { ...activity, id: tempId };
@@ -820,7 +820,7 @@ export default function HomePage() {
     }
   };
 
-  const handleRemoveActivity = async (activityId) => {
+  async function handleRemoveActivity(activityId) {
     setActivities(prev => prev.filter(a => a.id !== activityId));
     // Delete from backend (only if it's a real DB id — not temp)
     if (userId && typeof activityId === 'number') {
@@ -838,7 +838,7 @@ export default function HomePage() {
     }
   };
 
-  const handleAddGoal = async (goal) => {
+  async function handleAddGoal(goal) {
     if (!userId) { setGoals(prev => [...prev, goal]); return; }
     try {
       const payload = {
@@ -861,7 +861,7 @@ export default function HomePage() {
     }
   };
 
-  const handleUpdateGoal = async (goalId, updates) => {
+  async function handleUpdateGoal(goalId, updates) {
     setGoals(prev => prev.map(g => {
       if (g.id !== goalId) return g;
       const merged = { ...g, ...updates };
@@ -891,7 +891,7 @@ export default function HomePage() {
     }
   };
 
-  const handleRemoveGoal = async (goalId) => {
+  async function handleRemoveGoal(goalId) {
     setGoals(prev => prev.filter(g => g.id !== goalId));
     if (!userId || typeof goalId !== 'number') return;
     try {
@@ -922,7 +922,7 @@ export default function HomePage() {
     }, ...prev]);
   };
 
-  const handleRefreshTips = async () => {
+  async function handleRefreshTips() {
     if (!userId) return;
     try {
       const data = await surveyAPI.getDatasetInsights(userId);
@@ -937,7 +937,7 @@ export default function HomePage() {
       console.error('Refresh tips error:', err);
     }
   };
-  const handleToggleNotifications = async () => {
+  async function handleToggleNotifications() {
     const next = !notificationsOpen;
     setNotificationsOpen(next);
     if (next) {
@@ -945,7 +945,7 @@ export default function HomePage() {
     }
   };
   const handleCloseNotifications  = () => setNotificationsOpen(false);
-  const handleDismissNotification  = async (id) => {
+  async function handleDismissNotification(id) {
     const target = notifications.find((n) => n.id === id);
     if (!target) return;
 
@@ -960,7 +960,7 @@ export default function HomePage() {
     setNotifications(prev => prev.filter(n => n.id !== id));
   };
 
-  const handleMarkAllRead = async () => {
+  async function handleMarkAllRead() {
     if (userId) {
       try {
         await fetchAPI(`/notifications/user/${userId}/read-all`, { method: 'PUT', parseAs: 'none' });
@@ -980,7 +980,7 @@ export default function HomePage() {
     setActiveNotificationPopup(null);
   };
 
-  const handleViewBadgeFromPopup = async () => {
+  async function handleViewBadgeFromPopup() {
     setNotificationsOpen(true);
     await refreshNotifications();
     handleCloseNotificationPopup();
@@ -989,7 +989,7 @@ export default function HomePage() {
   const handleOpenModal  = () => setModalOpen(true);
   const handleCloseModal = () => setModalOpen(false);
 
-  const handleRefreshLeaderboard = async () => {
+  async function handleRefreshLeaderboard() {
     setLeaderboardLoading(true);
     try {
       const data = await leaderboardAPI.getLeaderboard(10);
