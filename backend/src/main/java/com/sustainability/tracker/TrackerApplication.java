@@ -22,6 +22,7 @@ public class TrackerApplication {
     private static final int DEFAULT_SERVER_PORT = 8081;
 
     public static void main(String[] args) {
+        java.util.TimeZone.setDefault(java.util.TimeZone.getTimeZone("UTC"));
         int configuredPort = resolveConfiguredPort();
         if (isPortInUse(configuredPort) && isExistingBackendHealthy(configuredPort)) {
             LOGGER.info("Backend is already running on port {}. Skipping duplicate startup.", configuredPort);
