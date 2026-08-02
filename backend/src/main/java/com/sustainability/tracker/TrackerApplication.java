@@ -30,6 +30,14 @@ public class TrackerApplication {
         }
 
         try {
+            System.out.println("===== DATABASE VARIABLES =====");
+            System.out.println("PGHOST = " + System.getenv("PGHOST"));
+            System.out.println("PGPORT = " + System.getenv("PGPORT"));
+            System.out.println("PGDATABASE = " + System.getenv("PGDATABASE"));
+            System.out.println("PGUSER = " + System.getenv("PGUSER"));
+            System.out.println("SPRING_DATASOURCE_URL = " + System.getenv("SPRING_DATASOURCE_URL"));
+            System.out.println("DATABASE_URL = " + System.getenv("DATABASE_URL"));
+            System.out.println("==============================");
             SpringApplication.run(TrackerApplication.class, args);
         } catch (RuntimeException ex) {
             PortInUseException portInUse = findPortInUseException(ex);
