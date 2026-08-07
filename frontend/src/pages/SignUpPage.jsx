@@ -117,10 +117,13 @@ export default function SignUpPage() {
     document.body.appendChild(script);
     script.onload = () => {
       if (GOOGLE_CLIENT_ID && GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE") {
-        window.google?.accounts.id.initialize({
-          client_id: GOOGLE_CLIENT_ID,
-          callback: handleCredentialResponse,
-        });
+        if (!window.__googleAuthInitialized) {
+          window.google?.accounts.id.initialize({
+            client_id: GOOGLE_CLIENT_ID,
+            callback: handleCredentialResponse,
+          });
+          window.__googleAuthInitialized = true;
+        }
       }
     };
     return () => {
