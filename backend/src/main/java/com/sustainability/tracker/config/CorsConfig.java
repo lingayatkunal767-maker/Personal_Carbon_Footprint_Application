@@ -14,9 +14,13 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 /**
- * Raw Jakarta servlet filter that writes CORS headers on every response.
- * Runs first (HIGHEST_PRECEDENCE) so no other filter can intercept before headers are set.
- * OPTIONS preflight requests are answered immediately with 200 OK.
+ * Raw Jakarta servlet filter — writes CORS headers on every response.
+ * Runs at HIGHEST_PRECEDENCE so it executes before every other filter.
+ * OPTIONS preflight is short-circuited with 200 OK immediately.
+ *
+ * NOTE: When the frontend is on Vercel with a proxy rewrite to Railway,
+ * these headers are used for direct Railway API access (e.g., mobile clients,
+ * testing tools). Vercel-proxied requests do not require CORS headers.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
@@ -31,7 +35,6 @@ public class CorsConfig implements Filter {
 
         String origin = request.getHeader("Origin");
 
-        // Echo the caller's origin back (allows any origin without using "*")
         if (origin != null && !origin.isBlank()) {
             response.setHeader("Access-Control-Allow-Origin",      origin);
             response.setHeader("Access-Control-Allow-Credentials", "true");
@@ -45,7 +48,6 @@ public class CorsConfig implements Filter {
                 "Origin, Content-Type, Accept, Authorization, X-Requested-With");
         response.setHeader("Access-Control-Max-Age", "3600");
 
-        // Short-circuit preflight — browser needs 200, not the actual endpoint's response
         if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
             response.setStatus(HttpServletResponse.SC_OK);
             return;
