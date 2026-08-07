@@ -1,53 +1,56 @@
 package com.sustainability.tracker.config;
 
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
-import org.springframework.context.annotation.Bean;
-import org.springframework.context.annotation.Configuration;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterChain;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletRequest;
+import jakarta.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.Ordered;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
+import org.springframework.core.annotation.Order;
+import org.springframework.stereotype.Component;
 
-import java.util.Arrays;
-import java.util.List;
+import java.io.IOException;
 
-@Configuration
-public class CorsConfig {
+/**
+ * Raw Jakarta servlet filter that writes CORS headers on every response.
+ * Runs first (HIGHEST_PRECEDENCE) so no other filter can intercept before headers are set.
+ * OPTIONS preflight requests are answered immediately with 200 OK.
+ */
+@Component
+@Order(Ordered.HIGHEST_PRECEDENCE)
+public class CorsConfig implements Filter {
 
-    @Bean
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration() {
-        CorsConfiguration config = new CorsConfiguration();
+    @Override
+    public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
+            throws IOException, ServletException {
 
-        // Allow all Vercel preview/production domains + localhost
-        config.setAllowedOriginPatterns(Arrays.asList(
-                "http://localhost:*",
-                "http://127.0.0.1:*",
-                "https://*.vercel.app",
-                "https://personal-carbon-footprint-applicati.vercel.app"
-        ));
+        HttpServletRequest  request  = (HttpServletRequest)  req;
+        HttpServletResponse response = (HttpServletResponse) res;
 
-        config.setAllowedMethods(Arrays.asList(
-                "GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"
-        ));
+        String origin = request.getHeader("Origin");
 
-        // Allow all request headers
-        config.setAllowedHeaders(List.of("*"));
+        // Echo the caller's origin back (allows any origin without using "*")
+        if (origin != null && !origin.isBlank()) {
+            response.setHeader("Access-Control-Allow-Origin",      origin);
+            response.setHeader("Access-Control-Allow-Credentials", "true");
+        } else {
+            response.setHeader("Access-Control-Allow-Origin", "*");
+        }
 
-        // Expose common response headers to the browser
-        config.setExposedHeaders(Arrays.asList(
-                "Authorization", "Content-Type", "X-Requested-With"
-        ));
+        response.setHeader("Access-Control-Allow-Methods",
+                "GET, POST, PUT, DELETE, PATCH, OPTIONS");
+        response.setHeader("Access-Control-Allow-Headers",
+                "Origin, Content-Type, Accept, Authorization, X-Requested-With");
+        response.setHeader("Access-Control-Max-Age", "3600");
 
-        config.setAllowCredentials(true);
-        config.setMaxAge(3600L);
+        // Short-circuit preflight — browser needs 200, not the actual endpoint's response
+        if ("OPTIONS".equalsIgnoreCase(request.getMethod())) {
+            response.setStatus(HttpServletResponse.SC_OK);
+            return;
+        }
 
-        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        // Apply CORS to every path, not just /api/**
-        source.registerCorsConfiguration("/**", config);
-
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
-        // Run before every other filter (authentication, security, etc.)
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        return bean;
+        chain.doFilter(req, res);
     }
 }
