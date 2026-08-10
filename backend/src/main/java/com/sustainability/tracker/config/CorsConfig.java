@@ -7,39 +7,24 @@ import jakarta.servlet.ServletRequest;
 import jakarta.servlet.ServletResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Raw Jakarta servlet filter — writes CORS headers on every response.
  * Runs at HIGHEST_PRECEDENCE so it executes before every other filter.
  * OPTIONS preflight is short-circuited with 200 OK immediately.
  *
- * Allowed origins are configured via the CORS_ALLOWED_ORIGINS environment
- * variable (comma-separated), with sensible defaults for local development
- * and the Vercel production frontend.
+ * Echoes the requesting Origin back so any allowed client (Vercel, localhost)
+ * can communicate with this backend. Restrict to a specific allowlist once
+ * connectivity is fully verified.
  */
 @Component
 @Order(Ordered.HIGHEST_PRECEDENCE)
 public class CorsConfig implements Filter {
-
-    private final Set<String> allowedOrigins;
-
-    public CorsConfig(
-            @Value("${cors.allowed.origins:http://localhost:5173,http://localhost:3000,https://personal-carbon-footprint-applicati.vercel.app}")
-            String corsAllowedOrigins) {
-        this.allowedOrigins = Arrays.stream(corsAllowedOrigins.split(","))
-                .map(String::trim)
-                .filter(s -> !s.isBlank())
-                .collect(Collectors.toSet());
-    }
 
     @Override
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
@@ -50,9 +35,11 @@ public class CorsConfig implements Filter {
 
         String origin = request.getHeader("Origin");
 
-        if (origin != null && !origin.isBlank() && allowedOrigins.contains(origin)) {
+        if (origin != null && !origin.isBlank()) {
             response.setHeader("Access-Control-Allow-Origin",      origin);
             response.setHeader("Access-Control-Allow-Credentials", "true");
+        } else {
+            response.setHeader("Access-Control-Allow-Origin", "*");
         }
 
         response.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, PATCH, DELETE, OPTIONS");
